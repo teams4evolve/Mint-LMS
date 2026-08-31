@@ -1,0 +1,11 @@
+@import '../css/mint.css';
+
+#mint-lms-root.mint-lms-student .mint-aspect-video iframe,
+#mint-lms-root.mint-lms-student .mint-aspect-video video {
+  width: 100%;
+  height: 100%;
+}
+
+#mint-lms-root.mint-lms-student .mint-aspect-video iframe {
+  aspect-ratio: 16 / 9;
+}

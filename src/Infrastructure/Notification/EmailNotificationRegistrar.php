@@ -1,0 +1,28 @@
+<?php
+declare(strict_types=1);
+
+namespace MintLMS\Infrastructure\Notification;
+
+defined( 'ABSPATH' ) || exit;
+
+use MintLMS\Application\Certificate\CertificateService;
+use MintLMS\Domain\Course\CourseRepositoryInterface;
+
+final class EmailNotificationRegistrar {
+
+	public function __construct(
+		private CourseRepositoryInterface $courseRepository,
+		private ?CertificateService $certificateService = null,
+	) {
+	}
+
+	public function register(): void {
+		$service = new EmailNotificationService(
+			$this->courseRepository,
+			MINTLMS_PATH . 'views/emails',
+			$this->certificateService,
+		);
+
+		$service->register();
+	}
+}

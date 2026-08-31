@@ -1,0 +1,27 @@
+{
+  "name": "mint-lms",
+  "private": true,
+  "scripts": {
+    "build:css": "NODE_ENV=production postcss ./assets/css/mint.css -o ./assets/dist/main.css",
+    "build:css:student": "NODE_ENV=production postcss ./assets/src/student.css -o ./assets/dist/student.css",
+    "build:js": "esbuild assets/src/main.js --bundle --minify --outfile=assets/dist/main.js",
+    "build:js:student": "esbuild assets/src/student.js --bundle --minify --outfile=assets/dist/student.js",
+    "build": "npm run build:css && npm run build:css:student && npm run build:js && npm run build:js:student",
+    "watch:css": "postcss ./assets/css/mint.css -o ./assets/dist/main.css --watch",
+    "watch:js": "esbuild assets/src/main.js --bundle --outfile=assets/dist/main.js --watch"
+  },
+  "dependencies": {
+    "alpinejs": "^3.14.9",
+    "sortablejs": "^1.15.6"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.21",
+    "cssnano": "^7.1.0",
+    "esbuild": "^0.25.0",
+    "postcss": "^8.5.6",
+    "postcss-cli": "^11.0.1",
+    "postcss-import": "^17.0.0",
+    "postcss-prefix-selector": "^2.1.1",
+    "tailwindcss": "^3.4.17"
+  }
+}

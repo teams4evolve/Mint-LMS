@@ -1,0 +1,6 @@
+@import './mint-tokens.css';
+@import './mint-components.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;

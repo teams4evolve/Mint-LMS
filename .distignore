@@ -1,0 +1,43 @@
+# Development and CI
+/.git
+/.github
+/.githooks
+/.cursorrules
+/.phpunit.cache
+/phpcs.xml
+/phpstan.neon
+/phpunit.xml.dist
+/composer.json
+/composer.lock
+/package.json
+/package-lock.json
+/tailwind.config.js
+/postcss.config.js
+/scripts
+
+# Design handoff (not shipped)
+/Mint LMS Designs
+/Mint LMS Designs.zip
+
+# Source assets (built files in assets/dist are included)
+/assets/src
+/node_modules
+
+# Tests (not shipped to wordpress.org)
+/tests
+
+# Dev-only vendor tools (run composer install --no-dev before packaging)
+/vendor/bin
+/vendor/phpunit
+/vendor/phpstan
+/vendor/squizlabs
+/vendor/dealerdirect
+/vendor/phpcsstandards
+/vendor/wp-coding-standards
+/vendor/php-stubs
+/vendor/szepeviktor
+/vendor/sebastian
+/vendor/nikic
+/vendor/myclabs
+/vendor/theseer
+/vendor/phar-io

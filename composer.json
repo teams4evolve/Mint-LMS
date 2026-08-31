@@ -1,0 +1,51 @@
+{
+    "name": "mintlms/mint-lms",
+    "description": "A clean, fast WordPress LMS plugin.",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0-or-later",
+    "require": {
+        "php": ">=8.1"
+    },
+    "require-dev": {
+        "dealerdirect/phpcodesniffer-composer-installer": "^1.0",
+        "php-stubs/wordpress-stubs": "^6.4",
+        "phpstan/phpstan": "^1.10",
+        "phpunit/phpunit": "^10.5",
+        "szepeviktor/phpstan-wordpress": "^1.3",
+        "wp-coding-standards/wpcs": "^3.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "MintLMS\\": "src/"
+        },
+        "files": [
+            "src/Api/V1/functions.php"
+        ]
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "MintLMS\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    },
+    "scripts": {
+        "arch": "phpunit --testsuite architecture",
+        "test:unit": "phpunit --testsuite unit",
+        "test:integ": "phpunit --testsuite integration",
+        "stan": "phpstan analyse --memory-limit=512M",
+        "sniff": "phpcs",
+        "fix": "phpcbf",
+        "plugin-check": "bash scripts/plugin-check.sh",
+        "check": [
+            "@arch",
+            "@stan",
+            "@sniff",
+            "@test:unit"
+        ]
+    }
+}

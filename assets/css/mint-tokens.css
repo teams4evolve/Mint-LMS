@@ -1,0 +1,120 @@
+/* Mint LMS — Phase 1 design tokens
+   Scope everything under #mint-lms-root so themes and wp-admin cannot leak in.
+   Self-host the fonts inside the plugin (no CDN call — wp.org + GDPR).
+
+   Direction: white page, hairline rules instead of card borders, ONE accent colour,
+   dramatic type scale. There are no drop shadows on static content — only on things
+   that genuinely float (menus, modals, toasts). */
+
+#mint-lms-root {
+  /* Type */
+  --mint-font: Aeonik, "Aeonik Pro", "General Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+
+  /* The single accent. Used ONLY for primary CTAs, active states, progress, focus rings. */
+  --mint-accent: #3F00FF;
+  --mint-accent-hover: #3200CC;
+  --mint-accent-wash: #EFEBFF;   /* active tree row, icon wells */
+
+  /* Surfaces — white page, not grey */
+  --mint-bg: #FFFFFF;
+  --mint-bg-hover: #FAFAFC;      /* row hover */
+  --mint-bg-subtle: #F4F3F8;     /* segmented controls, chips, ghost hover */
+  --mint-bg-track: #E7E4F3;      /* progress track */
+  --mint-bg-ink: #0F0E1A;        /* dark buttons */
+
+  /* Ink — all AA or better on white */
+  --mint-ink: #0F0E1A;           /* 18.9:1 — headlines, values */
+  --mint-ink-2: #33334A;         /* 9.6:1  — body, table cells */
+  --mint-ink-3: #5C5C77;         /* 6.4:1  — labels, metadata, captions */
+  /* No lighter ink than --mint-ink-3 is permitted for text. */
+
+  /* Rules — hairlines, never solid grey borders */
+  --mint-rule: rgba(15, 14, 26, 0.08);        /* section rules */
+  --mint-rule-soft: rgba(15, 14, 26, 0.07);   /* row dividers */
+  --mint-rule-faint: rgba(15, 14, 26, 0.06);  /* vertical rules between metrics */
+  --mint-border: rgba(15, 14, 26, 0.14);      /* secondary buttons, inputs */
+  --mint-border-dashed: rgba(15, 14, 26, 0.18);
+
+  /* Item hues — a fixed rotation assigned per course/person by index, used ONLY for
+     identity tiles and avatars so rows are scannable by colour. Never for status,
+     never for progress, never as a background for text blocks. */
+  --mint-hue-1-bg: #EFEBFF;  --mint-hue-1-ink: #4B23C4;
+  --mint-hue-2-bg: #E6F1FF;  --mint-hue-2-ink: #1A5AA8;
+  --mint-hue-3-bg: #E8F6EE;  --mint-hue-3-ink: #0A6B4C;
+  --mint-hue-4-bg: #FDEFE4;  --mint-hue-4-ink: #9A4E12;
+  --mint-hue-5-bg: #FBE9F2;  --mint-hue-5-ink: #A22069;
+  --mint-hue-6-bg: #FCF3DC;  --mint-hue-6-ink: #7A5407;
+
+  /* Tinted surfaces — soft lavender wash that separates zones without boxing them */
+  --mint-tint: #F6F4FD;          /* table header strips, callout panels, enroll card */
+  --mint-tint-hover: #F8F6FE;    /* row hover */
+  --mint-tint-pane: #FAF9FE;     /* builder contents pane */
+  --mint-tint-line: #E4E1F0;     /* border that pairs with tinted surfaces */
+  --mint-track: #E7E4F3;         /* progress track — 9px tall */
+  --mint-shadow-card: 0 8px 28px rgba(28,20,80,0.07);
+
+  /* Semantic — states only, never decoration */
+  --mint-danger: #C22B2B;
+  --mint-danger-hover: #9E1F1F;
+  --mint-danger-wash: #FBE9E9;
+  --mint-success: #0B7A57;
+  --mint-success-wash: #F0FAF5;
+
+  /* Radius — small and consistent */
+  --mint-r-sm: 7px;
+  --mint-r-md: 8px;    /* buttons, rows, inputs */
+  --mint-r-lg: 10px;
+  --mint-r-xl: 12px;   /* editor frame, modals */
+  --mint-r-full: 999px;
+
+  /* Focus — always visible, never removed */
+  --mint-focus: 0 0 0 3px rgba(63, 0, 255, 0.32);
+  --mint-focus-tight: 0 0 0 2px rgba(63, 0, 255, 0.32);  /* on rows */
+  --mint-focus-danger: 0 0 0 3px rgba(194, 43, 43, 0.26);
+
+  /* Float shadows only */
+  --mint-shadow-menu: 0 6px 16px rgba(15, 14, 26, 0.08);
+  --mint-shadow-modal: 0 16px 40px rgba(15, 14, 26, 0.12);
+
+  /* Motion */
+  --mint-ease: cubic-bezier(.2, .8, .2, 1);
+  --mint-t-hover: 120ms;
+  --mint-t-menu: 150ms;
+  --mint-t-modal: 180ms;
+  --mint-t-toast: 220ms;
+
+  /* Layout — no plugin sidebar; WordPress's admin menu is the navigation */
+  --mint-header-h: 60px;
+  --mint-page-pad: 40px;
+  --mint-content-max: 1000px;   /* dashboard / list screens */
+  --mint-prose-max: 680px;      /* lesson editor + reading column */
+  --mint-tree-w: 296px;         /* builder contents panel */
+
+  font-family: var(--mint-font);
+  font-size: 16px;
+  color: var(--mint-ink);
+  background: var(--mint-bg);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Type scale — dramatic jump from display to body, nothing below 14px.
+   px / line-height / tracking / weight */
+#mint-lms-root .mint-t-display { font-size: 60px; line-height: 62px; letter-spacing: -.045em; font-weight: 600; }
+#mint-lms-root .mint-t-h1      { font-size: 38px; line-height: 44px; letter-spacing: -.035em; font-weight: 600; }
+#mint-lms-root .mint-t-stat    { font-size: 36px; line-height: 38px; letter-spacing: -.04em;  font-weight: 600; font-variant-numeric: tabular-nums; }
+#mint-lms-root .mint-t-h2      { font-size: 26px; line-height: 32px; letter-spacing: -.025em; font-weight: 600; }
+#mint-lms-root .mint-t-h3      { font-size: 18px; line-height: 26px; letter-spacing: -.015em; font-weight: 600; }
+#mint-lms-root .mint-t-row     { font-size: 17px; line-height: 24px; letter-spacing: -.01em;  font-weight: 500; }
+#mint-lms-root .mint-t-body    { font-size: 18px; line-height: 28px; }   /* intro / lead copy */
+#mint-lms-root .mint-t-prose   { font-size: 17px; line-height: 30px; }   /* lesson content */
+#mint-lms-root .mint-t-base    { font-size: 16px; line-height: 24px; }
+#mint-lms-root .mint-t-sm      { font-size: 15px; line-height: 22px; }
+#mint-lms-root .mint-t-xs      { font-size: 14px; line-height: 20px; }   /* floor */
+#mint-lms-root .mint-t-over    { font-size: 12px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
+
+/* Numbers in any column or metric */
+#mint-lms-root .mint-nums { font-variant-numeric: tabular-nums; }
+
+/* Spacing: 8px grid — 4 · 8 · 12 · 16 · 24 · 32 · 40 · 48 · 64 · 80 · 96
+   4px only for icon↔label gaps. */

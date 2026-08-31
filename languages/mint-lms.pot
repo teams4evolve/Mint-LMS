@@ -1,0 +1,1539 @@
+# Copyright (C) 2026 Mint LMS
+# This file is distributed under the GPL-2.0-or-later.
+msgid ""
+msgstr ""
+"Project-Id-Version: Mint LMS 1.0.0\n"
+"Report-Msgid-Bugs-To: https://wordpress.org/support/plugin/mint-lms\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"POT-Creation-Date: 2026-08-30T08:37:51+00:00\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"X-Generator: WP-CLI 2.9.0\n"
+"X-Domain: mint-lms\n"
+
+#. Plugin Name of the plugin
+#. Author of the plugin
+#: src/Infrastructure/Admin/MenuRegistrar.php:16
+#: src/Infrastructure/Admin/MenuRegistrar.php:17
+#: views/admin/first-run.php:21
+#: views/admin/partials/admin-header.php:16
+#: views/components/brand.php:17
+msgid "Mint LMS"
+msgstr ""
+
+#. Plugin URI of the plugin
+msgid "https://wordpress.org/plugins/mint-lms/"
+msgstr ""
+
+#. Description of the plugin
+msgid "A clean, fast WordPress LMS for teachers and students."
+msgstr ""
+
+#: src/Application/Admin/CreatorDashboardService.php:113
+msgid "No lessons yet"
+msgstr ""
+
+#: src/Application/Admin/CreatorDashboardService.php:117
+msgid "A section has no lessons yet"
+msgstr ""
+
+#. translators: %d: lesson count
+#: src/Application/Admin/CreatorDashboardService.php:131
+msgid "%d lesson"
+msgid_plural "%d lessons"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Application/Admin/CreatorDashboardService.php:135
+msgid "published"
+msgstr ""
+
+#: src/Application/Admin/CreatorDashboardService.php:136
+msgid "draft"
+msgstr ""
+
+#: src/Application/Admin/CreatorDashboardService.php:151
+#: views/admin/reports/_reports-content.php:69
+msgid "A student"
+msgstr ""
+
+#. translators: 1: student name, 2: course title
+#: src/Application/Admin/CreatorDashboardService.php:159
+#: views/admin/reports/_reports-content.php:77
+msgid "%1$s finished %2$s"
+msgstr ""
+
+#. translators: 1: student name, 2: course title
+#: src/Application/Admin/CreatorDashboardService.php:162
+#: views/admin/reports/_reports-content.php:84
+msgid "%1$s enrolled in %2$s"
+msgstr ""
+
+#. translators: 1: student name, 2: course title
+#: src/Application/Admin/CreatorDashboardService.php:165
+#: views/admin/reports/_reports-content.php:91
+msgid "%1$s made progress in %2$s"
+msgstr ""
+
+#: src/Application/Certificate/CertificateService.php:93
+#: views/admin/courses/_students-content.php:264
+msgid "Student"
+msgstr ""
+
+#: src/Application/Certificate/CertificateService.php:97
+#: src/Infrastructure/Database/Migration/Migration_004_CertificateTemplate.php:20
+msgid "Certificate of Completion"
+msgstr ""
+
+#: src/Application/Certificate/CertificateService.php:98
+#: src/Infrastructure/Database/Migration/Migration_004_CertificateTemplate.php:22
+msgid "This certifies that"
+msgstr ""
+
+#: src/Application/Certificate/CertificateService.php:99
+#: src/Infrastructure/Database/Migration/Migration_004_CertificateTemplate.php:23
+msgid "has successfully completed"
+msgstr ""
+
+#: src/Application/Certificate/CertificateService.php:100
+#: src/Infrastructure/Database/Migration/Migration_004_CertificateTemplate.php:24
+msgid "on"
+msgstr ""
+
+#: src/Application/Student/StudentExperienceService.php:186
+msgid "This lesson is not available yet."
+msgstr ""
+
+#. translators: %d: number of days until the lesson unlocks
+#: src/Application/Student/StudentExperienceService.php:422
+msgid "Available in %d day"
+msgid_plural "Available in %d days"
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Frontend/ShortcodeRegistrar.php:56
+msgid "Log in to view your learning dashboard."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:94
+msgid "Log in to view your courses."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:173
+#: src/Frontend/ShortcodeRegistrar.php:240
+#: src/Frontend/ShortcodeRegistrar.php:349
+msgid "Course ID is required."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:181
+#: src/Frontend/ShortcodeRegistrar.php:250
+msgid "Course not found."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:188
+msgid "You are enrolled! Start learning below."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:256
+msgid "This course has no lessons yet."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:267
+msgid "Lesson not found."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:341
+msgid "Log in to view your certificate."
+msgstr ""
+
+#: src/Frontend/ShortcodeRegistrar.php:355
+msgid "Certificate is not available yet."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:78
+msgid "Mark complete"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:79
+msgid "Completed"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:80
+#: views/admin/courses/_builder-content.php:36
+#: views/admin/guided-course.php:76
+#: views/admin/guided-course.php:179
+msgid "Saving…"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:81
+msgid "Could not mark lesson complete."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:82
+#: templates/student/completion.php:19
+msgid "Course complete!"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:83
+msgid "Pass the quiz before marking this lesson complete."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:84
+msgid "Submit quiz"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:85
+msgid "Submitting…"
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:86
+msgid "Quiz passed! You can now mark this lesson complete."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:87
+msgid "Quiz not passed."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:88
+msgid "Review the lesson and try again."
+msgstr ""
+
+#: src/Frontend/StudentAssetLoader.php:89
+msgid "Could not submit quiz."
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:67
+msgid "Step"
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:69
+msgid "Name your course"
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:70
+msgid "Add your first lesson"
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:71
+msgid "Publish your course"
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:73
+msgid "Course title is required."
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:74
+msgid "Section and lesson titles are required."
+msgstr ""
+
+#: src/Infrastructure/Admin/AssetLoader.php:75
+msgid "Something went wrong. Please try again."
+msgstr ""
+
+#: src/Infrastructure/Admin/CourseBuilderPage.php:15
+#: src/Infrastructure/Admin/CourseBuilderPage.php:16
+msgid "Course Builder"
+msgstr ""
+
+#: src/Infrastructure/Admin/CourseBuilderPage.php:24
+#: src/Infrastructure/Admin/CourseBuilderPage.php:25
+msgid "Edit Course"
+msgstr ""
+
+#: src/Infrastructure/Admin/CourseBuilderPage.php:34
+msgid "You do not have permission to access the course builder."
+msgstr ""
+
+#: src/Infrastructure/Admin/CourseBuilderPage.php:49
+msgid "You do not have permission to edit courses."
+msgstr ""
+
+#: src/Infrastructure/Admin/FirstRunRedirect.php:44
+#: src/Infrastructure/Admin/MenuRegistrar.php:73
+#: src/Infrastructure/Admin/MenuRegistrar.php:102
+msgid "You do not have permission to access Mint LMS."
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:27
+#: src/Infrastructure/Admin/MenuRegistrar.php:28
+msgid "Dashboard"
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:36
+#: src/Infrastructure/Admin/MenuRegistrar.php:37
+#: src/Infrastructure/Setup/PageSettings.php:143
+#: templates/student/catalog.php:13
+#: templates/student/catalog.php:21
+#: views/admin/courses/list.php:20
+#: views/admin/courses/_edit-content.php:59
+#: views/admin/courses/_list-content.php:25
+msgid "Courses"
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:45
+#: src/Infrastructure/Admin/MenuRegistrar.php:46
+#: views/admin/courses/students.php:26
+#: views/admin/courses/students.php:27
+#: views/admin/courses/_list-content.php:109
+#: views/admin/courses/_students-content.php:114
+#: views/admin/courses/_students-content.php:175
+#: views/admin/dashboard/_dashboard-content.php:136
+msgid "Students"
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:54
+#: src/Infrastructure/Admin/MenuRegistrar.php:55
+#: views/admin/reports.php:31
+#: views/admin/reports/_reports-content.php:13
+msgid "Reports"
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:63
+#: src/Infrastructure/Admin/MenuRegistrar.php:64
+msgid "Guided first course"
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:86
+msgid "You do not have permission to access courses."
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:94
+msgid "You do not have permission to manage enrollments."
+msgstr ""
+
+#: src/Infrastructure/Admin/MenuRegistrar.php:110
+msgid "You do not have permission to view reports."
+msgstr ""
+
+#: src/Infrastructure/Admin/SettingsPage.php:26
+#: src/Infrastructure/Admin/SettingsPage.php:27
+#: views/admin/settings.php:24
+#: views/admin/_settings-content.php:26
+msgid "Settings"
+msgstr ""
+
+#: src/Infrastructure/Admin/SettingsPage.php:108
+#: src/Infrastructure/Admin/SettingsPage.php:129
+msgid "You do not have permission to manage Mint LMS settings."
+msgstr ""
+
+#: src/Infrastructure/Capability/CapabilityRegistrar.php:31
+msgid "Instructor"
+msgstr ""
+
+#: src/Infrastructure/Certificate/CertificateDownloadHandler.php:29
+msgid "Invalid certificate request."
+msgstr ""
+
+#: src/Infrastructure/Certificate/CertificateDownloadHandler.php:33
+msgid "Invalid security token."
+msgstr ""
+
+#: src/Infrastructure/Certificate/CertificateDownloadHandler.php:39
+msgid "You are not allowed to view this certificate."
+msgstr ""
+
+#. translators: 1: student count, 2: weekly completion count
+#: src/Infrastructure/Database/Repository/WpdbAdminDashboardRepository.php:209
+msgid "%1$d student is learning with you. %2$d finished a course this week."
+msgid_plural "%1$d students are learning with you. %2$d finished a course this week."
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: student count
+#: src/Infrastructure/Database/Repository/WpdbAdminDashboardRepository.php:221
+msgid "%d student is learning with you."
+msgid_plural "%d students are learning with you."
+msgstr[0] ""
+msgstr[1] ""
+
+#: src/Infrastructure/Database/Repository/WpdbAdminDashboardRepository.php:231
+msgid "Create a course to start welcoming students."
+msgstr ""
+
+#. translators: %s: course title
+#: src/Infrastructure/Notification/EmailNotificationService.php:46
+msgid "Welcome to %s"
+msgstr ""
+
+#. translators: %s: course title
+#: src/Infrastructure/Notification/EmailNotificationService.php:86
+msgid "Congratulations! You completed %s"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:135
+msgid "Dashboard page assigned"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:137
+msgid "My Learning"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:141
+msgid "Course catalog page assigned"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:147
+msgid "Course player page assigned"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:149
+msgid "Course Player"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:153
+msgid "Default enrollment mode set"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:156
+#: views/admin/courses/_edit-content.php:207
+msgid "Open enrollment"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:157
+#: views/admin/courses/_edit-content.php:212
+msgid "Manual enrollment"
+msgstr ""
+
+#: src/Infrastructure/Setup/PageSettings.php:182
+msgid "Not configured"
+msgstr ""
+
+#: src/Infrastructure/Ui/MintUi.php:77
+msgid "Good morning"
+msgstr ""
+
+#: src/Infrastructure/Ui/MintUi.php:81
+msgid "Good afternoon"
+msgstr ""
+
+#: src/Infrastructure/Ui/MintUi.php:84
+msgid "Good evening"
+msgstr ""
+
+#: src/Infrastructure/Ui/MintUi.php:88
+msgid "ago"
+msgstr ""
+
+#. translators: %d: minutes
+#: src/Infrastructure/Ui/MintUi.php:98
+msgid "%dm ago"
+msgid_plural "%dm ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: hours
+#: src/Infrastructure/Ui/MintUi.php:105
+msgid "%dh ago"
+msgid_plural "%dh ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: days
+#: src/Infrastructure/Ui/MintUi.php:112
+#: src/Infrastructure/Ui/MintUi.php:129
+msgid "%dd ago"
+msgid_plural "%dd ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#. translators: %d: weeks
+#: src/Infrastructure/Ui/MintUi.php:136
+msgid "%dw ago"
+msgid_plural "%dw ago"
+msgstr[0] ""
+msgstr[1] ""
+
+#: templates/student/catalog.php:22
+msgid "Browse available courses and start learning."
+msgstr ""
+
+#: templates/student/catalog.php:27
+msgid "No courses are available yet. Check back soon."
+msgstr ""
+
+#: templates/student/catalog.php:55
+msgid "View course"
+msgstr ""
+
+#: templates/student/certificate.php:13
+msgid "Open printable certificate"
+msgstr ""
+
+#: templates/student/certificate.php:17
+msgid "Print"
+msgstr ""
+
+#. translators: %s: course title
+#: templates/student/completion.php:24
+#: views/emails/course-completed.php:17
+msgid "You have completed %s."
+msgstr ""
+
+#. translators: %d: number of completed lessons
+#: templates/student/completion.php:33
+msgid "%d lessons completed."
+msgstr ""
+
+#: templates/student/completion.php:39
+msgid "Back to my courses"
+msgstr ""
+
+#: templates/student/completion.php:43
+msgid "Download certificate"
+msgstr ""
+
+#: templates/student/course-overview.php:50
+msgid "Unable to enroll. This course may require manual enrollment."
+msgstr ""
+
+#. translators: 1: progress percentage, 2: completed lessons, 3: total lessons
+#: templates/student/course-overview.php:82
+msgid "%1$d%% · %2$d of %3$d"
+msgstr ""
+
+#: templates/student/course-overview.php:97
+msgid "Continue course"
+msgstr ""
+
+#: templates/student/course-overview.php:98
+msgid "Start course"
+msgstr ""
+
+#: templates/student/course-overview.php:102
+msgid "Enroll for free"
+msgstr ""
+
+#: templates/student/course-overview.php:106
+msgid "Log in to enroll"
+msgstr ""
+
+#: templates/student/course-overview.php:109
+msgid "This course requires manual enrollment."
+msgstr ""
+
+#. translators: %d: number of lessons in the section
+#. translators: %d: total number of lessons in the course
+#: templates/student/course-overview.php:123
+#: templates/student/course-overview.php:200
+msgid "%d lessons"
+msgstr ""
+
+#: templates/student/course-overview.php:170
+#: views/admin/courses/_builder-content.php:41
+msgid "Preview"
+msgstr ""
+
+#: templates/student/course-overview.php:193
+msgid "THIS COURSE INCLUDES"
+msgstr ""
+
+#. translators: %d: number of sections in the course
+#: templates/student/course-overview.php:210
+msgid "%d sections"
+msgstr ""
+
+#: templates/student/course-overview.php:217
+msgid "Self-paced"
+msgstr ""
+
+#: templates/student/dashboard.php:36
+msgid "My learning"
+msgstr ""
+
+#. translators: 1: progress percentage, 2: course title
+#: templates/student/dashboard.php:51
+msgid "You're %1$d%% through %2$s."
+msgstr ""
+
+#: templates/student/dashboard.php:68
+msgid "CONTINUE WHERE YOU LEFT OFF"
+msgstr ""
+
+#. translators: 1: completed lesson number, 2: total lessons
+#: templates/student/dashboard.php:74
+msgid "Lesson %1$d of %2$d"
+msgstr ""
+
+#: templates/student/dashboard.php:84
+msgid "Continue lesson"
+msgstr ""
+
+#: templates/student/dashboard.php:91
+msgid "No courses in progress. Enroll in a course to start learning."
+msgstr ""
+
+#: templates/student/dashboard.php:94
+msgid "YOUR COURSES"
+msgstr ""
+
+#: templates/student/error.php:6
+msgid "We couldn't load this course. Please try again."
+msgstr ""
+
+#: templates/student/error.php:13
+#: views/components/error-state.php:6
+msgid "Something went wrong"
+msgstr ""
+
+#: templates/student/error.php:16
+#: templates/student/quiz.php:94
+#: views/admin/courses/_builder-content.php:70
+#: views/admin/courses/_edit-content.php:40
+#: views/admin/courses/_list-content.php:84
+msgid "Try again"
+msgstr ""
+
+#: templates/student/gated-lesson.php:6
+msgid "This lesson is part of a course that requires enrollment. Enroll to unlock all lessons."
+msgstr ""
+
+#: templates/student/gated-lesson.php:17
+msgid "This lesson is locked"
+msgstr ""
+
+#: templates/student/gated-lesson.php:21
+msgid "Enroll"
+msgstr ""
+
+#: templates/student/gated-lesson.php:25
+#: templates/student/login-prompt.php:19
+msgid "Sign in"
+msgstr ""
+
+#: templates/student/login-prompt.php:6
+msgid "You need to sign in before you can access this course content."
+msgstr ""
+
+#: templates/student/login-prompt.php:13
+msgid "Sign in to continue"
+msgstr ""
+
+#: templates/student/my-courses.php:23
+#: templates/student/my-courses.php:32
+msgid "My courses"
+msgstr ""
+
+#. translators: 1: total course count, 2: finished course count
+#: templates/student/my-courses.php:38
+msgid "%1$d courses · %2$d finished"
+msgstr ""
+
+#: templates/student/my-courses.php:48
+msgid "No courses found. Enroll in a course to get started."
+msgstr ""
+
+#: templates/student/my-courses.php:65
+msgid "Review course"
+msgstr ""
+
+#: templates/student/my-courses.php:65
+#: views/admin/guided-course.php:179
+msgid "Continue"
+msgstr ""
+
+#: templates/student/player.php:77
+msgid "Download attachment"
+msgstr ""
+
+#: templates/student/player.php:94
+msgid "← Previous"
+msgstr ""
+
+#: templates/student/player.php:108
+msgid "Mark complete & continue"
+msgstr ""
+
+#: templates/student/player.php:116
+msgid "CURRICULUM"
+msgstr ""
+
+#. translators: %d: minimum pass percentage
+#: templates/student/quiz.php:37
+msgid "Pass: %d%%"
+msgstr ""
+
+#: templates/student/quiz.php:59
+msgid "True"
+msgstr ""
+
+#: templates/student/quiz.php:63
+msgid "False"
+msgstr ""
+
+#: views/admin/courses/edit.php:22
+msgid "Open builder"
+msgstr ""
+
+#: views/admin/courses/edit.php:25
+msgid "Save changes"
+msgstr ""
+
+#: views/admin/courses/edit.php:31
+msgid "Course Settings"
+msgstr ""
+
+#: views/admin/courses/edit.php:32
+#: views/admin/courses/_edit-content.php:66
+msgid "Course settings"
+msgstr ""
+
+#: views/admin/courses/students.php:20
+msgid "Export CSV"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:22
+msgid "Back to courses"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:29
+msgid "Untitled course"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:37
+msgid "Saved"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:46
+#: views/admin/guided-course.php:186
+msgid "Publish"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:47
+msgid "Publishing…"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:68
+#: views/admin/courses/_edit-content.php:34
+msgid "Could not load course"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:80
+msgid "CONTENTS"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:82
+msgid "lessons"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:89
+msgid "No sections yet"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:90
+msgid "Add first section"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:104
+#: views/admin/courses/_builder-content.php:151
+msgid "Drag to reorder"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:200
+msgid "Add lesson"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:217
+msgid "Add section"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:234
+msgid "Pick a lesson to edit"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:235
+msgid "Select from the contents pane"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:243
+msgid "SECTION"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:253
+msgid "Section title"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:261
+msgid "Delete section"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:275
+msgid "Section"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:290
+msgid "Lesson title"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:300
+msgid "Written"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:306
+msgid "Video"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:312
+msgid "Quiz"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:321
+msgid "Content"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:345
+msgid "Video URL"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:352
+#: views/admin/guided-course.php:97
+msgid "Description"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:357
+msgid "Optional description…"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:366
+msgid "Loading quiz…"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:372
+msgid "Quiz title"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:376
+msgid "Pass %"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:382
+msgid "Add MCQ"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:383
+msgid "Add True/False"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:384
+msgid "Save quiz"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:385
+msgid "Delete quiz"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:391
+msgid "Question"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:392
+#: views/admin/courses/_builder-content.php:443
+#: views/admin/courses/_edit-content.php:138
+#: views/admin/courses/_students-content.php:325
+msgid "Remove"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:394
+msgid "Question prompt…"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:400
+msgid "True is correct"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:404
+msgid "False is correct"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:414
+msgid "Option"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:418
+msgid "Add option"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:422
+msgid "Save question"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:426
+msgid "No questions yet. Add MCQ or True/False questions above."
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:436
+msgid "Choose file"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:439
+msgid "Attached"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:439
+msgid "No attachment"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:446
+msgid "Free preview"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:458
+msgid "Available days after enrollment"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:465
+msgid "Leave empty for immediate access"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:466
+msgid "Students can access this lesson after this many days from enrollment."
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:478
+msgid "Delete lesson"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:485
+#: views/admin/guided-course.php:185
+msgid "Save draft"
+msgstr ""
+
+#: views/admin/courses/_builder-content.php:491
+msgid "Save and next"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:61
+msgid "Untitled"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:74
+#: views/admin/first-run.php:82
+msgid "Course name"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:84
+msgid "Students see this on their dashboard."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:90
+msgid "Short description"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:98
+msgid "Two sentences is plenty."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:104
+msgid "Cover image"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:128
+msgid "Upload"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:146
+msgid "Who can see it"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:154
+#: views/admin/courses/_list-content.php:45
+msgid "Live"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:155
+msgid "Visible to everyone. Students can enrol."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:159
+msgid "Draft"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:160
+msgid "Only you can see it. Useful while building."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:164
+#: views/admin/courses/_list-content.php:47
+msgid "Hidden"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:165
+msgid "Unlisted. Only direct link holders can access it."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:199
+msgid "Enrollment"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:208
+msgid "Students can enroll themselves from the course page."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:213
+msgid "Only students you add can access the course."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:247
+msgid "Delete"
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:250
+msgid "Permanently remove this course and all its content. This action cannot be undone."
+msgstr ""
+
+#: views/admin/courses/_edit-content.php:253
+msgid "Delete this course"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:27
+#: views/admin/courses/_list-content.php:151
+msgid "courses"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:29
+msgid "live"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:37
+#: views/admin/courses/_students-content.php:125
+msgid "Search courses…"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:44
+msgid "All"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:46
+msgid "Drafts"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:78
+msgid "Could not load courses"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:98
+msgid "No courses yet"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:99
+msgid "Create your first course to start building your curriculum."
+msgstr ""
+
+#: views/admin/courses/_list-content.php:100
+#: views/admin/dashboard/_dashboard-content.php:28
+#: views/admin/first-run.php:95
+msgid "Create your first course"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:107
+#: views/admin/dashboard/_dashboard-content.php:135
+msgid "Course"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:108
+msgid "Status"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:110
+#: views/admin/dashboard/_dashboard-content.php:137
+msgid "Finished"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:111
+#: views/admin/dashboard/_dashboard-content.php:138
+msgid "Edited"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:151
+msgid "Showing all"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:156
+msgid "Page"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:156
+msgid "of"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:159
+#: views/components/table.php:76
+msgid "Previous"
+msgstr ""
+
+#: views/admin/courses/_list-content.php:160
+#: views/components/table.php:84
+msgid "Next"
+msgstr ""
+
+#. translators: %d: user ID
+#: views/admin/courses/_students-content.php:40
+msgid "User #%d"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:117
+msgid "Pick a course to view its students."
+msgstr ""
+
+#: views/admin/courses/_students-content.php:130
+msgid "Loading courses…"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:134
+msgid "No courses found."
+msgstr ""
+
+#: views/admin/courses/_students-content.php:162
+msgid "Unable to load students"
+msgstr ""
+
+#. translators: 1: total count, 2: finished count
+#: views/admin/courses/_students-content.php:183
+msgid "%1$s students in this course · %2$s have finished"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:209
+msgid "Select a course…"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:224
+msgid "Add a student"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:231
+msgid "Email or user ID"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:241
+msgid "Add to course"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:250
+msgid "No students enrolled"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:251
+msgid "Enroll students manually or share an open enrollment link."
+msgstr ""
+
+#: views/admin/courses/_students-content.php:265
+msgid "Where they are"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:266
+msgid "Progress"
+msgstr ""
+
+#: views/admin/courses/_students-content.php:267
+msgid "Joined"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:25
+msgid "Let's build your"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:25
+msgid "first course"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:26
+msgid "Most teachers finish theirs in under 30 minutes."
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:29
+msgid "See an example"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:55
+#: views/admin/reports/_reports-content.php:27
+msgid "STUDENTS"
+msgstr ""
+
+#. translators: %d: published course count
+#: views/admin/dashboard/_dashboard-content.php:60
+msgid "enrolled across %d course"
+msgid_plural "enrolled across %d courses"
+msgstr[0] ""
+msgstr[1] ""
+
+#: views/admin/dashboard/_dashboard-content.php:65
+msgid "FINISHED"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:68
+msgid "of students who started"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:71
+msgid "PUBLISHED"
+msgstr ""
+
+#. translators: %d: total course count
+#: views/admin/dashboard/_dashboard-content.php:76
+msgid "of %d courses total"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:81
+msgid "LESSONS DONE"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:83
+msgid "last 7 days"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:84
+msgid "across all students"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:106
+msgid "NEEDS YOU"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:112
+msgid "Continue editing"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:118
+#: views/admin/reports/_reports-content.php:22
+msgid "COURSES"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:122
+msgid "Hide details"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:122
+msgid "Show details"
+msgstr ""
+
+#. translators: %d: number of courses
+#: views/admin/dashboard/_dashboard-content.php:127
+msgid "All %d"
+msgstr ""
+
+#: views/admin/dashboard/_dashboard-content.php:171
+#: views/admin/reports/_reports-content.php:61
+msgid "RECENT ACTIVITY"
+msgstr ""
+
+#: views/admin/first-run.php:26
+msgid "Teach what you already know."
+msgstr ""
+
+#: views/admin/first-run.php:29
+msgid "Structured lessons, clear progress, and a focused learning experience — without configuring fifty settings first."
+msgstr ""
+
+#: views/admin/first-run.php:38
+msgid "Course builder"
+msgstr ""
+
+#: views/admin/first-run.php:39
+msgid "Drag-and-drop sections and lessons with a visual editor."
+msgstr ""
+
+#: views/admin/first-run.php:43
+msgid "Student progress"
+msgstr ""
+
+#: views/admin/first-run.php:44
+msgid "See who finished what — completion rates, time spent, and streaks."
+msgstr ""
+
+#: views/admin/first-run.php:48
+msgid "Works in minutes"
+msgstr ""
+
+#: views/admin/first-run.php:49
+msgid "No config maze. Create a course, add lessons, publish."
+msgstr ""
+
+#: views/admin/first-run.php:68
+msgid "Trusted by educators who want simplicity over bloat."
+msgstr ""
+
+#: views/admin/first-run.php:75
+msgid "LET'S START"
+msgstr ""
+
+#: views/admin/first-run.php:77
+msgid "What are you teaching?"
+msgstr ""
+
+#: views/admin/first-run.php:88
+msgid "e.g. Introduction to Photography"
+msgstr ""
+
+#: views/admin/first-run.php:104
+msgid "Skip for now"
+msgstr ""
+
+#: views/admin/guided-course.php:49
+msgid "Skip setup"
+msgstr ""
+
+#: views/admin/guided-course.php:65
+msgid "Students see this on your course page."
+msgstr ""
+
+#: views/admin/guided-course.php:68
+msgid "Every course needs at least one section and lesson."
+msgstr ""
+
+#: views/admin/guided-course.php:71
+msgid "Publish now or keep editing as a draft."
+msgstr ""
+
+#: views/admin/guided-course.php:84
+msgid "Course title"
+msgstr ""
+
+#: views/admin/guided-course.php:92
+msgid "Introduction to Photography"
+msgstr ""
+
+#: views/admin/guided-course.php:99
+msgid "A short summary shown on the course landing page."
+msgstr ""
+
+#: views/admin/guided-course.php:105
+msgid "What will students learn?"
+msgstr ""
+
+#: views/admin/guided-course.php:116
+msgid "Section name"
+msgstr ""
+
+#: views/admin/guided-course.php:118
+msgid "Group related lessons together."
+msgstr ""
+
+#: views/admin/guided-course.php:125
+msgid "Getting started"
+msgstr ""
+
+#: views/admin/guided-course.php:130
+msgid "First lesson"
+msgstr ""
+
+#: views/admin/guided-course.php:132
+msgid "You can add more lessons later in the builder."
+msgstr ""
+
+#: views/admin/guided-course.php:139
+msgid "Welcome & overview"
+msgstr ""
+
+#: views/admin/guided-course.php:152
+msgid "Ready to go live"
+msgstr ""
+
+#: views/admin/guided-course.php:171
+msgid "Back"
+msgstr ""
+
+#: views/admin/guided-course.php:177
+msgid "Takes about 2 minutes"
+msgstr ""
+
+#: views/admin/partials/admin-header.php:28
+msgid "Search courses"
+msgstr ""
+
+#: views/admin/partials/admin-header.php:33
+msgid "New course"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:14
+msgid "Overview of courses, enrollments, and recent activity."
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:24
+msgid "total courses"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:29
+msgid "active enrollments"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:32
+msgid "ENROLLMENTS"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:34
+msgid "all time"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:37
+msgid "COMPLETIONS"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:39
+msgid "courses finished"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:54
+msgid "LESSONS COMPLETED"
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:56
+msgid "Individual lesson completions recorded across all courses."
+msgstr ""
+
+#: views/admin/reports/_reports-content.php:106
+msgid "No recent activity yet."
+msgstr ""
+
+#: views/admin/_settings-content.php:23
+msgid "Student pages created or updated."
+msgstr ""
+
+#: views/admin/_settings-content.php:28
+msgid "Configure student-facing pages and LMS defaults."
+msgstr ""
+
+#: views/admin/_settings-content.php:34
+msgid "Setup checklist"
+msgstr ""
+
+#. translators: 1: completed items, 2: total items
+#: views/admin/_settings-content.php:39
+msgid "%1$d / %2$d complete"
+msgstr ""
+
+#: views/admin/_settings-content.php:69
+msgid "Student pages"
+msgstr ""
+
+#: views/admin/_settings-content.php:70
+msgid "Choose which WordPress pages host Mint LMS shortcodes. Pages are created automatically on activation."
+msgstr ""
+
+#: views/admin/_settings-content.php:74
+msgid "Dashboard page"
+msgstr ""
+
+#: views/admin/_settings-content.php:81
+#: views/admin/_settings-content.php:98
+#: views/admin/_settings-content.php:115
+msgid "— Select —"
+msgstr ""
+
+#: views/admin/_settings-content.php:87
+msgid "Uses [mint_lms_dashboard] — student home and continue learning."
+msgstr ""
+
+#: views/admin/_settings-content.php:91
+msgid "Course catalog page"
+msgstr ""
+
+#: views/admin/_settings-content.php:104
+msgid "Uses [mint_lms_catalog] — browse courses and view course details."
+msgstr ""
+
+#: views/admin/_settings-content.php:108
+msgid "Course player page"
+msgstr ""
+
+#: views/admin/_settings-content.php:121
+msgid "Uses [mint_lms_player] — lesson viewer for enrolled students."
+msgstr ""
+
+#: views/admin/_settings-content.php:128
+msgid "Create or repair student pages"
+msgstr ""
+
+#: views/admin/_settings-content.php:134
+msgid "Certificate template"
+msgstr ""
+
+#: views/admin/_settings-content.php:135
+msgid "HTML shown when a student downloads their certificate. Placeholders: {{student_name}}, {{course_name}}, {{completion_date}}."
+msgstr ""
+
+#: views/admin/_settings-content.php:138
+msgid "Template HTML"
+msgstr ""
+
+#: views/admin/_settings-content.php:150
+msgid "Enrollment defaults"
+msgstr ""
+
+#: views/admin/_settings-content.php:151
+msgid "Default behavior for new courses. Individual courses can override this."
+msgstr ""
+
+#: views/admin/_settings-content.php:154
+msgid "Default enrollment"
+msgstr ""
+
+#: views/admin/_settings-content.php:162
+msgid "Open — students can self-enroll"
+msgstr ""
+
+#: views/admin/_settings-content.php:171
+msgid "Manual — admin must enroll students"
+msgstr ""
+
+#: views/admin/_settings-content.php:177
+msgid "Email notifications"
+msgstr ""
+
+#: views/admin/_settings-content.php:178
+msgid "Toggle automated emails. Email templates are managed separately."
+msgstr ""
+
+#: views/admin/_settings-content.php:189
+msgid "Send email when a student enrolls"
+msgstr ""
+
+#: views/admin/_settings-content.php:199
+msgid "Send email when a student completes a course"
+msgstr ""
+
+#: views/admin/_settings-content.php:204
+msgid "Save settings"
+msgstr ""
+
+#: views/components/brand.php:18
+msgid "Learning platform"
+msgstr ""
+
+#: views/components/error-state.php:18
+msgid "An unexpected error occurred. Please try again."
+msgstr ""
+
+#: views/components/modal.php:56
+msgid "Close"
+msgstr ""
+
+#. translators: 1: current page number, 2: total pages
+#: views/components/table.php:64
+msgid "Page %1$d of %2$d"
+msgstr ""
+
+#: views/components/toast.php:38
+msgid "Dismiss"
+msgstr ""
+
+#. translators: 1: student name
+#: views/emails/course-completed.php:12
+msgid "Congratulations, %1$s!"
+msgstr ""
+
+#: views/emails/course-completed.php:23
+msgid "Download your certificate"
+msgstr ""
+
+#. translators: 1: student name, 2: course title
+#: views/emails/enrolled.php:11
+msgid "Hi %1$s,"
+msgstr ""
+
+#. translators: %s: course title
+#: views/emails/enrolled.php:16
+msgid "You are now enrolled in %s. Log in to your dashboard to start learning."
+msgstr ""
