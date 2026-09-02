@@ -1,93 +1,213 @@
-# MintLMS
+# Mint LMS: Project Handoff Brief
 
+Prepared for team handoff. Updated against the live codebase on **2 Sep 2026**.
 
+Covers what Mint LMS is, architecture guardrails, how the build actually went, verified current state, and where to pick up.
 
-## Getting started
+---
 
-To make it easy for you to get started with GitLab, here's a list of recommended next steps.
+## 1. What Mint LMS is
 
-Already a pro? Just edit this README.md and make it your own. Want to make it easy? [Use the template at the bottom](#editing-this-readme)!
+A free WordPress LMS plugin being built for submission to [wordpress.org](https://wordpress.org). The pitch is not feature count — it is **cleanliness**: a teacher installs it and builds a working course in under ten minutes with no docs, and students get a modern course experience instead of a WordPress page with a checkbox on it. Everything runs on the customer's own WordPress install: no external service, no API key, no license gate on core features.
 
-## Add your files
+Four things it has to be, and stay honest about whether it is:
 
-* [Create](https://docs.gitlab.com/user/project/repository/web_editor/#create-a-file) or [upload](https://docs.gitlab.com/user/project/repository/web_editor/#upload-a-file) files
-* [Add files using the command line](https://docs.gitlab.com/topics/git/add_files/#add-files-to-a-git-repository) or push an existing Git repository with the following command:
+- **Clean** — no settings page with sixty options
+- **UI friendly** — a first-time user builds a course without a tutorial
+- **Bug free** — progress, enrollment and completion must never be wrong
+- **Fast** — 200 lessons / 5,000 students behaves like 10 lessons / 20 students
+
+---
+
+## 2. Architecture (locked — do not deviate without asking)
+
+PHP 8.1+, layered architecture. One rule matters more than any other:
+
+**THE RULE:** `Domain/` and `Application/` must contain **zero WordPress code**. No `$wpdb`, no `wp_*` functions, no `add_action`/`add_filter`, no `current_user_can`, no `esc_*`/`sanitize_*`, no `WP_*` classes. All WordPress touches live in `Infrastructure/`, `Http/`, `Api/`, and `Frontend/`. This is enforced by `tests/Architecture/LayerBoundaryTest.php` — if it fails, the code is wrong, not the test.
+
+| Layer | Role |
+|-------|------|
+| **Domain/** | Pure PHP business logic (Course, Enrollment, Progress, Quiz entities; enums; repository interfaces; DripAccessEvaluator; domain events). No outer dependencies. |
+| **Application/** | Use-case services (CourseService, EnrollmentService, ProgressService, QuizService, CertificateService, StudentExperienceService, etc.) depending on Domain + `Application/Contract` interfaces only. |
+| **Infrastructure/** | Every WordPress adapter: `Wpdb*` repositories, migrations, WP auth/media/cache, admin UI, WooCommerce, email, setup. |
+| **Http/Rest/** | Thin REST controllers under `mintlms/v1`. Parse request, call a service, shape response. No business logic. |
+| **Api/V1/** | Frozen public PHP facades (Courses, Enrollment, Progress) + extension registries for third-party hooks. |
+| **Frontend/** | Shortcodes, TemplateLoader, StudentAssetLoader. |
+
+**Stack specifics:**
+
+- Custom DB tables via `$wpdb` (never postmeta for LMS data); own auto-increment IDs (never WP post IDs)
+- Nine tables: `mintlms_courses`, `sections`, `lessons`, `enrollments`, `progress`, `progress_summary`, `quizzes`, `quiz_questions`, `quiz_attempts`
+- Four migrations (001 initial schema, 002 quizzes, 003 drip column, 004 certificate template option)
+- REST API namespace `mintlms/v1`
+- Alpine.js + Tailwind CSS (no React/Vue/jQuery); Sortable.js for drag-drop
+- Composer PSR-4 autoload; `vendor/` committed (wp.org has no build step)
+- PHPStan level 6 + WPCS both required — `composer check` must pass
+- Requires **WordPress 6.2+** and **PHP 8.1+** (6.2 minimum because migrations/uninstall use `$wpdb->prepare()` `%i` for table identifiers)
+
+**Naming is fixed everywhere:**
+
+| Item | Value |
+|------|-------|
+| Namespace | `MintLMS\` |
+| Text domain | `mint-lms` |
+| Tables | `{prefix}mintlms_*` |
+| REST namespace | `mintlms/v1` |
+| CSS prefix | `mint-` |
+| Root wrapper | `#mint-lms-root` |
+| JS global | `window.MintLMS` |
+
+Tailwind is configured with `prefix: mint-` and `important: '#mint-lms-root'`, preflight disabled, so styles do not bleed into the customer theme.
+
+---
+
+## 3. How the build actually went (read before assuming anything works)
+
+Built almost entirely by Cursor agents (multiple parallel agents at points), with Adeel testing and pushing back repeatedly. Pattern that repeated: agents reported something as done/passing, Adeel tested in the browser, it was broken, agent re-investigated. **Nothing reported as "complete" should be trusted without opening the actual page or re-running checks yourself.**
+
+### 3.1 v0.1: it was not actually an LMS
+
+After the first big multi-agent push, an honest audit found solid architecture but not a usable product: only 3 visible admin menu items (Dashboard, Courses, Students), broken stubs, unwired shortcodes. This was later addressed through v0.2.0 and v1.0.0. Agent self-reports early in this project were not reliable.
+
+### 3.2 UI/design workflow — Claude Design → Cursor handoff
+
+Cursor's own UI output was rated poorly. The workflow that worked better: design screens in Claude Design, export a handoff package (tokens, per-screen specs), then have Cursor implement screen-by-screen. Tailwind scoping (`#mint-lms-root`, preflight off) is a hard requirement tested against third-party themes.
+
+### 3.3 Feature gap vs LearnDash
+
+Mint LMS still lacks several LearnDash Essentials baseline features (e.g. sub-lesson "topics" hierarchy — Mint LMS is Course → Section → Lesson only; rich lesson editor parity). Treat **v1.0.0** as a version label, not proof of feature parity.
+
+### 3.4 Push to v1.0.0
+
+Added drip scheduling, certificates, email notifications, quizzes, settings, reports, and WooCommerce enrollment. Version is 1.0.0 in `mint-lms.php` but this is **not QA-approved release status**.
+
+### 3.5 WooCommerce — merged into core
+
+- All five classes live in `src/Infrastructure/WooCommerce/`: `WooCommerceIntegration`, `ProductMeta`, `OrderHandler`, `EnrollmentBridge`, `SettingsPage`
+- `Bootstrap::onPluginsLoaded()` calls `WooCommerceIntegration::register()` when WooCommerce is active
+- Meta keys preserved: `_mintlms_course_id`, `_mintlms_wc_enrollments`, `_mintlms_wc_enrollment_processed`; hooks `mintlms_wc_*` preserved
+- The separate `mint-lms-woocommerce/` plugin folder is **gone** from `wp-content/plugins/`
+- **`readme.txt` still incorrectly tells users to install a separate "Mint LMS WooCommerce" addon** — update before wp.org submission
+
+### 3.6 Duplicate-plugin bug (recurred 3+ times)
+
+**Cause:** `mint-lms-release-check/` staging copy had identical `Plugin Name: Mint LMS` header.
+
+**Final fix:** staging copy removed entirely. Plugin Check runs in-place against `mint-lms/` using `.distignore` exclusions via `dev/plugin-check.sh`. **Never put release-check staging copies under `wp-content/plugins/`.**
+
+### 3.7 Dev tooling (inside this repo)
+
+Dev-only files live in **`dev/`** inside the plugin repo (excluded from wp.org zip via `.distignore`):
 
 ```
-cd existing_repo
-git remote add origin https://gitlab.com/elearning-evolve/mintlms.git
-git branch -M main
-git push -uf origin main
+dev/
+├── plugin-check.sh
+└── scripts/
+    ├── verify-all.php
+    ├── verify-rest-actions.php
+    ├── seed-v1-demo.php
+    └── smoke-v1.php
 ```
 
-## Integrate with your tools
+`phpunit.xml.dist` lives at repo root. `composer plugin-check` runs `dev/plugin-check.sh` with `--ignore-warnings` for CI; run `wp plugin check mint-lms` manually to see all warnings.
 
-* [Set up project integrations](https://gitlab.com/elearning-evolve/mintlms/-/settings/integrations)
+---
 
-## Collaborate with your team
+## 4. Current state — verified against codebase
 
-* [Invite team members and collaborators](https://docs.gitlab.com/user/project/members/)
-* [Create a new merge request](https://docs.gitlab.com/user/project/merge_requests/creating_merge_requests/)
-* [Automatically close issues from merge requests](https://docs.gitlab.com/user/project/issues/managing_issues/#closing-issues-automatically)
-* [Enable merge request approvals](https://docs.gitlab.com/user/project/merge_requests/approvals/)
-* [Set auto-merge](https://docs.gitlab.com/user/project/merge_requests/auto_merge/)
+### 4.1 Plugin Check
 
-## Test and Deploy
+| Severity | Count |
+|----------|-------|
+| **ERROR** | **0** |
+| **WARNING** | **3** (dev-only: `.gitignore`, `.distignore`, `.github/` — excluded from release zip) |
 
-Use the built-in continuous integration in GitLab.
+- No warnings on `Migration_003_Drip.php`, `uninstall.php`, or `ProductMeta.php`
+- `composer check` passes (architecture tests, PHPStan 6, PHPCS, unit tests)
+- `composer plugin-check` passes
 
-* [Get started with GitLab CI/CD](https://docs.gitlab.com/ci/quick_start/)
-* [Analyze your code for known vulnerabilities with Static Application Security Testing (SAST)](https://docs.gitlab.com/user/application_security/sast/)
-* [Deploy to Kubernetes, Amazon EC2, or Amazon ECS using Auto Deploy](https://docs.gitlab.com/topics/autodevops/requirements/)
-* [Use pull-based deployments for improved Kubernetes management](https://docs.gitlab.com/user/clusters/agent/)
-* [Set up protected environments](https://docs.gitlab.com/ci/environments/protected_environments/)
+**Previously flagged items — now resolved:**
 
-***
+- **ProductMeta.php** — `check_admin_referer()` / `check_ajax_referer()` before reading `$_POST`; course IDs sanitized with `absint()`
+- **Migration_003_Drip.php** — table names validated via `Schema::validateTable()`; queries use `$wpdb->prepare()` with `%i`
+- **uninstall.php** — `DROP TABLE` uses `$wpdb->prepare('DROP TABLE IF EXISTS %i', $table)` with validated table names
 
-# Editing this README
+### 4.2 Admin UI today
 
-When you're ready to make this README your own, just edit this file and use the handy template below (or feel free to structure it however you want - this is just a starting point!). Thanks to [makeareadme.com](https://www.makeareadme.com/) for this template.
+- **Visible menu:** Dashboard, Courses, Students, Reports
+- **Settings:** Mint LMS → Settings — pages, emails, certificate template, uninstall options
+- **Hidden pages:** course builder, course edit, guided first course
+- Quizzes, certificates, drip, emails exist in the product but not all have top-level menu items
 
-## Suggestions for a good README
+### 4.3 Student-facing surface
 
-Every project is different, so consider which of these sections apply to yours. The sections used in the template are suggestions for most open source projects. Also keep in mind that while a README can be too long and detailed, too long is better than too short. If you think your README is too long, consider utilizing another form of documentation rather than cutting out information.
+**Shortcodes:**
 
-## Name
-Choose a self-explaining name for your project.
+- `[mint_lms_dashboard]`
+- `[mint_lms_my_courses]`
+- `[mint_lms_catalog]`
+- `[mint_lms_course id="123"]`
+- `[mint_lms_player course="123"]`
+- `[mint_lms_certificate course="123"]`
 
-## Description
-Let people know what your project can do specifically. Provide context and add a link to any reference visitors might be unfamiliar with. A list of Features or a Background subsection can also be added here. If there are alternatives to your project, this is a good place to list differentiating factors.
+Templates in `templates/student/`; theme overrides at `{theme}/mint-lms/{template}`. Built assets in `assets/dist/`.
 
-## Badges
-On some READMEs, you may see small images that convey metadata, such as whether or not all the tests are passing for the project. You can use Shields to add some to your README. Many services also have instructions for adding a badge.
+### 4.4 Immediate next steps
 
-## Visuals
-Depending on what you are making, it can be a good idea to include screenshots or even a video (you'll frequently see GIFs rather than actual videos). Tools like ttygif can help, but check out Asciinema for a more sophisticated method.
+1. Update `readme.txt` — remove separate WooCommerce addon language; align Requirements WP version (body still says 6.0+, header says 6.2)
+2. Manual browser QA — teacher flow (create course → add lessons → publish) and student flow (enroll → complete lesson → progress/certificate)
+3. Before wp.org submission — run Plugin Check on a release-shaped tree (or trust `.distignore`)
 
-## Installation
-Within a particular ecosystem, there may be a common way of installing things, such as using Yarn, NuGet, or Homebrew. However, consider the possibility that whoever is reading your README is a novice and would like more guidance. Listing specific steps helps remove ambiguity and gets people to using your project as quickly as possible. If it only runs in a specific context like a particular programming language version or operating system or has dependencies that have to be installed manually, also add a Requirements subsection.
+---
 
-## Usage
-Use examples liberally, and show the expected output if you can. It's helpful to have inline the smallest example of usage that you can demonstrate, while providing links to more sophisticated examples if they are too long to reasonably include in the README.
+## 5. Pattern to watch for going forward
 
-## Support
-Tell people where they can go to for help. It can be any combination of an issue tracker, a chat room, an email address, etc.
+**Trust but verify, always.** Cursor agents repeatedly reported work as complete when it was not — including "0 errors" while warnings remained, and "production ready" while core flows were broken. Re-verify any "done" claim by opening the page or running the check yourself. Re-paste architecture rules (layer boundaries, naming) in long Cursor sessions to prevent drift.
 
-## Roadmap
-If you have ideas for releases in the future, it is a good idea to list them in the README.
+Distinguish **ERROR vs WARNING** in Plugin Check reports — never say "zero issues" when warnings remain.
 
-## Contributing
-State if you are open to contributions and what your requirements are for accepting them.
+---
 
-For people who want to make changes to your project, it's helpful to have some documentation on how to get started. Perhaps there is a script that they should run or some environment variables that they need to set. Make these steps explicit. These instructions could also be useful to your future self.
+## 6. Repository and environment
 
-You can also document commands to lint the code or run tests. These steps help to ensure high code quality and reduce the likelihood that the changes inadvertently break something. Having instructions for running tests is especially helpful if it requires external setup, such as starting a Selenium server for testing in a browser.
+| Item | Value |
+|------|-------|
+| GitLab repo | https://gitlab.com/elearning-evolve/mintlms (branch: `main`) |
+| Plugin path | `wp-content/plugins/mint-lms/` |
+| Dev tooling | `dev/` inside this repo (not a separate WP plugin) |
+| Version | 1.0.0 |
+| Requires | WordPress 6.2+, PHP 8.1+ |
+| WooCommerce addon | Removed — functionality in core |
+| Release-check staging | Should **NOT** exist under `plugins/` |
 
-## Authors and acknowledgment
-Show your appreciation to those who have contributed to the project.
+---
 
-## License
-For open source projects, say how it is licensed.
+## 7. Key commands
 
-## Project status
-If you have run out of energy or time for your project, put a note at the top of the README saying that development has slowed down or stopped completely. Someone may choose to fork your project or volunteer to step in as a maintainer or owner, allowing your project to keep going. You can also make an explicit request for maintainers.
+```bash
+cd wp-content/plugins/mint-lms
+
+# Required gate after meaningful changes
+composer check
+
+# WP.org Plugin Check simulation (ignores warnings)
+composer plugin-check
+
+# Individual suites
+composer stan
+composer sniff
+composer test:unit
+composer test:integ
+
+# Full Plugin Check including warnings
+wp plugin check mint-lms --path=/path/to/wordpress
+
+# Verify plugin list (should show ONE mint-lms entry)
+wp plugin list | grep -i mint
+
+# Dev verification scripts (WP-CLI)
+wp eval-file dev/scripts/verify-all.php
+wp eval-file dev/scripts/seed-v1-demo.php
+```
+
+When in doubt: read `tests/Architecture/LayerBoundaryTest.php`, run `composer check`, open the page in a browser.
