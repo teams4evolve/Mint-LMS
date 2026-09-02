@@ -20,17 +20,17 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 	 * @return array<string, mixed>
 	 */
 	public function getAuthorStats( int $authorId, array $courseIds ): array {
-		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() lists for author course ids.
+		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() lists for author course ids., PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$prefix = $this->wpdb->prefix;
 
-		$coursesTable     = Schema::coursesTable( $prefix );
-		$enrollmentsTable = Schema::enrollmentsTable( $prefix );
-		$progressTable    = Schema::progressTable( $prefix );
-		$summaryTable     = Schema::progressSummaryTable( $prefix );
-		$sectionsTable    = Schema::sectionsTable( $prefix );
-		$lessonsTable     = Schema::lessonsTable( $prefix );
+		$coursesTable     = Schema::validateTable( Schema::coursesTable( $prefix ), $prefix );
+		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
+		$progressTable    = Schema::validateTable( Schema::progressTable( $prefix ), $prefix );
+		$summaryTable     = Schema::validateTable( Schema::progressSummaryTable( $prefix ), $prefix );
+		$sectionsTable    = Schema::validateTable( Schema::sectionsTable( $prefix ), $prefix );
+		$lessonsTable     = Schema::validateTable( Schema::lessonsTable( $prefix ), $prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$publishedCount = (int) $this->wpdb->get_var(
 			$this->wpdb->prepare(
 				"SELECT COUNT(*) FROM {$coursesTable} WHERE author_id = %d AND status = 'published'",
@@ -52,7 +52,7 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		if ( array() !== $courseIds ) {
 			$placeholders = implode( ',', array_fill( 0, count( $courseIds ), '%d' ) );
 
-			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() course id lists.
+			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() course id lists., PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$studentsTotal = (int) $this->wpdb->get_var(
 				$this->wpdb->prepare(
 					"SELECT COUNT(DISTINCT user_id) FROM {$enrollmentsTable} WHERE course_id IN ({$placeholders}) AND status = 'active'",
@@ -258,9 +258,9 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		}
 
 		$prefix           = $this->wpdb->prefix;
-		$enrollmentsTable = Schema::enrollmentsTable( $prefix );
-		$summaryTable     = Schema::progressSummaryTable( $prefix );
-		$lessonsTable     = Schema::lessonsTable( $prefix );
+		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
+		$summaryTable     = Schema::validateTable( Schema::progressSummaryTable( $prefix ), $prefix );
+		$lessonsTable     = Schema::validateTable( Schema::lessonsTable( $prefix ), $prefix );
 		$placeholders     = implode( ',', array_fill( 0, count( $courseIds ), '%d' ) );
 		$stats            = array();
 
@@ -272,7 +272,7 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 			);
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$lessonRows = $this->wpdb->get_results(
 			$this->wpdb->prepare(
 				"SELECT course_id, COUNT(*) AS lesson_count FROM {$lessonsTable} WHERE course_id IN ({$placeholders}) GROUP BY course_id",
@@ -330,9 +330,9 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 	 */
 	public function getReportsSummary( ?int $authorId ): array {
 		$prefix           = $this->wpdb->prefix;
-		$coursesTable     = Schema::coursesTable( $prefix );
-		$enrollmentsTable = Schema::enrollmentsTable( $prefix );
-		$progressTable    = Schema::progressTable( $prefix );
+		$coursesTable     = Schema::validateTable( Schema::coursesTable( $prefix ), $prefix );
+		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
+		$progressTable    = Schema::validateTable( Schema::progressTable( $prefix ), $prefix );
 
 		$where  = '1=1';
 		$params = array();
@@ -342,7 +342,7 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 			$params[] = $authorId;
 		}
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$totalCourses = (int) $this->wpdb->get_var(
 			array() === $params
 				? "SELECT COUNT(*) FROM {$coursesTable}"

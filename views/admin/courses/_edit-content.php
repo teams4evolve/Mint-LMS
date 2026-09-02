@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 /** @var MintLMS\Infrastructure\Admin\ViewRenderer $renderer */
 /** @var int $courseId */
 
@@ -28,20 +30,21 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 	<!-- Error -->
 	<div x-show="error && !loading" x-cloak style="padding-top:40px">
 		<?php
+		$mintlms_retry_button = $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
+			'button',
+			array(
+				'variant' => 'secondary',
+				'label'   => esc_html__( 'Try again', 'mint-lms' ),
+				'type'    => 'button',
+				'attrs'   => '@click="init()"',
+			)
+		);
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'error-state',
 			array(
-				'title'        => __( 'Could not load course', 'mint-lms' ),
+				'title'        => esc_html__( 'Could not load course', 'mint-lms' ),
 				'messageAttrs' => 'x-text="error"',
-				'retry'        => $renderer->component(
-					'button',
-					array(
-						'variant' => 'secondary',
-						'label'   => __( 'Try again', 'mint-lms' ),
-						'type'    => 'button',
-						'attrs'   => '@click="init()"',
-					)
-				),
+				'retry'        => $mintlms_retry_button, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer component HTML.
 			)
 		);
 		?>
@@ -100,7 +103,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 
 			<!-- ── Cover image ─────────────────────────────── -->
 			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-overline" style="display:block;margin-bottom:16px">
+				<span class="mint-t-over" style="display:block;margin-bottom:16px">
 					<?php echo esc_html__( 'Cover image', 'mint-lms' ); ?>
 				</span>
 
@@ -142,7 +145,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 
 			<!-- ── Who can see it ──────────────────────────── -->
 			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-overline" style="display:block;margin-bottom:20px">
+				<span class="mint-t-over" style="display:block;margin-bottom:20px">
 					<?php echo esc_html__( 'Who can see it', 'mint-lms' ); ?>
 				</span>
 
@@ -195,7 +198,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 
 			<!-- ── Enrollment ──────────────────────────────── -->
 			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-overline" style="display:block;margin-bottom:20px">
+				<span class="mint-t-over" style="display:block;margin-bottom:20px">
 					<?php echo esc_html__( 'Enrollment', 'mint-lms' ); ?>
 				</span>
 
@@ -243,7 +246,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 
 			<!-- ── Delete ──────────────────────────────────── -->
 			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-overline" style="display:block;margin-bottom:8px;color:var(--mint-danger)">
+				<span class="mint-t-over" style="display:block;margin-bottom:8px;color:var(--mint-danger)">
 					<?php echo esc_html__( 'Delete', 'mint-lms' ); ?>
 				</span>
 				<p style="font-size:16px;color:var(--mint-ink-2);line-height:24px;margin:0 0 16px">

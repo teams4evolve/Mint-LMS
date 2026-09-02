@@ -5,6 +5,8 @@ namespace MintLMS\Frontend;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Infrastructure\Setup\PageSettings;
+
 final class StudentAssetLoader {
 
 	private const ENQUEUE_PRIORITY = 999;
@@ -24,27 +26,7 @@ final class StudentAssetLoader {
 	}
 
 	public function enqueueStudentAssets(): void {
-		if ( ! is_singular() ) {
-			return;
-		}
-
-		$post = get_post();
-
-		if ( null === $post ) {
-			return;
-		}
-
-		$content = (string) $post->post_content;
-		$found   = false;
-
-		foreach ( self::SHORTCODES as $shortcode ) {
-			if ( has_shortcode( $content, $shortcode ) ) {
-				$found = true;
-				break;
-			}
-		}
-
-		if ( ! $found ) {
+		if ( ! $this->shouldEnqueueStudentAssets() ) {
 			return;
 		}
 
@@ -90,5 +72,40 @@ final class StudentAssetLoader {
 				),
 			)
 		);
+	}
+
+	private function shouldEnqueueStudentAssets(): bool {
+		if ( is_admin() ) {
+			return false;
+		}
+
+		$post = get_post();
+
+		if ( null === $post ) {
+			return false;
+		}
+
+		$pageSettings = new PageSettings();
+		$mintPageIds  = array_filter(
+			array(
+				$pageSettings->getDashboardPageId(),
+				$pageSettings->getCatalogPageId(),
+				$pageSettings->getPlayerPageId(),
+			)
+		);
+
+		if ( in_array( (int) $post->ID, $mintPageIds, true ) ) {
+			return true;
+		}
+
+		$content = (string) $post->post_content;
+
+		foreach ( self::SHORTCODES as $shortcode ) {
+			if ( has_shortcode( $content, $shortcode ) ) {
+				return true;
+			}
+		}
+
+		return str_contains( $content, 'mint_lms_' );
 	}
 }

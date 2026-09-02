@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Infrastructure\Admin\ViewRenderer;
 
 $renderer = new ViewRenderer();
@@ -55,7 +57,7 @@ $renderer = new ViewRenderer();
 				<div style="max-width:580px;width:100%">
 
 					<!-- Step overline -->
-					<span class="mint-overline" style="color:var(--mint-accent)" x-text="stepLabel"></span>
+					<span class="mint-t-over" style="color:var(--mint-accent)" x-text="stepLabel"></span>
 
 					<!-- Title -->
 					<h1 style="font-size:38px;line-height:44px;letter-spacing:-0.035em;font-weight:600;color:var(--mint-ink);margin:12px 0 0" x-text="stepTitle"></h1>

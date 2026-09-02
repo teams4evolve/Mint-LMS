@@ -18,9 +18,9 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 	}
 
 	public function findById( int $id ): ?Enrollment {
-		$table = Schema::enrollmentsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, user_id, course_id, status, enrolled_at, expires_at, completed_at
@@ -39,9 +39,9 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 	}
 
 	public function findByUserAndCourse( int $userId, int $courseId ): ?Enrollment {
-		$table = Schema::enrollmentsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, user_id, course_id, status, enrolled_at, expires_at, completed_at
@@ -61,7 +61,7 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 	}
 
 	public function save( Enrollment $enrollment ): Enrollment {
-		$table = Schema::enrollmentsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		$data = array(
 			'user_id'      => $enrollment->userId,
@@ -117,7 +117,7 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 		int $perPage,
 		?EnrollmentStatus $status = null,
 	): array {
-		$table  = Schema::enrollmentsTable( $this->wpdb->prefix );
+		$table  = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$offset = ( $page - 1 ) * $perPage;
 
 		$where  = array( 'course_id = %d' );
@@ -137,7 +137,7 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 			ORDER BY enrolled_at DESC
 			LIMIT %d OFFSET %d";
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$total = (int) $this->wpdb->get_var( $this->wpdb->prepare( $countSql, ...$params ) );
 		$rows  = $this->wpdb->get_results(
 			$this->wpdb->prepare( $listSql, ...array_merge( $params, array( $perPage, $offset ) ) )
@@ -164,7 +164,7 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 		int $perPage,
 		?EnrollmentStatus $status = null,
 	): array {
-		$table  = Schema::enrollmentsTable( $this->wpdb->prefix );
+		$table  = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$offset = ( $page - 1 ) * $perPage;
 
 		$where  = array( 'user_id = %d' );
@@ -184,7 +184,7 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 			ORDER BY enrolled_at DESC
 			LIMIT %d OFFSET %d";
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$total = (int) $this->wpdb->get_var( $this->wpdb->prepare( $countSql, ...$params ) );
 		$rows  = $this->wpdb->get_results(
 			$this->wpdb->prepare( $listSql, ...array_merge( $params, array( $perPage, $offset ) ) )
@@ -210,11 +210,11 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 			return array();
 		}
 
-		$table        = Schema::progressSummaryTable( $this->wpdb->prefix );
+		$table        = Schema::validateTable( Schema::progressSummaryTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$placeholders = implode( ',', array_fill( 0, count( $userIds ), '%d' ) );
 		$params       = array_merge( array( $courseId ), $userIds );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $this->wpdb->get_results(
 			$this->wpdb->prepare(
 				"SELECT user_id, pct_complete

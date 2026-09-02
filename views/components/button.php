@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 $variant = $variant ?? 'primary';
 $label   = $label ?? '';
 $type    = $type ?? 'button';

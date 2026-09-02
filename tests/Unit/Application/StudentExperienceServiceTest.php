@@ -99,6 +99,10 @@ final class StudentExperienceServiceTest extends TestCase
             ->method('loadStructureRows')
             ->willReturn($this->sampleStructureRows());
 
+        $this->progressRepository
+            ->method('getCompletedLessonIds')
+            ->willReturn([]);
+
         $courses = $this->service->getDashboardCourses($userId);
 
         $this->assertCount(1, $courses);
@@ -146,6 +150,10 @@ final class StudentExperienceServiceTest extends TestCase
         $this->sectionRepository
             ->method('loadStructureRows')
             ->willReturn($this->sampleStructureRows());
+
+        $this->progressRepository
+            ->method('getCompletedLessonIds')
+            ->willReturn([]);
 
         $completed = $this->service->getMyCourses($userId, 'completed');
 

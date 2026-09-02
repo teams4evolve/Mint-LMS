@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Student\Dto\StudentCourseItemDto;
 use MintLMS\Infrastructure\Ui\MintUi;
 
@@ -41,6 +43,22 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 			);
 			?>
 		</p>
+	</div>
+
+	<?php
+	$filters = array(
+		'all'         => __( 'All', 'mint-lms' ),
+		'in_progress' => __( 'In progress', 'mint-lms' ),
+		'completed'   => __( 'Completed', 'mint-lms' ),
+	);
+	?>
+	<div class="mint-filter-tabs" style="margin-bottom:28px">
+		<?php foreach ( $filters as $key => $label ) : ?>
+			<a
+				href="<?php echo esc_url( add_query_arg( 'filter', $key, $pageUrl ) ); ?>"
+				class="mint-filter-tab<?php echo $filter === $key ? ' is-active' : ''; ?>"
+			><?php echo esc_html( $label ); ?></a>
+		<?php endforeach; ?>
 	</div>
 
 	<?php if ( array() === $courses ) : ?>

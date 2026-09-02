@@ -19,9 +19,9 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	}
 
 	public function findById( int $id ): ?Course {
-		$table = Schema::coursesTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::coursesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, title, slug, description, featured_image_id, status, enrollment_type, author_id, created_at, updated_at
@@ -40,9 +40,9 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	}
 
 	public function findBySlug( string $slug ): ?Course {
-		$table = Schema::coursesTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::coursesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, title, slug, description, featured_image_id, status, enrollment_type, author_id, created_at, updated_at
@@ -61,7 +61,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	}
 
 	public function save( Course $course ): Course {
-		$table = Schema::coursesTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::coursesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$now   = $course->updatedAt->format( 'Y-m-d H:i:s' );
 
 		if ( 0 === $course->id ) {
@@ -127,7 +127,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	}
 
 	public function delete( int $id ): bool {
-		$table = Schema::coursesTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::coursesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$deleted = $this->wpdb->delete(
@@ -140,7 +140,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	}
 
 	public function list( int $page, int $perPage, ?int $authorId = null, ?CourseStatus $status = null, ?string $search = null ): array {
-		$table  = Schema::coursesTable( $this->wpdb->prefix );
+		$table  = Schema::validateTable( Schema::coursesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$offset = ( $page - 1 ) * $perPage;
 
 		$where  = array( '1=1' );
@@ -171,14 +171,14 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 			LIMIT %d OFFSET %d";
 
 		if ( array() !== $params ) {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$total = (int) $this->wpdb->get_var( $this->wpdb->prepare( $countSql, ...$params ) );
 			$rows  = $this->wpdb->get_results(
 				$this->wpdb->prepare( $listSql, ...array_merge( $params, array( $perPage, $offset ) ) )
 			);
 			// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 		} else {
-			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$total = (int) $this->wpdb->get_var( $countSql );
 			$rows  = $this->wpdb->get_results(
 				$this->wpdb->prepare( $listSql, $perPage, $offset )

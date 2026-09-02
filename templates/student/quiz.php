@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Quiz\Dto\QuizDto;
 
 /** @var QuizDto|null $quiz */
@@ -29,7 +31,7 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 	})"
 >
 	<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-		<h2 class="mint-overline" style="margin:0"><?php echo esc_html( $quiz->title ); ?></h2>
+		<h2 class="mint-t-over" style="margin:0"><?php echo esc_html( $quiz->title ); ?></h2>
 		<span style="font-size:14px;color:var(--mint-ink-2)">
 			<?php
 			printf(

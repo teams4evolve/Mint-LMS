@@ -38,7 +38,12 @@ export async function mintApi(path, options = {}, config = getAdminConfig()) {
   }
 
   if (!response.ok || json.success === false) {
-    const message = json.error?.message || response.statusText || 'Request failed';
+    const message =
+      json.error?.message ||
+      json.message ||
+      (typeof json.data?.message === 'string' ? json.data.message : '') ||
+      response.statusText ||
+      'Request failed';
     throw new Error(message);
   }
 

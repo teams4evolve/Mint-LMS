@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Exception\ForbiddenException;
 use MintLMS\Application\Exception\NotFoundException;
 use MintLMS\Infrastructure\Admin\ViewRenderer;
@@ -18,7 +20,6 @@ $pagination    = array(
 	'base_url' => admin_url( 'admin.php?page=mint-lms-course-students&course_id=' . $courseId ),
 );
 $error         = '';
-$courseTitle    = '';
 $totalStudents = 0;
 $totalFinished = 0;
 
@@ -69,14 +70,6 @@ if ( $courseId <= 0 ) {
 			'base_url' => admin_url( 'admin.php?page=mint-lms-course-students&course_id=' . $courseId ),
 		);
 
-		global $wpdb;
-		if ( $wpdb instanceof \wpdb ) {
-			$table = $wpdb->prefix . 'mintlms_courses';
-			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
-			$courseTitle = (string) $wpdb->get_var(
-				$wpdb->prepare( "SELECT title FROM {$table} WHERE id = %d", $courseId )
-			);
-		}
 	} catch ( NotFoundException $exception ) {
 		$error = $exception->getMessage();
 	} catch ( ForbiddenException $exception ) {
@@ -156,13 +149,13 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 <!-- ── Error state ──────────────────────────────────────── -->
 <div style="padding:48px var(--mint-page-pad)">
 	<?php
-	echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
-		'error-state',
-		array(
-			'title'   => __( 'Unable to load students', 'mint-lms' ),
-			'message' => esc_html( $error ),
-		)
-	);
+		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
+			'error-state',
+			array(
+				'title'   => esc_html__( 'Unable to load students', 'mint-lms' ),
+				'message' => esc_html( $error ),
+			)
+		);
 	?>
 </div>
 
@@ -247,8 +240,8 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'empty-state',
 			array(
-				'title'       => __( 'No students enrolled', 'mint-lms' ),
-				'description' => __( 'Enroll students manually or share an open enrollment link.', 'mint-lms' ),
+				'title'       => esc_html__( 'No students enrolled', 'mint-lms' ),
+				'description' => esc_html__( 'Enroll students manually or share an open enrollment link.', 'mint-lms' ),
 			)
 		);
 		?>

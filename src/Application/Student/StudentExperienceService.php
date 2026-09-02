@@ -118,13 +118,14 @@ final class StudentExperienceService {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
-		if ( CourseStatus::Published !== $course->status ) {
+		if ( ! $this->canViewCourseOnFrontend( $userId, $course->status, $course->authorId ) ) {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
-		$isEnrolled = $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId );
-		$structure  = $this->loadGatedStructure( $courseId, $isEnrolled, $userId, $isEditorPreview );
-		$flat       = $this->flattenLessons( $structure );
+		$isEditorPreview = $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId );
+		$isEnrolled      = ( $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId ) ) || $isEditorPreview;
+		$structure       = $this->loadGatedStructure( $courseId, $isEnrolled, $userId, $isEditorPreview );
+		$flat            = $this->flattenLessons( $structure );
 
 		$progressPct        = null;
 		$lastLessonId       = null;
@@ -145,7 +146,7 @@ final class StudentExperienceService {
 			$course->featuredImageId,
 			$course->enrollmentType->value,
 			$isEnrolled,
-			$this->canSelfEnroll( $userId, $course->enrollmentType, $isEnrolled ),
+			$this->canSelfEnroll( $userId, $course->enrollmentType, $isEnrolled, $course->status ),
 			$userId > 0,
 			$progressPct,
 			$lastLessonId,
@@ -164,7 +165,7 @@ final class StudentExperienceService {
 
 		$isEditorPreview = $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId );
 
-		if ( CourseStatus::Published !== $course->status && ! $isEditorPreview ) {
+		if ( ! $this->canViewCourseOnFrontend( $userId, $course->status, $course->authorId ) ) {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
@@ -182,9 +183,16 @@ final class StudentExperienceService {
 		}
 
 		if ( $current->isDripLocked ) {
-			throw new ForbiddenException(
-				$current->dripMessage ?? 'This lesson is not available yet.'
+			// phpcs:disable WordPress.Security.EscapeOutput.ExceptionNotEscaped -- Plain-text drip copy; stripped below before reaching clients.
+			$message = preg_replace(
+				'/[\r\n\t\x00-\x08\x0B\x0C\x0E-\x1F<>]/',
+				'',
+				(string) ( $current->dripMessage ?? '' )
 			);
+			throw new ForbiddenException(
+				'' !== $message ? $message : 'This lesson is not available yet.'
+			);
+			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
 		if ( ! $this->lessonHasAccessibleContent( $current, $isEnrolled ) ) {
@@ -269,7 +277,7 @@ final class StudentExperienceService {
 	private function buildCourseItemFromEnrollment( Enrollment $enrollment, int $userId ): ?StudentCourseItemDto {
 		$course = $this->courseRepository->findById( $enrollment->courseId );
 
-		if ( null === $course || CourseStatus::Published !== $course->status ) {
+		if ( null === $course || ! $this->isCourseVisibleInStudentLibrary( $course->status ) ) {
 			return null;
 		}
 
@@ -279,6 +287,7 @@ final class StudentExperienceService {
 		$isComplete   = null !== $summary && $summary->isCourseComplete();
 		$structure    = $this->loadGatedStructure( $course->id, true, $userId );
 		$flat         = $this->flattenLessons( $structure );
+		$completedIds = $this->progressRepository->getCompletedLessonIds( $userId, $course->id );
 
 		return new StudentCourseItemDto(
 			$course->id,
@@ -290,11 +299,13 @@ final class StudentExperienceService {
 			$isComplete,
 			$course->featuredImageId,
 			$course->enrollmentType->value,
+			count( $flat ),
+			count( $completedIds ),
 		);
 	}
 
-	private function canSelfEnroll( int $userId, EnrollmentType $enrollmentType, bool $isEnrolled ): bool {
-		if ( $isEnrolled || $userId <= 0 ) {
+	private function canSelfEnroll( int $userId, EnrollmentType $enrollmentType, bool $isEnrolled, CourseStatus $status ): bool {
+		if ( CourseStatus::Published !== $status || $isEnrolled || $userId <= 0 ) {
 			return false;
 		}
 
@@ -430,6 +441,18 @@ final class StudentExperienceService {
 		}
 
 		return $this->authorization->canEditCourse( $userId, $authorId );
+	}
+
+	private function canViewCourseOnFrontend( int $userId, CourseStatus $status, int $authorId ): bool {
+		if ( CourseStatus::Published === $status || CourseStatus::Archived === $status ) {
+			return true;
+		}
+
+		return $this->canEditorPreviewCourse( $userId, $status, $authorId );
+	}
+
+	private function isCourseVisibleInStudentLibrary( CourseStatus $status ): bool {
+		return CourseStatus::Published === $status || CourseStatus::Archived === $status;
 	}
 
 	private function resolveEnrollmentDate( int $userId, int $courseId, bool $isEnrolled ): ?\DateTimeImmutable {

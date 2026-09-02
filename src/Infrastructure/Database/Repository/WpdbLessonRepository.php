@@ -17,9 +17,9 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function findById( int $id ): ?Lesson {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, section_id, course_id, title, slug, content, video_url, attachment_id, is_preview, available_after_days, sort_order, created_at, updated_at
@@ -38,9 +38,9 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function findBySlugAndCourseId( string $slug, int $courseId ): ?Lesson {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
 				"SELECT id, section_id, course_id, title, slug, content, video_url, attachment_id, is_preview, available_after_days, sort_order, created_at, updated_at
@@ -60,9 +60,9 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function findBySectionId( int $sectionId ): array {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $this->wpdb->get_results(
 			$this->wpdb->prepare(
 				"SELECT id, section_id, course_id, title, slug, content, video_url, attachment_id, is_preview, available_after_days, sort_order, created_at, updated_at
@@ -86,7 +86,7 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function save( Lesson $lesson ): Lesson {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$now   = $lesson->updatedAt->format( 'Y-m-d H:i:s' );
 
 		if ( 0 === $lesson->id ) {
@@ -160,7 +160,7 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function delete( int $id ): bool {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$deleted = $this->wpdb->delete(
@@ -173,7 +173,7 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function deleteBySectionId( int $sectionId ): void {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$this->wpdb->delete(
@@ -184,7 +184,7 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function reorder( int $sectionId, array $lessonIds ): void {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		foreach ( $lessonIds as $index => $lessonId ) {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -202,9 +202,9 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function nextSortOrder( int $sectionId ): int {
-		$table = Schema::lessonsTable( $this->wpdb->prefix );
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$max = $this->wpdb->get_var(
 			$this->wpdb->prepare(
 				"SELECT MAX(sort_order) FROM {$table} WHERE section_id = %d",

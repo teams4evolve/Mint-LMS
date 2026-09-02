@@ -7,6 +7,8 @@
 
 defined( 'WP_UNINSTALL_PLUGIN' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 require_once __DIR__ . '/vendor/autoload.php';
 
 use MintLMS\Infrastructure\Database\Schema;
@@ -14,10 +16,12 @@ use MintLMS\Infrastructure\Setup\PageSettings;
 
 global $wpdb;
 
-// phpcs:ignore WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
-foreach ( Schema::allTables( $wpdb->prefix ) as $table ) {
-	$wpdb->query( "DROP TABLE IF EXISTS {$table}" ); // phpcs:ignore WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+// phpcs:disable WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery -- Uninstall drops validated custom LMS tables.
+foreach ( Schema::allTables( $wpdb->prefix ) as $mintlms_table ) {
+	$mintlms_table = Schema::validateTable( $mintlms_table, $wpdb->prefix );
+	$wpdb->query( $wpdb->prepare( 'DROP TABLE IF EXISTS %i', $mintlms_table ) );
 }
+// phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
 
 delete_option( 'mintlms_db_version' );
 delete_option( 'mintlms_first_run_complete' );

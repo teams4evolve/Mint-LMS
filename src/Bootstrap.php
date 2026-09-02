@@ -51,6 +51,7 @@ use MintLMS\Infrastructure\Notification\EmailNotificationRegistrar;
 use MintLMS\Infrastructure\Setup\Activator;
 use MintLMS\Infrastructure\Setup\PageSettings;
 use MintLMS\Infrastructure\User\WpUserLookup;
+use MintLMS\Infrastructure\WooCommerce\WooCommerceIntegration;
 
 final class Bootstrap {
 
@@ -74,12 +75,6 @@ final class Bootstrap {
 	public static function onPluginsLoaded(): void {
 		global $wpdb;
 
-		load_plugin_textdomain(
-			'mint-lms',
-			false,
-			dirname( plugin_basename( MINTLMS_FILE ) ) . '/languages'
-		);
-
 		self::runMigrations();
 
 		Plugin::boot();
@@ -100,6 +95,7 @@ final class Bootstrap {
 		self::registerRestApi();
 		self::registerNotifications( $wpdb );
 		self::registerCertificateHandler( $wpdb );
+		WooCommerceIntegration::register();
 	}
 
 	private static function registerNotifications( \wpdb $wpdb ): void {
@@ -148,8 +144,6 @@ final class Bootstrap {
 		$authorization  = Plugin::authorization();
 		$userLookup     = new WpUserLookup();
 		$certificateService = self::createCertificateService( $wpdb, $clock );
-
-		Plugin::registerCertificateService( $certificateService );
 
 		$enrollmentService = new EnrollmentService(
 			$enrollmentRepo,
@@ -230,7 +224,8 @@ final class Bootstrap {
 			$courseRepo,
 			$authorization,
 			$clock,
-			$progressService
+			$progressService,
+			$quizService
 		);
 		$structureService  = new CourseStructureService( $courseRepo, $sectionRepo, $authorization );
 		Plugin::registerCourseServices( $courseService, $structureService );

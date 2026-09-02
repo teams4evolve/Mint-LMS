@@ -7,6 +7,18 @@ final class CourseBuilderPage {
 
 	public function register(): void {
 		add_action( 'admin_menu', array( $this, 'registerPages' ) );
+		add_action( 'load-admin_page_mint-lms-builder', array( $this, 'setBuilderTitle' ) );
+		add_action( 'load-admin_page_mint-lms-course-edit', array( $this, 'setEditTitle' ) );
+	}
+
+	public function setBuilderTitle(): void {
+		global $title;
+		$title = __( 'Course Builder', 'mint-lms' );
+	}
+
+	public function setEditTitle(): void {
+		global $title;
+		$title = __( 'Edit Course', 'mint-lms' );
 	}
 
 	public function registerPages(): void {
@@ -41,7 +53,14 @@ final class CourseBuilderPage {
 			exit;
 		}
 
-		include MINTLMS_PATH . 'views/admin/courses/builder.php';
+		$renderer = new ViewRenderer();
+		$renderer->echo(
+			'admin/courses/builder',
+			array(
+				'renderer' => $renderer,
+				'courseId' => $courseId,
+			)
+		);
 	}
 
 	public function renderEdit(): void {
@@ -56,6 +75,13 @@ final class CourseBuilderPage {
 			exit;
 		}
 
-		include MINTLMS_PATH . 'views/admin/courses/edit.php';
+		$renderer = new ViewRenderer();
+		$renderer->echo(
+			'admin/courses/edit',
+			array(
+				'renderer' => $renderer,
+				'courseId' => $courseId,
+			)
+		);
 	}
 }

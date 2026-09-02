@@ -9,10 +9,12 @@ final class FirstRunRedirect {
 
 	public const ACTIVATION_REDIRECT_TRANSIENT = 'mintlms_activation_redirect';
 	public const START_GUIDED_ACTION           = 'mintlms_start_guided';
+	public const SKIP_FIRST_RUN_ACTION         = 'mintlms_skip_first_run';
 
 	public function register(): void {
 		add_action( 'admin_init', array( $this, 'handleActivationRedirect' ) );
 		add_action( 'admin_init', array( $this, 'handleStartGuidedAction' ) );
+		add_action( 'admin_init', array( $this, 'handleSkipFirstRunAction' ) );
 		add_action( 'admin_init', array( $this, 'handleGuidedFlowRedirect' ) );
 	}
 
@@ -49,6 +51,23 @@ final class FirstRunRedirect {
 		FirstRunState::markFirstRunStarted();
 
 		wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-guided-course' ) );
+		exit;
+	}
+
+	public function handleSkipFirstRunAction(): void {
+		if ( ! isset( $_GET['mintlms_action'] ) || self::SKIP_FIRST_RUN_ACTION !== $_GET['mintlms_action'] ) { // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+			return;
+		}
+
+		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access Mint LMS.', 'mint-lms' ) );
+		}
+
+		check_admin_referer( self::SKIP_FIRST_RUN_ACTION );
+
+		FirstRunState::markOnboardingComplete();
+
+		wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-courses' ) );
 		exit;
 	}
 
@@ -91,6 +110,13 @@ final class FirstRunRedirect {
 		return wp_nonce_url(
 			admin_url( 'admin.php?page=mint-lms&mintlms_action=' . self::START_GUIDED_ACTION ),
 			self::START_GUIDED_ACTION
+		);
+	}
+
+	public static function skipFirstRunUrl(): string {
+		return wp_nonce_url(
+			admin_url( 'admin.php?page=mint-lms&mintlms_action=' . self::SKIP_FIRST_RUN_ACTION ),
+			self::SKIP_FIRST_RUN_ACTION
 		);
 	}
 }

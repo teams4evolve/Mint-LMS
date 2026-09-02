@@ -17,7 +17,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
 		$charset = $wpdb->get_charset_collate();
 		$prefix  = $wpdb->prefix;
 
-		$courses = Schema::coursesTable( $prefix );
+		$courses = Schema::validateTable( Schema::coursesTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$courses} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -36,7 +36,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$sections = Schema::sectionsTable( $prefix );
+		$sections = Schema::validateTable( Schema::sectionsTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$sections} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -49,7 +49,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$lessons = Schema::lessonsTable( $prefix );
+		$lessons = Schema::validateTable( Schema::lessonsTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$lessons} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -70,7 +70,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$enrollments = Schema::enrollmentsTable( $prefix );
+		$enrollments = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$enrollments} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -86,7 +86,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$progress = Schema::progressTable( $prefix );
+		$progress = Schema::validateTable( Schema::progressTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$progress} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -102,7 +102,7 @@ final class Migration_001_InitialSchema implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$summary = Schema::progressSummaryTable( $prefix );
+		$summary = Schema::validateTable( Schema::progressSummaryTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$summary} (
                 user_id bigint(20) unsigned NOT NULL,

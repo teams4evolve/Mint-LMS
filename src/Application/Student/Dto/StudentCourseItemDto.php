@@ -15,6 +15,8 @@ final readonly class StudentCourseItemDto {
 		public bool $isComplete,
 		public ?int $featuredImageId,
 		public string $enrollmentType,
+		public int $totalLessons = 0,
+		public int $completedLessons = 0,
 	) {
 	}
 
@@ -32,6 +34,8 @@ final readonly class StudentCourseItemDto {
 			'isComplete'      => $this->isComplete,
 			'featuredImageId' => $this->featuredImageId,
 			'enrollmentType'  => $this->enrollmentType,
+			'totalLessons'    => $this->totalLessons,
+			'completedLessons' => $this->completedLessons,
 		);
 	}
 }

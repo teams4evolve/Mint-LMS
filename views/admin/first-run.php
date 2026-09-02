@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 ?>
 <div class="wrap mint-lms-admin-wrap">
@@ -72,7 +74,7 @@ use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 			<!-- Right: form column -->
 			<div style="padding:48px 40px;background:#FAF8FF;display:flex;align-items:center;justify-content:center">
 				<div style="max-width:400px;width:100%">
-					<span class="mint-overline" style="color:var(--mint-accent)"><?php esc_html_e( "LET'S START", 'mint-lms' ); ?></span>
+					<span class="mint-t-over" style="color:var(--mint-accent)"><?php esc_html_e( "LET'S START", 'mint-lms' ); ?></span>
 					<h2 style="font-size:28px;line-height:34px;letter-spacing:-0.025em;font-weight:600;color:var(--mint-ink);margin:12px 0 0">
 						<?php esc_html_e( 'What are you teaching?', 'mint-lms' ); ?>
 					</h2>
@@ -98,7 +100,7 @@ use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 
 					<div style="text-align:center;margin-top:16px">
 						<a
-							href="<?php echo esc_url( admin_url( 'admin.php?page=mint-lms-courses' ) ); ?>"
+							href="<?php echo esc_url( FirstRunRedirect::skipFirstRunUrl() ); ?>"
 							class="mint-btn mint-btn--ghost"
 							style="font-size:15px;font-weight:500;height:auto;padding:8px 16px"
 						><?php esc_html_e( 'Skip for now', 'mint-lms' ); ?></a>

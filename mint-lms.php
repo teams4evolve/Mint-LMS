@@ -4,7 +4,7 @@
  * Plugin URI:        https://wordpress.org/plugins/mint-lms/
  * Description:       A clean, fast WordPress LMS for teachers and students.
  * Version:           1.0.0
- * Requires at least: 6.0
+ * Requires at least: 6.2
  * Requires PHP:      8.1
  * Author:            Mint LMS
  * License:           GPL-2.0-or-later

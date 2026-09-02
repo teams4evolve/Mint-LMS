@@ -14,6 +14,7 @@ use MintLMS\Application\Lesson\Dto\ReorderLessonsDto;
 use MintLMS\Application\Lesson\Dto\UpdateLessonDto;
 use MintLMS\Application\Lesson\LessonService;
 use MintLMS\Infrastructure\Http\RestContentSanitizer;
+use MintLMS\Http\Rest\Response\ApiResponse;
 
 final class LessonController {
 

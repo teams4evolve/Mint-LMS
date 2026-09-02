@@ -17,7 +17,7 @@ final class Migration_002_Quizzes implements MigrationInterface {
 		$charset = $wpdb->get_charset_collate();
 		$prefix  = $wpdb->prefix;
 
-		$quizzes = Schema::quizzesTable( $prefix );
+		$quizzes = Schema::validateTable( Schema::quizzesTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$quizzes} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -32,7 +32,7 @@ final class Migration_002_Quizzes implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$questions = Schema::quizQuestionsTable( $prefix );
+		$questions = Schema::validateTable( Schema::quizQuestionsTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$questions} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,
@@ -47,7 +47,7 @@ final class Migration_002_Quizzes implements MigrationInterface {
             ) {$charset};"
 		);
 
-		$attempts = Schema::quizAttemptsTable( $prefix );
+		$attempts = Schema::validateTable( Schema::quizAttemptsTable( $prefix ), $prefix );
 		dbDelta(
 			"CREATE TABLE {$attempts} (
                 id bigint(20) unsigned NOT NULL AUTO_INCREMENT,

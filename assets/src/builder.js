@@ -23,6 +23,8 @@ function courseBuilder(courseId) {
     error: '',
     saveStatus: '',
     publishing: false,
+    addingSection: false,
+    addingLesson: false,
     selected: null,
     expanded: {},
     editingKey: '',
@@ -34,16 +36,29 @@ function courseBuilder(courseId) {
     quizSaving: false,
     editorReady: false,
 
-    buildPreviewUrl(courseId) {
+    buildPreviewUrl(courseId, lessonId = 0) {
       const base = config.urls.playerPage;
       if (!base) return '#';
       try {
         const url = new URL(base, window.location.origin);
         url.searchParams.set('mint_course', String(courseId));
+        if (lessonId > 0) {
+          url.searchParams.set('mint_lesson', String(lessonId));
+        }
         return url.toString();
       } catch {
-        return `${base}${base.includes('?') ? '&' : '?'}mint_course=${courseId}`;
+        const suffix = lessonId > 0 ? `&mint_lesson=${lessonId}` : '';
+        return `${base}${base.includes('?') ? '&' : '?'}mint_course=${courseId}${suffix}`;
       }
+    },
+
+    firstLessonId() {
+      for (const section of this.sections) {
+        if (section.lessons && section.lessons.length > 0) {
+          return section.lessons[0].id;
+        }
+      }
+      return 0;
     },
 
     get selectedSection() {
@@ -86,7 +101,7 @@ function courseBuilder(courseId) {
           ...section,
           lessons: section.lessons || [],
         }));
-        this.previewUrl = this.buildPreviewUrl(this.courseId);
+        this.previewUrl = this.buildPreviewUrl(this.courseId, this.firstLessonId());
 
         this.sections.forEach((section) => {
           this.expanded[section.id] = true;
@@ -361,6 +376,8 @@ function courseBuilder(courseId) {
     },
 
     async addSection() {
+      if (this.addingSection) return;
+      this.addingSection = true;
       try {
         const section = await mintApi(`courses/${this.courseId}/sections`, {
           method: 'POST',
@@ -372,10 +389,14 @@ function courseBuilder(courseId) {
         this.$nextTick(() => this.initSortables());
       } catch (err) {
         window.MintLMS.toast.error(err.message);
+      } finally {
+        this.addingSection = false;
       }
     },
 
     async addLesson(sectionId) {
+      if (this.addingLesson) return;
+      this.addingLesson = true;
       try {
         const lesson = await mintApi(`sections/${sectionId}/lessons`, {
           method: 'POST',
@@ -389,6 +410,8 @@ function courseBuilder(courseId) {
         }
       } catch (err) {
         window.MintLMS.toast.error(err.message);
+      } finally {
+        this.addingLesson = false;
       }
     },
 

@@ -134,6 +134,8 @@ final class CourseController {
 			return ApiResponse::success( $result->toArray() );
 		} catch ( ForbiddenException $exception ) {
 			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		} catch ( \ValueError $exception ) {
+			return ApiResponse::error( 'invalid_status', 'Invalid course status.', 400 );
 		}
 	}
 

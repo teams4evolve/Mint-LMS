@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Student\Dto\StudentPlayerContextDto;
 use MintLMS\Infrastructure\Ui\MintUi;
 
@@ -113,7 +115,7 @@ $pct          = (int) round( $context->progressPct );
 		</main>
 
 		<aside class="mint-student-aside mint-student-aside--curriculum">
-			<div class="mint-overline mint-curriculum-overline"><?php esc_html_e( 'CURRICULUM', 'mint-lms' ); ?></div>
+			<div class="mint-t-over mint-curriculum-overline"><?php esc_html_e( 'CURRICULUM', 'mint-lms' ); ?></div>
 
 			<?php foreach ( $context->structure->sections as $section ) : ?>
 				<div class="mint-curriculum-block">

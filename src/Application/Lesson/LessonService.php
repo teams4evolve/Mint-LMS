@@ -28,6 +28,7 @@ final class LessonService {
 		private AuthorizationInterface $authorization,
 		private Clock $clock,
 		private ProgressLifecycleInterface $progressLifecycle,
+		private ?QuizService $quizService = null,
 	) {
 	}
 

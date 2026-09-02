@@ -3,11 +3,19 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Infrastructure\Admin\ViewRenderer;
 
+/** @var ViewRenderer $renderer */
 /** @var int $courseId */
 
-$renderer   = new ViewRenderer();
+$courseId = isset( $courseId ) ? (int) $courseId : 0;
+
+if ( $courseId <= 0 ) {
+	$courseId = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+}
+
 $builderUrl = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId );
 
 $content = $renderer->render(

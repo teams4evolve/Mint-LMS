@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Student\Dto\StudentCourseOverviewDto;
 use MintLMS\Infrastructure\Ui\MintUi;
 
@@ -55,7 +57,7 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 
 	<div class="mint-student-main">
 
-		<div class="mint-overline mint-overline--accent-spaced">
+		<div class="mint-t-over mint-t-over--accent-spaced">
 			<?php echo esc_html( strtoupper( $overview->enrollmentType ) ); ?>
 		</div>
 
@@ -190,7 +192,7 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 			</div>
 		<?php endif; ?>
 
-		<div class="mint-overline" style="margin-bottom:14px"><?php esc_html_e( 'THIS COURSE INCLUDES', 'mint-lms' ); ?></div>
+		<div class="mint-t-over" style="margin-bottom:14px"><?php esc_html_e( 'THIS COURSE INCLUDES', 'mint-lms' ); ?></div>
 		<ul class="mint-feature-list">
 			<li class="mint-feature-list__item">
 				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>

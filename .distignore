@@ -1,12 +1,13 @@
 # Development and CI
 /.git
+/.gitignore
 /.github
 /.githooks
-/.cursorrules
+/.gitignore
+/.distignore
 /.phpunit.cache
 /phpcs.xml
 /phpstan.neon
-/phpunit.xml.dist
 /composer.json
 /composer.lock
 /package.json
@@ -14,6 +15,7 @@
 /tailwind.config.js
 /postcss.config.js
 /scripts
+/dev
 
 # Design handoff (not shipped)
 /Mint LMS Designs

@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Infrastructure\Admin\ViewRenderer;
 use MintLMS\Infrastructure\Setup\PageSettings;
 
@@ -16,7 +18,7 @@ $playerId    = $pageSettings->getPlayerPageId();
 $certTemplate = (string) get_option( 'mintlms_certificate_template', '' );
 $doneCount   = count( array_filter( $checklist, static fn( array $item ): bool => $item['done'] ) );
 $totalCount  = count( $checklist );
-$pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintlms_pages']; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+$pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === sanitize_text_field( wp_unslash( (string) $_GET['mintlms_pages'] ) ); // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 ?>
 <div class="mint-settings-shell">
 	<?php if ( $pagesCreated ) : ?>
@@ -62,6 +64,11 @@ $pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintl
 		</ul>
 	</div>
 
+	<form id="mintlms-create-pages-form" method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" hidden>
+		<?php wp_nonce_field( 'mintlms_create_pages' ); ?>
+		<input type="hidden" name="action" value="mintlms_create_pages" />
+	</form>
+
 	<form method="post" action="options.php" class="mint-settings-form">
 		<?php settings_fields( 'mintlms_settings' ); ?>
 
@@ -75,10 +82,10 @@ $pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintl
 					<?php
 					wp_dropdown_pages(
 						array(
-							'name'              => PageSettings::OPTION_DASHBOARD,
+							'name'              => esc_attr( PageSettings::OPTION_DASHBOARD ),
 							'id'                => 'mintlms_page_dashboard',
-							'selected'          => $dashboardId,
-							'show_option_none'  => __( '— Select —', 'mint-lms' ),
+							'selected'          => absint( $dashboardId ),
+							'show_option_none'  => esc_html__( '— Select —', 'mint-lms' ),
 							'option_none_value' => '0',
 							'class'             => 'mint-field__select',
 						)
@@ -92,10 +99,10 @@ $pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintl
 					<?php
 					wp_dropdown_pages(
 						array(
-							'name'              => PageSettings::OPTION_CATALOG,
+							'name'              => esc_attr( PageSettings::OPTION_CATALOG ),
 							'id'                => 'mintlms_page_catalog',
-							'selected'          => $catalogId,
-							'show_option_none'  => __( '— Select —', 'mint-lms' ),
+							'selected'          => absint( $catalogId ),
+							'show_option_none'  => esc_html__( '— Select —', 'mint-lms' ),
 							'option_none_value' => '0',
 							'class'             => 'mint-field__select',
 						)
@@ -109,10 +116,10 @@ $pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintl
 					<?php
 					wp_dropdown_pages(
 						array(
-							'name'              => PageSettings::OPTION_PLAYER,
+							'name'              => esc_attr( PageSettings::OPTION_PLAYER ),
 							'id'                => 'mintlms_page_player',
-							'selected'          => $playerId,
-							'show_option_none'  => __( '— Select —', 'mint-lms' ),
+							'selected'          => absint( $playerId ),
+							'show_option_none'  => esc_html__( '— Select —', 'mint-lms' ),
 							'option_none_value' => '0',
 							'class'             => 'mint-field__select',
 						)
@@ -121,12 +128,8 @@ $pagesCreated = isset( $_GET['mintlms_pages'] ) && '1' === (string) $_GET['mintl
 					<p class="mint-field__help"><?php esc_html_e( 'Uses [mint_lms_player] — lesson viewer for enrolled students.', 'mint-lms' ); ?></p>
 				</div>
 			</div>
-			<p class="mint-field__help" style="margin-top:16px">
-				<form method="post" action="<?php echo esc_url( admin_url( 'admin-post.php' ) ); ?>" style="display:inline">
-					<?php wp_nonce_field( 'mintlms_create_pages' ); ?>
-					<input type="hidden" name="action" value="mintlms_create_pages" />
-					<button type="submit" class="button button-secondary"><?php esc_html_e( 'Create or repair student pages', 'mint-lms' ); ?></button>
-				</form>
+			<p class="mint-field__help mint-settings-inline-action">
+				<button type="submit" form="mintlms-create-pages-form" class="button button-secondary"><?php esc_html_e( 'Create or repair student pages', 'mint-lms' ); ?></button>
 			</p>
 		</div>
 

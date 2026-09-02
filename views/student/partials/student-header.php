@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 defined( 'ABSPATH' ) || exit;
+
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 $pageTitle    = $pageTitle ?? '';
 $user         = wp_get_current_user();
 $userName     = $userName ?? ($user->display_name ?: '');

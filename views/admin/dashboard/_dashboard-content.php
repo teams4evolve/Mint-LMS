@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Admin\Dto\CreatorDashboardDto;
 use MintLMS\Application\Admin\Dto\DashboardCourseRowDto;
 
@@ -52,7 +54,7 @@ $metrics     = $dashboard->metrics;
 		<?php
 		$metricCells = array(
 			array(
-				'label' => __( 'STUDENTS', 'mint-lms' ),
+				'label' => __( 'Students', 'mint-lms' ),
 				'value' => (string) $metrics->studentsTotal,
 				'delta' => $metrics->studentsDelta > 0 ? sprintf( '+%d this week', $metrics->studentsDelta ) : '',
 				'sub'   => sprintf(
@@ -62,13 +64,13 @@ $metrics     = $dashboard->metrics;
 				),
 			),
 			array(
-				'label' => __( 'FINISHED', 'mint-lms' ),
+				'label' => __( 'Finished', 'mint-lms' ),
 				'value' => null !== $metrics->finishedPct ? round( $metrics->finishedPct ) . '%' : '—',
 				'delta' => $metrics->finishedDelta > 0 ? sprintf( '+%d pts', $metrics->finishedDelta ) : '',
 				'sub'   => __( 'of students who started', 'mint-lms' ),
 			),
 			array(
-				'label' => __( 'PUBLISHED', 'mint-lms' ),
+				'label' => __( 'Published', 'mint-lms' ),
 				'value' => (string) $metrics->publishedCount,
 				'delta' => $metrics->draftCount > 0 ? sprintf( '%d drafts', $metrics->draftCount ) : '',
 				'sub'   => sprintf(
@@ -78,7 +80,7 @@ $metrics     = $dashboard->metrics;
 				),
 			),
 			array(
-				'label' => __( 'LESSONS DONE', 'mint-lms' ),
+				'label' => __( 'Lessons done', 'mint-lms' ),
 				'value' => (string) $metrics->lessonsDone7d,
 				'delta' => __( 'last 7 days', 'mint-lms' ),
 				'sub'   => __( 'across all students', 'mint-lms' ),
@@ -88,7 +90,7 @@ $metrics     = $dashboard->metrics;
 		foreach ( $metricCells as $cell ) :
 		?>
 			<div class="mint-metric-cell">
-				<div class="mint-overline"><?php echo esc_html( $cell['label'] ); ?></div>
+				<div class="mint-metric-label"><?php echo esc_html( $cell['label'] ); ?></div>
 				<div class="mint-stat-row">
 					<div class="mint-t-stat"><?php echo esc_html( $cell['value'] ); ?></div>
 					<?php if ( '' !== $cell['delta'] ) : ?>
@@ -103,7 +105,7 @@ $metrics     = $dashboard->metrics;
 	<?php if ( null !== $dashboard->needsYou ) : ?>
 	<div class="mint-needs-you">
 		<div class="mint-needs-you__main">
-			<div class="mint-overline"><?php esc_html_e( 'NEEDS YOU', 'mint-lms' ); ?></div>
+			<div class="mint-section-label mint-section-label--accent"><?php esc_html_e( 'Needs you', 'mint-lms' ); ?></div>
 			<div style="min-width:0">
 				<div class="mint-t-h3"><?php echo esc_html( $dashboard->needsYou->title ); ?></div>
 				<div class="mint-t-sm mint-needs-you__meta"><?php echo esc_html( $dashboard->needsYou->blocker . ' · draft · edited ' . $dashboard->needsYou->editedLabel ); ?></div>
@@ -115,7 +117,7 @@ $metrics     = $dashboard->metrics;
 
 	<div class="mint-courses-section">
 		<div class="mint-section-header">
-			<div class="mint-overline"><?php esc_html_e( 'COURSES', 'mint-lms' ); ?></div>
+			<div class="mint-section-label"><?php esc_html_e( 'Courses', 'mint-lms' ); ?></div>
 			<div class="mint-section-header__actions">
 				<button type="button" @click="toggleDetails()" class="mint-toggle-details-btn" :class="{ 'is-active': showDetails }">
 					<svg class="mint-toggle-details-btn__chevron" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
@@ -168,7 +170,7 @@ $metrics     = $dashboard->metrics;
 
 	<?php if ( array() !== $dashboard->activity ) : ?>
 	<div x-show="showDetails" x-cloak class="mint-activity-section">
-		<div class="mint-overline"><?php esc_html_e( 'RECENT ACTIVITY', 'mint-lms' ); ?></div>
+		<div class="mint-section-label"><?php esc_html_e( 'Recent activity', 'mint-lms' ); ?></div>
 		<?php foreach ( $dashboard->activity as $item ) : ?>
 		<div class="mint-activity-row">
 			<div class="mint-avatar mint-avatar--sm" style="background:<?php echo esc_attr( $item->avatarBg ); ?>;color:<?php echo esc_attr( $item->avatarInk ); ?>"><?php echo esc_html( $item->initials ); ?></div>

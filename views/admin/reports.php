@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Infrastructure\Admin\ViewRenderer;
 use MintLMS\Infrastructure\Database\Repository\WpdbAdminDashboardRepository;
-use MintLMS\Infrastructure\Ui\MintUi;
 use MintLMS\Plugin;
 
 global $wpdb;

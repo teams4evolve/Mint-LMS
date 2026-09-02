@@ -69,7 +69,6 @@
 }
 
 #mint-lms-root img,
-#mint-lms-root svg,
 #mint-lms-root video,
 #mint-lms-root canvas {
   display: block;
@@ -80,6 +79,8 @@
 
 #mint-lms-root svg {
   overflow: hidden;
+  flex-shrink: 0;
+  vertical-align: middle;
 }
 
 #mint-lms-root h1,

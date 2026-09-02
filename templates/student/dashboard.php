@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 use MintLMS\Application\Student\Dto\StudentCourseItemDto;
 use MintLMS\Infrastructure\Ui\MintUi;
 
@@ -30,8 +32,8 @@ if ( null === $continueCourse && array() !== $courses ) {
 	}
 }
 
-$totalLessons   = 8;
-$doneLessons    = $continueCourse ? (int) round( $continueCourse->progressPct / 100 * $totalLessons ) : 0;
+$totalLessons = $continueCourse ? max( 1, $continueCourse->totalLessons ) : 0;
+$doneLessons  = $continueCourse ? min( $continueCourse->completedLessons, $totalLessons ) : 0;
 
 $pageTitle = __( 'My learning', 'mint-lms' );
 include MINTLMS_PATH . 'views/student/partials/student-header.php';
@@ -65,7 +67,7 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 		$pct = (int) round( $continueCourse->progressPct );
 	?>
 		<div class="mint-continue-banner">
-			<div class="mint-overline mint-continue-banner__overline"><?php esc_html_e( 'CONTINUE WHERE YOU LEFT OFF', 'mint-lms' ); ?></div>
+			<div class="mint-t-over mint-continue-banner__overline"><?php esc_html_e( 'CONTINUE WHERE YOU LEFT OFF', 'mint-lms' ); ?></div>
 			<div class="mint-continue-banner__title"><?php echo esc_html( $continueCourse->title ); ?></div>
 			<div class="mint-continue-banner__meta">
 				<?php
@@ -91,7 +93,7 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 			<p class="mint-student-lead"><?php esc_html_e( 'No courses in progress. Enroll in a course to start learning.', 'mint-lms' ); ?></p>
 		</div>
 	<?php else : ?>
-		<div class="mint-overline mint-overline--spaced"><?php esc_html_e( 'YOUR COURSES', 'mint-lms' ); ?></div>
+		<div class="mint-t-over mint-t-over--spaced"><?php esc_html_e( 'YOUR COURSES', 'mint-lms' ); ?></div>
 		<div class="mint-student-grid">
 			<?php foreach ( $courses as $idx => $course ) :
 				$hue     = MintUi::hueByIndex( $idx );

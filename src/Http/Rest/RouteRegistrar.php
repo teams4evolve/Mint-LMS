@@ -13,6 +13,7 @@ use MintLMS\Http\Rest\Controller\ProgressController;
 use MintLMS\Http\Rest\Controller\QuizController;
 use MintLMS\Http\Rest\Controller\SectionController;
 use MintLMS\Http\Rest\Controller\UserController;
+use MintLMS\Http\Rest\Response\ApiResponse;
 use MintLMS\Infrastructure\Ui\MintUi;
 
 final class RouteRegistrar {
@@ -65,11 +66,11 @@ final class RouteRegistrar {
 		$allowed = array( 'mint_lms_show_details' );
 
 		if ( ! in_array( $key, $allowed, true ) ) {
-			return new \WP_REST_Response( array( 'error' => array( 'message' => 'Invalid key' ) ), 400 );
+			return ApiResponse::error( 'validation_error', 'Invalid key', 400 );
 		}
 
 		MintUi::setShowDetailsPreference( $userId, '1' === $value );
 
-		return new \WP_REST_Response( array( 'data' => array( 'ok' => true ) ) );
+		return ApiResponse::success( array( 'ok' => true ) );
 	}
 }

@@ -34,13 +34,13 @@
         "sort-packages": true
     },
     "scripts": {
-        "arch": "phpunit --testsuite architecture",
-        "test:unit": "phpunit --testsuite unit",
-        "test:integ": "phpunit --testsuite integration",
+        "arch": "phpunit -c phpunit.xml.dist --testsuite architecture",
+        "test:unit": "phpunit -c phpunit.xml.dist --testsuite unit",
+        "test:integ": "phpunit -c phpunit.xml.dist --testsuite integration",
         "stan": "phpstan analyse --memory-limit=512M",
         "sniff": "phpcs",
         "fix": "phpcbf",
-        "plugin-check": "bash scripts/plugin-check.sh",
+        "plugin-check": "bash dev/plugin-check.sh",
         "check": [
             "@arch",
             "@stan",

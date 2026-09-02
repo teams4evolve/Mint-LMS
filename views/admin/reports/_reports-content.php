@@ -3,6 +3,10 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
+use MintLMS\Infrastructure\Ui\MintUi;
+
 /** @var array<string, mixed> $summary */
 
 $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : array();
@@ -19,22 +23,22 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 		<?php
 		$metrics = array(
 			array(
-				'label' => __( 'COURSES', 'mint-lms' ),
+				'label' => __( 'Courses', 'mint-lms' ),
 				'value' => (string) absint( $summary['total_courses'] ?? 0 ),
 				'sub'   => __( 'total courses', 'mint-lms' ),
 			),
 			array(
-				'label' => __( 'STUDENTS', 'mint-lms' ),
+				'label' => __( 'Students', 'mint-lms' ),
 				'value' => (string) absint( $summary['total_students'] ?? 0 ),
 				'sub'   => __( 'active enrollments', 'mint-lms' ),
 			),
 			array(
-				'label' => __( 'ENROLLMENTS', 'mint-lms' ),
+				'label' => __( 'Enrollments', 'mint-lms' ),
 				'value' => (string) absint( $summary['total_enrollments'] ?? 0 ),
 				'sub'   => __( 'all time', 'mint-lms' ),
 			),
 			array(
-				'label' => __( 'COMPLETIONS', 'mint-lms' ),
+				'label' => __( 'Completions', 'mint-lms' ),
 				'value' => (string) absint( $summary['total_completions'] ?? 0 ),
 				'sub'   => __( 'courses finished', 'mint-lms' ),
 			),
@@ -43,7 +47,7 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 		foreach ( $metrics as $cell ) :
 			?>
 			<div class="mint-metric-cell">
-				<div class="mint-overline"><?php echo esc_html( $cell['label'] ); ?></div>
+				<div class="mint-metric-label"><?php echo esc_html( $cell['label'] ); ?></div>
 				<div class="mint-t-stat"><?php echo esc_html( $cell['value'] ); ?></div>
 				<div class="mint-t-xs mint-text-muted"><?php echo esc_html( $cell['sub'] ); ?></div>
 			</div>
@@ -51,14 +55,14 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 	</div>
 
 	<div style="margin-top:32px">
-		<div class="mint-overline"><?php esc_html_e( 'LESSONS COMPLETED', 'mint-lms' ); ?></div>
+		<div class="mint-section-label"><?php esc_html_e( 'Lessons completed', 'mint-lms' ); ?></div>
 		<div class="mint-t-stat" style="margin-top:8px"><?php echo esc_html( (string) absint( $summary['lessons_completed'] ?? 0 ) ); ?></div>
 		<p class="mint-t-sm mint-text-muted" style="margin-top:4px"><?php esc_html_e( 'Individual lesson completions recorded across all courses.', 'mint-lms' ); ?></p>
 	</div>
 
 	<?php if ( array() !== $activity ) : ?>
 	<div class="mint-activity-section" style="margin-top:40px">
-		<div class="mint-overline"><?php esc_html_e( 'RECENT ACTIVITY', 'mint-lms' ); ?></div>
+		<div class="mint-section-label"><?php esc_html_e( 'Recent activity', 'mint-lms' ); ?></div>
 		<?php
 		$index = 0;
 		foreach ( $activity as $row ) :

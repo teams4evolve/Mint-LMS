@@ -86,8 +86,10 @@ jobs:
           wp config create --path=/tmp/wp --dbname=wp_test --dbuser=root --dbpass=root --dbhost=127.0.0.1
           wp core install --path=/tmp/wp --url=http://example.com --title=Test --admin_user=admin --admin_password=password --admin_email=admin@example.com --skip-email
           wp plugin install plugin-check --activate --path=/tmp/wp
+          ln -sf "$GITHUB_WORKSPACE" /tmp/wp/wp-content/plugins/mint-lms
+          wp plugin activate mint-lms --path=/tmp/wp
 
       - name: Run Plugin Check on release tree
         env:
           WP_PATH: /tmp/wp
-        run: bash scripts/plugin-check.sh
+        run: bash dev/plugin-check.sh

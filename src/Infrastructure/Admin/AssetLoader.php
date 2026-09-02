@@ -86,11 +86,21 @@ final class AssetLoader {
 			return;
 		}
 
+		$isBuilder = str_contains( (string) $screen->id, 'mint-lms-builder' );
+
 		echo '<style>
 			.mint-lms-admin-wrap{margin:0;padding:0}
 			.mint-lms-admin-wrap>.notice{display:none}
 			#wpbody-content{padding-bottom:0}
-		</style>';
+		';
+
+		if ( $isBuilder ) {
+			echo '
+			body.admin_page_mint-lms-builder #wpcontent{padding-bottom:0}
+			';
+		}
+
+		echo '</style>';
 	}
 
 	private function enqueueStyles( string $handle ): void {
@@ -103,7 +113,7 @@ final class AssetLoader {
 
 		wp_add_inline_style(
 			$handle,
-			'#mint-lms-root.mint-lms-ui,#mint-lms-root.mint-lms-student{isolation:isolate;position:relative;z-index:0}'
+			'#mint-lms-root.mint-lms-ui,#mint-lms-root.mint-lms-student{isolation:isolate}'
 		);
 	}
 

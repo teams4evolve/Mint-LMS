@@ -2,7 +2,7 @@
 /**
  * Smoke tests for Mint LMS v1 — run after seeding demo data.
  *
- * Usage: wp eval-file wp-content/plugins/mint-lms/scripts/smoke-v1.php
+ * Usage: wp eval-file wp-content/plugins/mint-lms-dev/scripts/smoke-v1.php
  *
  * @package MintLMS
  */
@@ -17,17 +17,15 @@ MintLMS\Plugin::boot();
 
 global $wpdb;
 
-$failures = 0;
+$GLOBALS['failures'] = 0;
 
 function mintlms_smoke_assert( bool $condition, string $label ): void {
-	global $failures;
-
 	if ( $condition ) {
 		WP_CLI::log( 'PASS: ' . $label );
 		return;
 	}
 
-	++$failures;
+	++$GLOBALS['failures'];
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
@@ -53,7 +51,8 @@ $lessonRepo     = new MintLMS\Infrastructure\Database\Repository\WpdbLessonRepos
 $clock          = new MintLMS\Infrastructure\Clock\SystemClock();
 $auth           = MintLMS\Plugin::authorization();
 $lessonAccess   = new MintLMS\Application\Lesson\LessonAccessService( $lessonRepo, $enrollmentRepo, $progressRepo, $clock );
-$quizService    = new MintLMS\Application\Quiz\QuizService( $quizRepo, $lessonRepo, $courseRepo, $auth, $clock, $progressRepo, $lessonAccess );
+$userLookup     = new MintLMS\Infrastructure\User\WpUserLookup();
+$quizService    = new MintLMS\Application\Quiz\QuizService( $quizRepo, $lessonRepo, $courseRepo, $auth, $clock, $progressRepo, $userLookup, $lessonAccess );
 $studentService = new MintLMS\Application\Student\StudentExperienceService(
 	$courseRepo,
 	$sectionRepo,
@@ -96,6 +95,22 @@ if ( null !== $quizLessonId ) {
 }
 
 if ( null !== $dripLessonId ) {
+	$enrollment = $enrollmentRepo->findByUserAndCourse( $studentId, $course->id );
+
+	if ( null !== $enrollment ) {
+		$enrollmentRepo->save(
+			new MintLMS\Domain\Enrollment\Enrollment(
+				$enrollment->id,
+				$studentId,
+				$course->id,
+				$enrollment->status,
+				$clock->now(),
+				$enrollment->expiresAt,
+				$enrollment->completedAt,
+			)
+		);
+	}
+
 	$dripBlocked = false;
 
 	try {
@@ -126,8 +141,8 @@ mintlms_smoke_assert( $dashboardId > 0, 'Dashboard page configured' );
 mintlms_smoke_assert( $catalogId > 0, 'Catalog page configured' );
 mintlms_smoke_assert( $playerId > 0, 'Player page configured' );
 
-if ( $failures > 0 ) {
-	WP_CLI::error( $failures . ' smoke test(s) failed.' );
+if ( ( $GLOBALS['failures'] ?? 0 ) > 0 ) {
+	WP_CLI::error( (string) $GLOBALS['failures'] . ' smoke test(s) failed.' );
 }
 
 WP_CLI::success( 'All Mint LMS v1 smoke tests passed.' );

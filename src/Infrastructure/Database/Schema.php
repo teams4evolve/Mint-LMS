@@ -42,6 +42,17 @@ final class Schema {
 	}
 
 	/**
+	 * Validate a table name against the plugin schema whitelist.
+	 */
+	public static function validateTable( string $table, string $prefix ): string {
+		if ( ! in_array( $table, self::allTables( $prefix ), true ) ) {
+			throw new \InvalidArgumentException( 'Invalid Mint LMS table name.' );
+		}
+
+		return $table;
+	}
+
+	/**
 	 * @return list<string>
 	 */
 	public static function allTables( string $prefix ): array {

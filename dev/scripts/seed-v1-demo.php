@@ -2,7 +2,7 @@
 /**
  * Seeds Mint LMS v1 demo course data for manual and automated verification.
  *
- * Usage: wp eval-file wp-content/plugins/mint-lms/scripts/seed-v1-demo.php
+ * Usage: wp eval-file wp-content/plugins/mint-lms-dev/scripts/seed-v1-demo.php
  *
  * @package MintLMS
  */

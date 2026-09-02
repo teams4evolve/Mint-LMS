@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 $message = $message ?? __( 'You need to sign in before you can access this course content.', 'mint-lms' );
 ?>
 <div class="mint-edge-screen">

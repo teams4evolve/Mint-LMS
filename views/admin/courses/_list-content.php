@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 defined( 'ABSPATH' ) || exit;
 
+// phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
+
 /** @var MintLMS\Infrastructure\Admin\ViewRenderer $renderer */
 
 $hue_map = array(
@@ -72,20 +74,21 @@ $hue_map = array(
 	<!-- Error state -->
 	<div x-show="error && !loading" x-cloak class="mint-list-block">
 		<?php
+		$mintlms_retry_button = $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
+			'button',
+			array(
+				'variant' => 'secondary',
+				'label'   => esc_html__( 'Try again', 'mint-lms' ),
+				'type'    => 'button',
+				'attrs'   => '@click="loadCourses(page)"',
+			)
+		);
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'error-state',
 			array(
-				'title'        => __( 'Could not load courses', 'mint-lms' ),
+				'title'        => esc_html__( 'Could not load courses', 'mint-lms' ),
 				'messageAttrs' => 'x-text="error"',
-				'retry'        => $renderer->component(
-					'button',
-					array(
-						'variant' => 'secondary',
-						'label'   => __( 'Try again', 'mint-lms' ),
-						'type'    => 'button',
-						'attrs'   => '@click="loadCourses(page)"',
-					)
-				),
+				'retry'        => $mintlms_retry_button, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer component HTML.
 			)
 		);
 		?>
