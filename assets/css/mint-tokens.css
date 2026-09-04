@@ -97,24 +97,3 @@
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
-
-/* Type scale — dramatic jump from display to body, nothing below 14px.
-   px / line-height / tracking / weight */
-#mint-lms-root .mint-t-display { font-size: 60px; line-height: 62px; letter-spacing: -.045em; font-weight: 600; }
-#mint-lms-root .mint-t-h1      { font-size: 38px; line-height: 44px; letter-spacing: -.035em; font-weight: 600; }
-#mint-lms-root .mint-t-stat    { font-size: 36px; line-height: 38px; letter-spacing: -.04em;  font-weight: 600; font-variant-numeric: tabular-nums; }
-#mint-lms-root .mint-t-h2      { font-size: 26px; line-height: 32px; letter-spacing: -.025em; font-weight: 600; }
-#mint-lms-root .mint-t-h3      { font-size: 18px; line-height: 26px; letter-spacing: -.015em; font-weight: 600; }
-#mint-lms-root .mint-t-row     { font-size: 17px; line-height: 24px; letter-spacing: -.01em;  font-weight: 500; }
-#mint-lms-root .mint-t-body    { font-size: 18px; line-height: 28px; }   /* intro / lead copy */
-#mint-lms-root .mint-t-prose   { font-size: 17px; line-height: 30px; }   /* lesson content */
-#mint-lms-root .mint-t-base    { font-size: 16px; line-height: 24px; }
-#mint-lms-root .mint-t-sm      { font-size: 15px; line-height: 22px; }
-#mint-lms-root .mint-t-xs      { font-size: 14px; line-height: 20px; }   /* floor */
-#mint-lms-root .mint-t-over    { font-size: 12px; line-height: 16px; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; }
-
-/* Numbers in any column or metric */
-#mint-lms-root .mint-nums { font-variant-numeric: tabular-nums; }
-
-/* Spacing: 8px grid — 4 · 8 · 12 · 16 · 24 · 32 · 40 · 48 · 64 · 80 · 96
-   4px only for icon↔label gaps. */

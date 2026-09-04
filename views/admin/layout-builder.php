@@ -5,9 +5,8 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 $content = $content ?? '';
 ?>
-<div class="wrap mint-lms-admin-wrap mint-lms-builder-page">
+<div class="wrap mint-lms-admin-wrap mint-m-0 mint-p-0 mint-overflow-hidden">
 	<?php echo MintLMS\Infrastructure\Ui\UiRoot::open( 'admin' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 	<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
-	<?php // Toast component rendered inside builder content ?>
 	<?php echo MintLMS\Infrastructure\Ui\UiRoot::close(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>

@@ -23,6 +23,15 @@ $error         = '';
 $totalStudents = 0;
 $totalFinished = 0;
 
+$hue_tile_classes = array(
+	1 => 'mint-bg-hue-1 mint-text-hue-1i',
+	2 => 'mint-bg-hue-2 mint-text-hue-2i',
+	3 => 'mint-bg-hue-3 mint-text-hue-3i',
+	4 => 'mint-bg-hue-4 mint-text-hue-4i',
+	5 => 'mint-bg-hue-5 mint-text-hue-5i',
+	6 => 'mint-bg-hue-6 mint-text-hue-6i',
+);
+
 if ( $courseId <= 0 ) {
 	$error = '';
 } else {
@@ -78,12 +87,12 @@ if ( $courseId <= 0 ) {
 }
 
 $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
+$inputClass      = 'mint-block mint-w-full mint-rounded-lg mint-border-[1.5px] mint-border-[#B9B6CE] mint-bg-bg mint-px-[14px] mint-py-[11px] mint-text-base mint-text-ink focus:mint-border-accent focus:mint-shadow-focus focus:mint-outline-none';
 ?>
 
 <?php if ( $courseId <= 0 ) : ?>
-<!-- ── No course selected — show course picker ──────────── -->
 <div
-	style="max-width:560px;margin:0 auto;padding:48px var(--mint-page-pad) 96px"
+	class="mint-mx-auto mint-max-w-[560px] mint-px-7 mint-pb-24 mint-pt-12"
 	x-data="{
 		courses: [],
 		loading: true,
@@ -103,51 +112,54 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 		.catch(() => { loading = false; })
 	"
 >
-	<h1 style="font-size:48px;line-height:52px;font-weight:600;letter-spacing:-.04em;color:var(--mint-ink);margin:0 0 8px">
+	<h1 class="mint-m-0 mint-mb-2 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink">
 		<?php echo esc_html__( 'Students', 'mint-lms' ); ?>
 	</h1>
-	<p style="font-size:19px;line-height:28px;color:var(--mint-ink-2);margin:0 0 32px">
+	<p class="mint-m-0 mint-mb-8 mint-text-[19px] mint-leading-7 mint-text-ink-2">
 		<?php echo esc_html__( 'Pick a course to view its students.', 'mint-lms' ); ?>
 	</p>
 
-	<!-- Search -->
 	<input
 		type="text"
-		class="mint-input"
-		style="max-width:380px;margin-bottom:20px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px"
+		class="<?php echo esc_attr( $inputClass ); ?> mint-mb-5 mint-max-w-[380px]"
 		placeholder="<?php echo esc_attr__( 'Search courses…', 'mint-lms' ); ?>"
 		x-model="search"
 	/>
 
-	<div x-show="loading" style="padding:24px 0;color:var(--mint-ink-3);font-size:15px">
+	<div x-show="loading" class="mint-py-6 mint-text-sm mint-text-ink-3">
 		<?php echo esc_html__( 'Loading courses…', 'mint-lms' ); ?>
 	</div>
 
-	<div x-show="!loading && filtered.length === 0" x-cloak style="padding:24px 0;color:var(--mint-ink-3);font-size:15px">
+	<div x-show="!loading && filtered.length === 0" x-cloak class="mint-py-6 mint-text-sm mint-text-ink-3">
 		<?php echo esc_html__( 'No courses found.', 'mint-lms' ); ?>
 	</div>
 
-	<div x-show="!loading" x-cloak style="display:flex;flex-direction:column;gap:4px">
+	<div x-show="!loading" x-cloak class="mint-flex mint-flex-col mint-gap-1">
 		<template x-for="course in filtered" :key="course.id">
 			<a
 				:href="'<?php echo esc_url( $studentsPageUrl ); ?>&course_id=' + course.id"
-				class="mint-row"
-				style="display:flex;align-items:center;gap:14px;padding:12px 14px;text-decoration:none;color:var(--mint-ink)"
+				class="mint-flex mint-items-center mint-gap-[14px] mint-rounded-md mint-px-[14px] mint-py-3 mint-text-ink mint-no-underline hover:mint-bg-bg-subtle"
 			>
 				<span
-					class="mint-tile mint-tile--sm"
-					:style="'background:var(--mint-hue-' + ((course.id % 6) + 1) + '-bg);color:var(--mint-hue-' + ((course.id % 6) + 1) + '-ink)'"
+					class="mint-flex mint-h-11 mint-w-11 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-xl mint-text-lg mint-font-bold"
+					:class="{
+						'mint-bg-hue-1 mint-text-hue-1i': (course.id % 6) === 1,
+						'mint-bg-hue-2 mint-text-hue-2i': (course.id % 6) === 2,
+						'mint-bg-hue-3 mint-text-hue-3i': (course.id % 6) === 3,
+						'mint-bg-hue-4 mint-text-hue-4i': (course.id % 6) === 4,
+						'mint-bg-hue-5 mint-text-hue-5i': (course.id % 6) === 5,
+						'mint-bg-hue-6 mint-text-hue-6i': (course.id % 6) === 0
+					}"
 					x-text="course.title ? course.title.charAt(0).toUpperCase() : '?'"
 				></span>
-				<span style="font-size:16px;font-weight:600;letter-spacing:-.01em" x-text="course.title"></span>
+				<span class="mint-text-base mint-font-semibold mint-tracking-tight" x-text="course.title"></span>
 			</a>
 		</template>
 	</div>
 </div>
 
 <?php elseif ( '' !== $error ) : ?>
-<!-- ── Error state ──────────────────────────────────────── -->
-<div style="padding:48px var(--mint-page-pad)">
+<div class="mint-px-7 mint-py-12">
 	<?php
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'error-state',
@@ -160,29 +172,25 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 </div>
 
 <?php else : ?>
-<!-- ── Students list ────────────────────────────────────── -->
-<div style="max-width:var(--mint-content-max);margin:0 auto;padding:48px var(--mint-page-pad) 96px">
+<div class="mint-mx-auto mint-max-w-content mint-px-7 mint-pb-24 mint-pt-12">
 
-	<!-- Title -->
-	<h1 style="font-size:48px;line-height:52px;font-weight:600;letter-spacing:-.04em;color:var(--mint-ink);margin:0 0 6px">
+	<h1 class="mint-m-0 mint-mb-[6px] mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink">
 		<?php echo esc_html__( 'Students', 'mint-lms' ); ?>
 	</h1>
 
-	<!-- Subtitle -->
-	<p style="font-size:19px;line-height:28px;color:var(--mint-ink-2);margin:0 0 32px">
+	<p class="mint-m-0 mint-mb-8 mint-text-[19px] mint-leading-7 mint-text-ink-2">
 		<?php
 		printf(
 			/* translators: 1: total count, 2: finished count */
 			esc_html__( '%1$s students in this course · %2$s have finished', 'mint-lms' ),
-			'<span style="font-variant-numeric:tabular-nums">' . esc_html( (string) $totalStudents ) . '</span>',
-			'<span style="font-variant-numeric:tabular-nums">' . esc_html( (string) $totalFinished ) . '</span>'
+			'<span class="mint-tabular-nums">' . esc_html( (string) $totalStudents ) . '</span>',
+			'<span class="mint-tabular-nums">' . esc_html( (string) $totalFinished ) . '</span>'
 		);
 		?>
 	</p>
 
-	<!-- Course picker -->
 	<div
-		style="display:flex;align-items:center;gap:12px;margin-bottom:28px;flex-wrap:wrap"
+		class="mint-mb-7 mint-flex mint-flex-wrap mint-items-center mint-gap-3"
 		x-data="{ courses: [], loading: true }"
 		x-init="
 			fetch(mintLmsAdmin.restBase + '/courses?per_page=100', {
@@ -193,10 +201,9 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 			.catch(() => { loading = false; })
 		"
 	>
-		<div style="position:relative;min-width:290px">
+		<div class="mint-relative mint-min-w-[290px]">
 			<select
-				class="mint-select"
-				style="height:44px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px;padding-right:40px"
+				class="<?php echo esc_attr( $inputClass ); ?> mint-h-control-lg mint-pr-10"
 				onchange="if(this.value) window.location='<?php echo esc_url( $studentsPageUrl ); ?>&course_id='+this.value"
 			>
 				<option value="" disabled><?php esc_html_e( 'Select a course…', 'mint-lms' ); ?></option>
@@ -207,27 +214,25 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 		</div>
 	</div>
 
-	<!-- Add student panel -->
 	<div
-		style="background:var(--mint-tint);border:1px solid var(--mint-tint-line);border-radius:14px;padding:22px;display:flex;align-items:flex-end;gap:12px;margin-bottom:32px;flex-wrap:wrap"
+		class="mint-mb-8 mint-flex mint-flex-wrap mint-items-end mint-gap-3 mint-rounded-[14px] mint-border mint-border-tint-line mint-bg-tint mint-p-[22px]"
 		x-data="{ enrollEmail: '' }"
 	>
-		<div style="flex:1;min-width:200px">
-			<label for="mint-enroll-email" class="mint-label mint-label--sm">
+		<div class="mint-min-w-[200px] mint-flex-1">
+			<label for="mint-enroll-email" class="mint-mb-2 mint-block mint-text-sm mint-font-medium mint-text-ink">
 				<?php echo esc_html__( 'Add a student', 'mint-lms' ); ?>
 			</label>
 			<input
 				id="mint-enroll-email"
 				type="text"
-				class="mint-input"
-				style="border-width:1.5px;border-color:#B9B6CE;border-radius:8px;background:#FFFFFF"
+				class="<?php echo esc_attr( $inputClass ); ?> mint-bg-bg"
 				placeholder="<?php echo esc_attr__( 'Email or user ID', 'mint-lms' ); ?>"
 				x-model="enrollEmail"
 			/>
 		</div>
 		<button
 			type="button"
-			class="mint-btn mint-btn--primary"
+			class="mint-inline-flex mint-h-control-lg mint-items-center mint-justify-center mint-rounded-lg mint-bg-accent mint-px-[18px] mint-text-base mint-font-semibold mint-text-neutral-50 hover:mint-bg-accent-hover"
 			id="mint-enroll-student"
 			data-mint-course="<?php echo esc_attr( (string) $courseId ); ?>"
 		>
@@ -246,14 +251,9 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 		);
 		?>
 	<?php else : ?>
-		<!-- Table -->
-		<div style="width:100%">
+		<div class="mint-w-full">
 
-			<!-- Header row -->
-			<div
-				class="mint-table-header"
-				style="grid-template-columns:minmax(0,1fr) 132px 120px 84px 84px;border-radius:10px;font-size:15px;font-weight:600;color:var(--mint-ink-2)"
-			>
+			<div class="mint-grid mint-grid-cols-[minmax(0,1fr)_132px_120px_84px_84px] mint-items-center mint-rounded-lg mint-px-4 mint-py-[13px] mint-text-sm mint-font-semibold mint-text-ink-2">
 				<span><?php echo esc_html__( 'Student', 'mint-lms' ); ?></span>
 				<span><?php echo esc_html__( 'Where they are', 'mint-lms' ); ?></span>
 				<span><?php echo esc_html__( 'Progress', 'mint-lms' ); ?></span>
@@ -261,57 +261,50 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 				<span></span>
 			</div>
 
-			<!-- Data rows -->
-			<?php foreach ( $students as $s ) : ?>
+			<?php foreach ( $students as $s ) :
+				$hueClass = $hue_tile_classes[ (int) $s['hueIdx'] ];
+			?>
 			<div
-				style="display:grid;grid-template-columns:minmax(0,1fr) 132px 120px 84px 84px;align-items:center;padding:14px 16px;border-bottom:1px solid var(--mint-rule-soft)"
+				class="mint-grid mint-grid-cols-[minmax(0,1fr)_132px_120px_84px_84px] mint-items-center mint-border-b mint-border-rule-soft mint-px-4 mint-py-[14px]"
 				data-mint-student-row
 				data-mint-student-name="<?php echo esc_attr( wp_strip_all_tags( $s['name'] ) ); ?>"
 				data-mint-student-email="<?php echo esc_attr( wp_strip_all_tags( $s['email'] ) ); ?>"
 				data-mint-student-progress="<?php echo (int) $s['progressPct']; ?>%"
 				data-mint-student-joined="<?php echo esc_attr( wp_strip_all_tags( $s['enrolled'] ) ); ?>"
 			>
-				<!-- Student cell -->
-				<div style="display:flex;align-items:center;gap:12px;min-width:0">
-					<span
-						class="mint-avatar mint-avatar--md"
-						style="background:var(--mint-hue-<?php echo (int) $s['hueIdx']; ?>-bg);color:var(--mint-hue-<?php echo (int) $s['hueIdx']; ?>-ink)"
-					>
+				<div class="mint-flex mint-min-w-0 mint-items-center mint-gap-3">
+					<span class="mint-flex mint-h-10 mint-w-10 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-text-sm mint-font-bold <?php echo esc_attr( $hueClass ); ?>">
 						<?php echo esc_html( $s['initials'] ); ?>
 					</span>
-					<div style="min-width:0">
-						<span style="display:block;font-size:17px;font-weight:600;line-height:24px;color:var(--mint-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+					<div class="mint-min-w-0">
+						<span class="mint-block mint-truncate mint-text-row mint-font-semibold mint-text-ink">
 							<?php echo esc_html( $s['name'] ); ?>
 						</span>
-						<span style="display:block;font-size:15px;line-height:20px;color:var(--mint-ink-2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">
+						<span class="mint-block mint-truncate mint-text-sm mint-leading-5 mint-text-ink-2">
 							<?php echo esc_html( $s['email'] ); ?>
 						</span>
 					</div>
 				</div>
 
-				<!-- Where they are -->
-				<span style="font-size:15px;color:var(--mint-ink-2)">–</span>
+				<span class="mint-text-sm mint-text-ink-2">–</span>
 
-				<!-- Progress -->
-				<div style="display:flex;align-items:center;gap:8px">
-					<div class="mint-progress" style="flex:1;height:9px">
-						<div class="mint-progress__fill" style="width:<?php echo (int) $s['progressPct']; ?>%"></div>
+				<div class="mint-flex mint-items-center mint-gap-2">
+					<div class="mint-h-[9px] mint-flex-1 mint-overflow-hidden mint-rounded-full mint-bg-bg-track">
+						<div class="mint-h-full mint-rounded-full mint-bg-accent mint-w-[<?php echo (int) $s['progressPct']; ?>%]"></div>
 					</div>
-					<span class="mint-tabular" style="font-size:14px;font-weight:600;color:var(--mint-ink-2);min-width:30px;text-align:right">
+					<span class="mint-min-w-[30px] mint-tabular-nums mint-text-right mint-text-sm mint-font-semibold mint-text-ink-2">
 						<?php echo (int) $s['progressPct']; ?>%
 					</span>
 				</div>
 
-				<!-- Joined -->
-				<span class="mint-tabular" style="font-size:14px;color:var(--mint-ink-2)">
+				<span class="mint-tabular-nums mint-text-sm mint-text-ink-2">
 					<?php echo esc_html( $s['enrolled'] ); ?>
 				</span>
 
-				<!-- Remove action -->
-				<div style="text-align:right">
+				<div class="mint-text-right">
 					<button
 						type="button"
-						style="background:none;border:none;cursor:pointer;font-family:var(--mint-font);font-size:16px;font-weight:600;color:var(--mint-danger);padding:4px 0;outline:none"
+						class="mint-cursor-pointer mint-border-0 mint-bg-transparent mint-p-1 mint-text-base mint-font-semibold mint-text-danger hover:mint-text-danger-hover focus:mint-outline-none"
 						data-mint-unenroll="<?php echo esc_attr( (string) $s['enrollmentId'] ); ?>"
 						data-mint-course="<?php echo esc_attr( (string) $courseId ); ?>"
 					>
@@ -322,19 +315,17 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 			<?php endforeach; ?>
 		</div>
 
-		<!-- Pagination -->
 		<?php if ( $pagination['total'] > 1 ) : ?>
-		<div style="display:flex;align-items:center;justify-content:center;gap:8px;margin-top:28px">
+		<div class="mint-mt-7 mint-flex mint-items-center mint-justify-center mint-gap-2">
 			<?php for ( $p = 1; $p <= $pagination['total']; $p++ ) : ?>
 				<?php if ( $p === $pagination['current'] ) : ?>
-					<span class="mint-btn mint-btn--sm" style="background:var(--mint-accent);color:#FFF;pointer-events:none">
+					<span class="mint-inline-flex mint-h-control-md mint-w-control-md mint-items-center mint-justify-center mint-rounded-md mint-bg-accent mint-text-sm mint-font-semibold mint-text-neutral-50 mint-pointer-events-none">
 						<?php echo (int) $p; ?>
 					</span>
 				<?php else : ?>
 					<a
 						href="<?php echo esc_url( $pagination['base_url'] . '&paged=' . $p ); ?>"
-						class="mint-btn mint-btn--ghost mint-btn--sm"
-						style="text-decoration:none"
+						class="mint-inline-flex mint-h-control-md mint-min-w-control-md mint-items-center mint-justify-center mint-rounded-md mint-bg-transparent mint-px-[14px] mint-text-sm mint-font-semibold mint-text-ink-2 mint-no-underline hover:mint-bg-bg-subtle"
 					>
 						<?php echo (int) $p; ?>
 					</a>
@@ -343,5 +334,11 @@ $studentsPageUrl = admin_url( 'admin.php?page=mint-lms-course-students' );
 		</div>
 		<?php endif; ?>
 	<?php endif; ?>
+
+	<div class="mint-hidden" aria-hidden="true">
+		<?php for ( $i = 0; $i <= 100; $i++ ) : ?>
+			<span class="mint-w-[<?php echo esc_attr( (string) $i ); ?>%]"></span>
+		<?php endfor; ?>
+	</div>
 </div>
 <?php endif; ?>

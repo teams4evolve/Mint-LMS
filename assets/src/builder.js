@@ -157,9 +157,9 @@ function courseBuilder(courseId) {
 
     statusBadgeClass(status) {
       const map = {
-        draft: 'mint-badge mint-badge--draft',
-        published: 'mint-badge mint-badge--published',
-        archived: 'mint-badge mint-badge--archived',
+        draft: 'mint-inline-flex mint-items-center mint-rounded-full mint-bg-bg-subtle mint-px-2 mint-py-0.5 mint-text-xs mint-font-medium mint-text-ink-2',
+        published: 'mint-inline-flex mint-items-center mint-rounded-full mint-bg-success-wash mint-px-2 mint-py-0.5 mint-text-xs mint-font-medium mint-text-success',
+        archived: 'mint-inline-flex mint-items-center mint-rounded-full mint-bg-danger-wash mint-px-2 mint-py-0.5 mint-text-xs mint-font-medium mint-text-danger',
       };
       return map[status] || map.draft;
     },

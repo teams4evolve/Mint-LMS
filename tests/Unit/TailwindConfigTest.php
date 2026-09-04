@@ -29,7 +29,7 @@ final class TailwindConfigTest extends TestCase
 
         $this->assertStringContainsString( '#mint-lms-root', $contents );
         $this->assertStringContainsString( '--mint-accent: #3F00FF', $contents );
-        $this->assertStringContainsString( '.mint-t-display', $contents );
+        $this->assertStringNotContainsString( '.mint-t-display', $contents );
     }
 
     public function test_compiled_css_includes_design_tokens_and_scoped_utilities(): void
@@ -40,14 +40,14 @@ final class TailwindConfigTest extends TestCase
         $contents = file_get_contents( $cssPath );
 
         $this->assertGreaterThan(
-            10_000,
+            5_000,
             strlen( $contents ),
             'Compiled admin CSS looks unprocessed; run npm run build and verify postcss.config.js exports plugins.'
         );
         $this->assertStringContainsString( '--mint-accent:#3f00ff', strtolower( $contents ) );
         $this->assertStringContainsString( '#mint-lms-root', $contents );
-        $this->assertStringContainsString( '.mint-t-display', $contents );
-        $this->assertStringContainsString( 'mint-builder-shell', $contents );
+        $this->assertStringContainsString( 'mint-bg-accent', $contents );
+        $this->assertStringContainsString( 'mint-text-display', $contents );
     }
 
     public function test_ui_root_helper_renders_isolated_wrapper(): void

@@ -1,7 +1,21 @@
 @import '../src/scoped-reset.css';
 @import './mint-tokens.css';
-@import './mint-components.css';
 
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+@layer components {
+  /* WordPress TinyMCE chrome inside the builder — minimal isolation only */
+  #mint-lms-root .mint-wp-editor .wp-editor-wrap {
+    @apply mint-border-0 mint-shadow-none;
+  }
+
+  #mint-lms-root .mint-wp-editor .wp-editor-tools {
+    @apply mint-border-b mint-border-rule-soft mint-bg-bg mint-px-3 mint-py-2;
+  }
+
+  #mint-lms-root .mint-wp-editor .wp-editor-area {
+    @apply mint-min-h-[280px] mint-border-0 mint-font-sans mint-text-base mint-text-ink;
+  }
+}

@@ -57,11 +57,24 @@ function coursesList() {
       return labels[status] || status;
     },
 
+    hueClass(index) {
+      const hues = {
+        1: 'mint-bg-hue-1 mint-text-hue-1i',
+        2: 'mint-bg-hue-2 mint-text-hue-2i',
+        3: 'mint-bg-hue-3 mint-text-hue-3i',
+        4: 'mint-bg-hue-4 mint-text-hue-4i',
+        5: 'mint-bg-hue-5 mint-text-hue-5i',
+        6: 'mint-bg-hue-6 mint-text-hue-6i',
+      };
+      return hues[(index % 6) + 1];
+    },
+
     statusBadgeClass(status) {
+      const base = 'mint-inline-flex mint-items-center mint-px-[11px] mint-py-[5px] mint-text-sm mint-font-bold mint-leading-none mint-rounded-md';
       const map = {
-        draft: 'mint-badge mint-badge--draft',
-        published: 'mint-badge mint-badge--published',
-        archived: 'mint-badge mint-badge--archived',
+        draft: `${base} mint-bg-neutral-200 mint-text-ink-2`,
+        published: `${base} mint-bg-hue-3 mint-text-hue-3i`,
+        archived: `${base} mint-bg-hue-6 mint-text-hue-6i`,
       };
       return map[status] || map.draft;
     },

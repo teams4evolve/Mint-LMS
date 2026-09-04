@@ -14,18 +14,18 @@ $required = $required ?? false;
 $error    = $error ?? '';
 $attrs    = $attrs ?? '';
 
-$selectClasses = 'mint-block mint-w-full mint-px-3 mint-py-2 mint-text-sm mint-text-neutral-900 mint-bg-neutral-50 mint-border mint-border-neutral-300 mint-rounded-md focus:mint-outline-none focus:mint-ring-2 focus:mint-ring-accent focus:mint-border-accent disabled:mint-opacity-50';
+$selectClasses = 'mint-block mint-h-control-md mint-w-full mint-rounded-md mint-border mint-border-control mint-bg-bg mint-px-3 mint-text-base mint-text-ink mint-outline-none focus:mint-border-accent focus:mint-shadow-focus disabled:mint-opacity-50';
 
 if ( '' !== $error ) {
-	$selectClasses .= ' mint-border-neutral-800';
+	$selectClasses .= ' mint-border-danger';
 }
 ?>
-<div class="mint-space-y-1">
+<div class="mint-space-y-2">
 	<?php if ( '' !== $label ) : ?>
-		<label for="<?php echo esc_attr( $id ); ?>" class="mint-block mint-text-sm mint-font-medium mint-text-neutral-700">
+		<label for="<?php echo esc_attr( $id ); ?>" class="mint-block mint-text-sm mint-font-semibold mint-text-ink">
 			<?php echo esc_html( $label ); ?>
 			<?php if ( $required ) : ?>
-				<span class="mint-text-neutral-800" aria-hidden="true">*</span>
+				<span class="mint-text-danger" aria-hidden="true">*</span>
 			<?php endif; ?>
 		</label>
 	<?php endif; ?>
@@ -43,6 +43,6 @@ if ( '' !== $error ) {
 		<?php endforeach; ?>
 	</select>
 	<?php if ( '' !== $error ) : ?>
-		<p class="mint-text-xs mint-text-neutral-800" role="alert"><?php echo esc_html( $error ); ?></p>
+		<p class="mint-text-xs mint-text-danger" role="alert"><?php echo esc_html( $error ); ?></p>
 	<?php endif; ?>
 </div>

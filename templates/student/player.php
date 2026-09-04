@@ -6,7 +6,6 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
 use MintLMS\Application\Student\Dto\StudentPlayerContextDto;
-use MintLMS\Infrastructure\Ui\MintUi;
 
 /** @var StudentPlayerContextDto $context */
 /** @var callable(int): string $lessonUrl */
@@ -32,50 +31,55 @@ $pct          = (int) round( $context->progressPct );
 		hasPassedQuiz: <?php echo $context->hasPassedQuiz ? 'true' : 'false'; ?>
 	})"
 >
-	<div class="mint-player-header">
-		<div class="mint-player-header__trail">
-			<a href="<?php echo esc_url( $dashboardUrl ); ?>" class="mint-breadcrumb__link"><?php echo esc_html( $context->courseTitle ); ?></a>
-			<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink:0"><polyline points="9 18 15 12 9 6"/></svg>
-			<span class="mint-breadcrumb__current"><?php echo esc_html( $lesson->title ); ?></span>
-		</div>
-		<?php if ( $context->isEnrolled ) : ?>
-			<div class="mint-player-progress">
-				<span class="mint-player-progress__label" x-text="Math.round(progressPct) + '% complete'"></span>
-				<div class="mint-player-progress__track">
-					<div class="mint-progress__fill" style="height:100%;transition:width 300ms ease-out" :style="'width:' + Math.round(progressPct) + '%'"></div>
-				</div>
+	<div class="mint-border-b mint-border-rule mint-bg-bg mint-px-4 sm:mint-px-6 mint-py-4">
+		<div class="mint-mx-auto mint-flex mint-max-w-content mint-flex-col mint-gap-4 sm:mint-flex-row sm:mint-items-center sm:mint-justify-between">
+			<div class="mint-flex mint-min-w-0 mint-items-center mint-gap-2 mint-text-sm">
+				<a href="<?php echo esc_url( $dashboardUrl ); ?>" class="mint-truncate mint-font-medium mint-text-ink-2 hover:mint-text-accent mint-no-underline mint-transition-colors mint-duration-hover"><?php echo esc_html( $context->courseTitle ); ?></a>
+				<svg class="mint-h-3.5 mint-w-3.5 mint-shrink-0 mint-text-ink-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="9 18 15 12 9 6"/></svg>
+				<span class="mint-truncate mint-font-medium mint-text-ink"><?php echo esc_html( $lesson->title ); ?></span>
 			</div>
-		<?php endif; ?>
+			<?php if ( $context->isEnrolled ) : ?>
+				<div class="mint-flex mint-min-w-[200px] mint-flex-col mint-gap-1.5 sm:mint-w-48">
+					<span class="mint-text-xs mint-font-medium mint-text-ink-3" x-text="Math.round(progressPct) + '% complete'"></span>
+					<progress
+						class="mint-block mint-h-1.5 mint-w-full mint-appearance-none mint-overflow-hidden mint-rounded-full mint-bg-bg-track [&::-moz-progress-bar]:mint-rounded-full [&::-moz-progress-bar]:mint-bg-accent [&::-webkit-progress-bar]:mint-rounded-full [&::-webkit-progress-bar]:mint-bg-bg-track [&::-webkit-progress-value]:mint-rounded-full [&::-webkit-progress-value]:mint-bg-accent"
+						:value="Math.round(progressPct)"
+						max="100"
+						aria-label="<?php esc_attr_e( 'Course progress', 'mint-lms' ); ?>"
+					></progress>
+				</div>
+			<?php endif; ?>
+		</div>
 	</div>
 
-	<div class="mint-student-layout mint-student-layout--player">
+	<div class="mint-mx-auto mint-grid mint-max-w-content mint-grid-cols-1 mint-gap-8 mint-px-4 mint-py-8 sm:mint-px-6 lg:mint-grid-cols-[1fr_280px]">
 
-		<main class="mint-player-main">
+		<main class="mint-min-w-0">
 
 			<?php if ( '' !== $videoEmbed ) : ?>
-				<div class="mint-video-frame">
+				<div class="mint-aspect-video mint-w-full mint-overflow-hidden mint-rounded-xl mint-border mint-border-rule mint-bg-bg-ink [&_iframe]:mint-h-full [&_iframe]:mint-w-full">
 					<?php echo $videoEmbed; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 				</div>
 			<?php else : ?>
-				<div class="mint-video-frame mint-video-frame--empty">
-					<div class="mint-video-play-btn">
-						<svg width="28" height="28" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+				<div class="mint-flex mint-aspect-video mint-w-full mint-items-center mint-justify-center mint-rounded-xl mint-border mint-border-rule mint-bg-bg-subtle">
+					<div class="mint-flex mint-h-16 mint-w-16 mint-items-center mint-justify-center mint-rounded-full mint-bg-accent mint-text-neutral-50">
+						<svg class="mint-h-7 mint-w-7" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
 					</div>
 				</div>
 			<?php endif; ?>
 
-			<h1 class="mint-lesson-heading"><?php echo esc_html( $lesson->title ); ?></h1>
+			<h1 class="mint-mt-6 mint-text-h2 mint-font-semibold mint-text-ink mint-tracking-tight"><?php echo esc_html( $lesson->title ); ?></h1>
 
 			<?php if ( '' !== $lesson->content ) : ?>
-				<div class="mint-t-prose mint-lesson-prose">
+				<div class="mint-mt-4 mint-text-prose mint-text-ink-2 [&_p]:mint-mb-4 [&_p:last-child]:mint-mb-0">
 					<?php echo wp_kses_post( wpautop( $lesson->content ) ); ?>
 				</div>
 			<?php endif; ?>
 
 			<?php if ( is_string( $attachmentUrl ) && '' !== $attachmentUrl ) : ?>
-				<div style="margin-bottom:24px">
-					<a href="<?php echo esc_url( $attachmentUrl ); ?>" class="mint-btn mint-btn--secondary mint-btn--sm" download>
-						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+				<div class="mint-mt-6 mint-mb-6">
+					<a href="<?php echo esc_url( $attachmentUrl ); ?>" class="mint-inline-flex mint-items-center mint-gap-2 mint-h-control mint-px-4 mint-text-sm mint-font-medium mint-rounded-md mint-border mint-border-control mint-bg-bg mint-text-ink hover:mint-bg-bg-hover mint-transition-colors mint-duration-hover mint-no-underline" download>
+						<svg class="mint-h-4 mint-w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
 						<?php esc_html_e( 'Download attachment', 'mint-lms' ); ?>
 					</a>
 				</div>
@@ -89,10 +93,10 @@ $pct          = (int) round( $context->progressPct );
 			include MINTLMS_PATH . 'templates/student/quiz.php';
 			?>
 
-			<div class="mint-lesson-nav">
+			<div class="mint-mt-8 mint-flex mint-flex-col mint-gap-3 sm:mint-flex-row sm:mint-items-center sm:mint-justify-between">
 				<div>
 					<?php if ( null !== $context->previousLessonId ) : ?>
-						<a href="<?php echo esc_url( $lessonUrl( $context->previousLessonId ) ); ?>" class="mint-btn mint-btn--secondary">
+						<a href="<?php echo esc_url( $lessonUrl( $context->previousLessonId ) ); ?>" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-4 mint-text-sm mint-font-medium mint-rounded-md mint-border mint-border-control mint-bg-bg mint-text-ink hover:mint-bg-bg-hover mint-transition-colors mint-duration-hover mint-no-underline">
 							<?php esc_html_e( '← Previous', 'mint-lms' ); ?>
 						</a>
 					<?php endif; ?>
@@ -101,9 +105,8 @@ $pct          = (int) round( $context->progressPct );
 					<?php if ( $context->isEnrolled ) : ?>
 						<button
 							type="button"
-							class="mint-btn mint-btn--primary"
-							:class="{ 'mint-btn--primary': !isComplete }"
-							:style="isComplete ? 'background:#E8F6EE;color:#0B7A57;cursor:default' : ''"
+							class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-5 mint-text-sm mint-font-medium mint-rounded-md mint-transition-colors mint-duration-hover"
+							:class="isComplete ? 'mint-bg-success-wash mint-text-success mint-cursor-default' : 'mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover'"
 							:disabled="isComplete || marking || (quizRequired && !hasPassedQuiz)"
 							@click="markComplete()"
 						>
@@ -114,54 +117,58 @@ $pct          = (int) round( $context->progressPct );
 			</div>
 		</main>
 
-		<aside class="mint-student-aside mint-student-aside--curriculum">
-			<div class="mint-t-over mint-curriculum-overline"><?php esc_html_e( 'CURRICULUM', 'mint-lms' ); ?></div>
+		<aside class="mint-min-w-0">
+			<div class="mint-mb-4 mint-text-over mint-font-semibold mint-uppercase mint-tracking-widest mint-text-ink-3"><?php esc_html_e( 'CURRICULUM', 'mint-lms' ); ?></div>
 
 			<?php foreach ( $context->structure->sections as $section ) : ?>
-				<div class="mint-curriculum-block">
-					<h3 class="mint-curriculum-section-label"><?php echo esc_html( $section->title ); ?></h3>
-					<?php foreach ( $section->lessons as $sectionLesson ) :
-						$isCurrent   = $sectionLesson->id === $lesson->id;
-						$isCompleted = in_array( $sectionLesson->id, $completedIds, true );
-						$accessible  = ( $context->isEnrolled || $sectionLesson->isPreview ) && ! $sectionLesson->isDripLocked;
-						$hasContent  = '' !== $sectionLesson->content || null !== $sectionLesson->videoUrl || $sectionLesson->isDripLocked;
-						$linkClass   = 'mint-curriculum-link' . ( $isCurrent ? ' is-current' : '' );
-					?>
-						<?php if ( $accessible && $hasContent ) : ?>
-							<a
-								href="<?php echo esc_url( $lessonUrl( $sectionLesson->id ) ); ?>"
-								class="<?php echo esc_attr( $linkClass ); ?>"
-								<?php echo $isCurrent ? 'aria-current="page"' : ''; ?>
-							>
-								<div
-									class="mint-lesson-icon mint-lesson-icon--sm"
-									:style="completedIds.includes(<?php echo (int) $sectionLesson->id; ?>) ? 'background:#E8F6EE' : '<?php echo $isCurrent ? 'background:var(--mint-accent)' : 'background:var(--mint-bg-subtle)'; ?>'"
+				<div class="mint-mb-5">
+					<h3 class="mint-mb-2 mint-text-xs mint-font-semibold mint-uppercase mint-tracking-wide mint-text-ink-3"><?php echo esc_html( $section->title ); ?></h3>
+					<div class="mint-space-y-1">
+						<?php foreach ( $section->lessons as $sectionLesson ) :
+							$isCurrent   = $sectionLesson->id === $lesson->id;
+							$isCompleted = in_array( $sectionLesson->id, $completedIds, true );
+							$accessible  = ( $context->isEnrolled || $sectionLesson->isPreview ) && ! $sectionLesson->isDripLocked;
+							$hasContent  = '' !== $sectionLesson->content || null !== $sectionLesson->videoUrl || $sectionLesson->isDripLocked;
+							$lessonId    = (int) $sectionLesson->id;
+							?>
+							<?php if ( $accessible && $hasContent ) : ?>
+								<a
+									href="<?php echo esc_url( $lessonUrl( $sectionLesson->id ) ); ?>"
+									class="mint-flex mint-items-center mint-gap-2.5 mint-rounded-md mint-px-2 mint-py-2 mint-text-sm mint-no-underline mint-transition-colors mint-duration-hover <?php echo $isCurrent ? 'mint-bg-accent-wash mint-text-accent' : 'mint-text-ink-2 hover:mint-bg-bg-hover hover:mint-text-ink'; ?>"
+									<?php echo $isCurrent ? 'aria-current="page"' : ''; ?>
 								>
-									<template x-if="completedIds.includes(<?php echo (int) $sectionLesson->id; ?>)">
-										<svg width="14" height="14" viewBox="0 0 20 20" fill="#0B7A57" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
-									</template>
-									<template x-if="!completedIds.includes(<?php echo (int) $sectionLesson->id; ?>)">
-										<?php if ( $isCurrent ) : ?>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="#FFFFFF" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-										<?php else : ?>
-											<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+									<div
+										class="mint-flex mint-h-7 mint-w-7 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-transition-colors mint-duration-hover"
+										:class="completedIds.includes(<?php echo $lessonId; ?>) ? 'mint-bg-success-wash mint-text-success' : (<?php echo $isCurrent ? 'true' : 'false'; ?> ? 'mint-bg-accent mint-text-neutral-50' : 'mint-bg-bg-subtle mint-text-ink-3')"
+									>
+										<template x-if="completedIds.includes(<?php echo $lessonId; ?>)">
+											<svg class="mint-h-3.5 mint-w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+										</template>
+										<template x-if="!completedIds.includes(<?php echo $lessonId; ?>)">
+											<?php if ( $isCurrent ) : ?>
+												<svg class="mint-h-3 mint-w-3" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+											<?php else : ?>
+												<svg class="mint-h-3 mint-w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+											<?php endif; ?>
+										</template>
+									</div>
+									<span class="mint-min-w-0 mint-truncate mint-font-medium"><?php echo esc_html( $sectionLesson->title ); ?></span>
+								</a>
+							<?php else : ?>
+								<div class="mint-flex mint-items-start mint-gap-2.5 mint-rounded-md mint-px-2 mint-py-2 mint-opacity-60" title="<?php echo esc_attr( $sectionLesson->dripMessage ?? '' ); ?>">
+									<div class="mint-flex mint-h-7 mint-w-7 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-bg-bg-subtle mint-text-ink-3">
+										<svg class="mint-h-3 mint-w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+									</div>
+									<div class="mint-min-w-0">
+										<span class="mint-block mint-truncate mint-text-sm mint-font-medium mint-text-ink-2"><?php echo esc_html( $sectionLesson->title ); ?></span>
+										<?php if ( $sectionLesson->isDripLocked && is_string( $sectionLesson->dripMessage ) && '' !== $sectionLesson->dripMessage ) : ?>
+											<span class="mint-mt-0.5 mint-block mint-text-xs mint-text-ink-3"><?php echo esc_html( $sectionLesson->dripMessage ); ?></span>
 										<?php endif; ?>
-									</template>
+									</div>
 								</div>
-								<span class="mint-curriculum-link__title"><?php echo esc_html( $sectionLesson->title ); ?></span>
-							</a>
-						<?php else : ?>
-							<div class="mint-curriculum-locked" title="<?php echo esc_attr( $sectionLesson->dripMessage ?? '' ); ?>">
-								<div class="mint-lesson-icon mint-lesson-icon--sm">
-									<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-								</div>
-								<span class="mint-curriculum-locked__title"><?php echo esc_html( $sectionLesson->title ); ?></span>
-								<?php if ( $sectionLesson->isDripLocked && is_string( $sectionLesson->dripMessage ) && '' !== $sectionLesson->dripMessage ) : ?>
-									<span class="mint-curriculum-locked__meta"><?php echo esc_html( $sectionLesson->dripMessage ); ?></span>
-								<?php endif; ?>
-							</div>
-						<?php endif; ?>
-					<?php endforeach; ?>
+							<?php endif; ?>
+						<?php endforeach; ?>
+					</div>
 				</div>
 			<?php endforeach; ?>
 		</aside>

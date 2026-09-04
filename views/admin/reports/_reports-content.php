@@ -10,16 +10,25 @@ use MintLMS\Infrastructure\Ui\MintUi;
 /** @var array<string, mixed> $summary */
 
 $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : array();
+
+$hue_tile_classes = array(
+	1 => 'mint-bg-hue-1 mint-text-hue-1i',
+	2 => 'mint-bg-hue-2 mint-text-hue-2i',
+	3 => 'mint-bg-hue-3 mint-text-hue-3i',
+	4 => 'mint-bg-hue-4 mint-text-hue-4i',
+	5 => 'mint-bg-hue-5 mint-text-hue-5i',
+	6 => 'mint-bg-hue-6 mint-text-hue-6i',
+);
 ?>
-<div class="mint-list-shell">
-	<div class="mint-list-head">
+<div class="mint-mx-auto mint-max-w-content mint-px-7">
+	<div class="mint-pt-10">
 		<div>
-			<h1 class="mint-page-title"><?php esc_html_e( 'Reports', 'mint-lms' ); ?></h1>
-			<p class="mint-page-subtitle"><?php esc_html_e( 'Overview of courses, enrollments, and recent activity.', 'mint-lms' ); ?></p>
+			<h1 class="mint-m-0 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink"><?php esc_html_e( 'Reports', 'mint-lms' ); ?></h1>
+			<p class="mint-mt-[10px] mint-text-[19px] mint-leading-7 mint-text-ink-2"><?php esc_html_e( 'Overview of courses, enrollments, and recent activity.', 'mint-lms' ); ?></p>
 		</div>
 	</div>
 
-	<div class="mint-metric-strip" style="margin-top:24px">
+	<div class="mint-mt-6 mint-flex mint-flex-wrap mint-items-stretch mint-border-b mint-border-rule">
 		<?php
 		$metrics = array(
 			array(
@@ -46,23 +55,23 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 
 		foreach ( $metrics as $cell ) :
 			?>
-			<div class="mint-metric-cell">
-				<div class="mint-metric-label"><?php echo esc_html( $cell['label'] ); ?></div>
-				<div class="mint-t-stat"><?php echo esc_html( $cell['value'] ); ?></div>
-				<div class="mint-t-xs mint-text-muted"><?php echo esc_html( $cell['sub'] ); ?></div>
+			<div class="mint-min-w-0 mint-flex-[1_1_165px] mint-border-l mint-border-rule-faint mint-px-7 mint-py-6 first:mint-border-l-0 first:mint-pl-0">
+				<div class="mint-text-sm mint-font-semibold mint-leading-5 mint-text-hue-1i"><?php echo esc_html( $cell['label'] ); ?></div>
+				<div class="mint-mt-3 mint-text-stat mint-font-semibold mint-tracking-tight mint-text-ink"><?php echo esc_html( $cell['value'] ); ?></div>
+				<div class="mint-text-xs mint-text-ink-3"><?php echo esc_html( $cell['sub'] ); ?></div>
 			</div>
 		<?php endforeach; ?>
 	</div>
 
-	<div style="margin-top:32px">
-		<div class="mint-section-label"><?php esc_html_e( 'Lessons completed', 'mint-lms' ); ?></div>
-		<div class="mint-t-stat" style="margin-top:8px"><?php echo esc_html( (string) absint( $summary['lessons_completed'] ?? 0 ) ); ?></div>
-		<p class="mint-t-sm mint-text-muted" style="margin-top:4px"><?php esc_html_e( 'Individual lesson completions recorded across all courses.', 'mint-lms' ); ?></p>
+	<div class="mint-mt-8">
+		<div class="mint-text-sm mint-font-semibold mint-leading-5 mint-text-ink-2"><?php esc_html_e( 'Lessons completed', 'mint-lms' ); ?></div>
+		<div class="mint-mt-2 mint-text-stat mint-font-semibold mint-tracking-tight mint-text-ink"><?php echo esc_html( (string) absint( $summary['lessons_completed'] ?? 0 ) ); ?></div>
+		<p class="mint-mt-1 mint-text-sm mint-text-ink-3"><?php esc_html_e( 'Individual lesson completions recorded across all courses.', 'mint-lms' ); ?></p>
 	</div>
 
 	<?php if ( array() !== $activity ) : ?>
-	<div class="mint-activity-section" style="margin-top:40px">
-		<div class="mint-section-label"><?php esc_html_e( 'Recent activity', 'mint-lms' ); ?></div>
+	<div class="mint-mt-10 mint-pb-24">
+		<div class="mint-mb-[10px] mint-text-sm mint-font-semibold mint-leading-5 mint-text-ink-2"><?php esc_html_e( 'Recent activity', 'mint-lms' ); ?></div>
 		<?php
 		$index = 0;
 		foreach ( $activity as $row ) :
@@ -72,6 +81,7 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 			$user = get_userdata( (int) ( $row['user_id'] ?? 0 ) );
 			$name = $user instanceof WP_User ? $user->display_name : __( 'A student', 'mint-lms' );
 			$hue  = MintUi::hueByIndex( $index );
+			$hueClass = $hue_tile_classes[ ( $index % 6 ) + 1 ];
 			++$index;
 			$course = (string) ( $row['course_title'] ?? '' );
 			$type   = (string) ( $row['type'] ?? '' );
@@ -99,14 +109,14 @@ $activity = is_array( $summary['activity'] ?? null ) ? $summary['activity'] : ar
 			}
 			$when = isset( $row['occurred_at'] ) ? MintUi::relativeTimeShort( new DateTimeImmutable( (string) $row['occurred_at'] ) ) : '';
 			?>
-			<div class="mint-activity-row">
-				<div class="mint-avatar mint-avatar--sm" style="background:<?php echo esc_attr( $hue['bg'] ); ?>;color:<?php echo esc_attr( $hue['ink'] ); ?>"><?php echo esc_html( MintUi::initials( $name ) ); ?></div>
-				<div class="mint-t-sm mint-activity-row__text"><?php echo esc_html( $text ); ?></div>
-				<div class="mint-t-xs mint-tabular mint-activity-row__when"><?php echo esc_html( $when ); ?></div>
+			<div class="mint-grid mint-grid-cols-[32px_minmax(0,1fr)_92px] mint-items-center mint-gap-[14px] mint-border-t mint-border-rule-soft mint-py-[13px]">
+				<div class="mint-flex mint-h-8 mint-w-8 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-text-[13px] mint-font-bold <?php echo esc_attr( $hueClass ); ?>"><?php echo esc_html( MintUi::initials( $name ) ); ?></div>
+				<div class="mint-min-w-0 mint-truncate mint-text-sm mint-text-ink-2"><?php echo esc_html( $text ); ?></div>
+				<div class="mint-tabular-nums mint-text-right mint-text-xs mint-text-[#82829C]"><?php echo esc_html( $when ); ?></div>
 			</div>
 		<?php endforeach; ?>
 	</div>
 	<?php else : ?>
-	<p class="mint-t-body mint-text-muted" style="margin-top:40px"><?php esc_html_e( 'No recent activity yet.', 'mint-lms' ); ?></p>
+	<p class="mint-mt-10 mint-pb-24 mint-text-body mint-text-ink-3"><?php esc_html_e( 'No recent activity yet.', 'mint-lms' ); ?></p>
 	<?php endif; ?>
 </div>

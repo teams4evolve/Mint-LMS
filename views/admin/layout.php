@@ -19,7 +19,7 @@ $renderer      = new MintLMS\Infrastructure\Admin\ViewRenderer();
 			include MINTLMS_PATH . 'views/admin/partials/admin-header.php';
 			?>
 		<?php endif; ?>
-		<main class="mint-page">
+		<main class="mint-mx-auto mint-max-w-content mint-px-7">
 			<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</main>
 		<?php echo $renderer->component( 'toast' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

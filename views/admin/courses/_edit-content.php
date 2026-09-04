@@ -10,15 +10,18 @@ defined( 'ABSPATH' ) || exit;
 
 $builderUrl = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId );
 $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
+
+$inputClass    = 'mint-block mint-w-full mint-rounded-lg mint-border mint-border-[#B9B6CE] mint-bg-bg mint-px-[14px] mint-py-[11px] mint-text-base mint-text-ink focus:mint-border-accent focus:mint-shadow-focus focus:mint-outline-none';
+$sectionBorder = 'mint-mt-8 mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8';
+$radioBase     = 'mint-mt-[2px] mint-h-[22px] mint-w-[22px] mint-shrink-0 mint-cursor-pointer mint-rounded-full mint-border-2 mint-border-[#9C99B5] mint-bg-bg mint-transition-colors focus:mint-outline-none focus:mint-shadow-focus';
 ?>
 <div
-	style="max-width:560px;margin:0 auto;padding:48px var(--mint-page-pad) 96px"
+	class="mint-mx-auto mint-max-w-[560px] mint-px-7 mint-pb-24 mint-pt-12"
 	x-data="courseEdit(<?php echo esc_attr( (string) $courseId ); ?>)"
 	x-init="init()"
 	@mint-save-course.window="save()"
 >
-	<!-- Loading -->
-	<div x-show="loading" x-cloak style="padding-top:40px">
+	<div x-show="loading" x-cloak class="mint-pt-10">
 		<?php
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'skeleton',
@@ -27,8 +30,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 		?>
 	</div>
 
-	<!-- Error -->
-	<div x-show="error && !loading" x-cloak style="padding-top:40px">
+	<div x-show="error && !loading" x-cloak class="mint-pt-10">
 		<?php
 		$mintlms_retry_button = $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'button',
@@ -50,69 +52,56 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 		?>
 	</div>
 
-	<!-- Main form -->
 	<div x-show="!loading && !error" x-cloak>
 
-		<!-- Breadcrumb -->
-		<nav style="font-size:16px;line-height:24px;color:var(--mint-ink-2);margin-bottom:12px">
-			<a href="<?php echo esc_url( $coursesUrl ); ?>"
-			   style="color:var(--mint-ink-2);text-decoration:none"
-			   onmouseover="this.style.color='var(--mint-ink)'"
-			   onmouseout="this.style.color='var(--mint-ink-2)'"
-			><?php echo esc_html__( 'Courses', 'mint-lms' ); ?></a>
-			<span style="margin:0 6px;opacity:.5">›</span>
+		<nav class="mint-mb-3 mint-text-base mint-leading-6 mint-text-ink-2">
+			<a href="<?php echo esc_url( $coursesUrl ); ?>" class="mint-text-ink-2 mint-no-underline hover:mint-text-ink"><?php echo esc_html__( 'Courses', 'mint-lms' ); ?></a>
+			<span class="mint-mx-[6px] mint-opacity-50">›</span>
 			<span x-text="form.title || '<?php echo esc_attr__( 'Untitled', 'mint-lms' ); ?>'"></span>
 		</nav>
 
-		<!-- Page title -->
-		<h1 style="font-size:48px;line-height:52px;font-weight:600;letter-spacing:-.04em;color:var(--mint-ink);margin:0 0 44px">
+		<h1 class="mint-m-0 mint-mb-11 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink">
 			<?php echo esc_html__( 'Course settings', 'mint-lms' ); ?>
 		</h1>
 
 		<form @submit.prevent="save()">
 
-			<!-- ── Course name ─────────────────────────────── -->
 			<div>
-				<label for="mint-course-title" class="mint-label">
+				<label for="mint-course-title" class="mint-mb-2 mint-block mint-text-base mint-font-semibold mint-leading-6 mint-text-ink">
 					<?php echo esc_html__( 'Course name', 'mint-lms' ); ?>
 				</label>
 				<input
 					id="mint-course-title"
 					type="text"
-					class="mint-input"
-					style="height:50px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px"
+					class="<?php echo esc_attr( $inputClass ); ?> mint-h-[50px] mint-border-[1.5px]"
 					x-model="form.title"
 					required
 				/>
-				<span class="mint-helper"><?php echo esc_html__( 'Students see this on their dashboard.', 'mint-lms' ); ?></span>
+				<span class="mint-mt-2 mint-block mint-text-sm mint-text-ink-3"><?php echo esc_html__( 'Students see this on their dashboard.', 'mint-lms' ); ?></span>
 			</div>
 
-			<!-- ── Short description ───────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<label for="mint-course-desc" class="mint-label">
+			<div class="<?php echo esc_attr( $sectionBorder ); ?>">
+				<label for="mint-course-desc" class="mint-mb-2 mint-block mint-text-base mint-font-semibold mint-leading-6 mint-text-ink">
 					<?php echo esc_html__( 'Short description', 'mint-lms' ); ?>
 				</label>
 				<textarea
 					id="mint-course-desc"
-					class="mint-textarea"
-					style="min-height:110px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px"
+					class="<?php echo esc_attr( $inputClass ); ?> mint-min-h-[110px] mint-resize-y mint-border-[1.5px]"
 					x-model="form.description"
 				></textarea>
-				<span class="mint-helper"><?php echo esc_html__( 'Two sentences is plenty.', 'mint-lms' ); ?></span>
+				<span class="mint-mt-2 mint-block mint-text-sm mint-text-ink-3"><?php echo esc_html__( 'Two sentences is plenty.', 'mint-lms' ); ?></span>
 			</div>
 
-			<!-- ── Cover image ─────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:16px">
+			<div class="<?php echo esc_attr( $sectionBorder ); ?>">
+				<span class="mint-mb-4 mint-block mint-text-over mint-font-semibold mint-uppercase mint-text-ink-3">
 					<?php echo esc_html__( 'Cover image', 'mint-lms' ); ?>
 				</span>
 
-				<!-- Image placeholder / preview -->
 				<div
 					x-show="!featuredImageUrl"
-					style="height:200px;border-radius:14px;border:1.5px dashed #A79FE0;display:flex;align-items:center;justify-content:center;background:var(--mint-tint)"
+					class="mint-flex mint-h-[200px] mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0] mint-bg-tint"
 				>
-					<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.45">
+					<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" class="mint-text-ink-3 mint-opacity-45" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 						<rect x="3" y="3" width="18" height="18" rx="3"/>
 						<circle cx="9" cy="9" r="1.5"/>
 						<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
@@ -121,19 +110,27 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 				<div
 					x-show="featuredImageUrl"
 					x-cloak
-					style="height:200px;border-radius:14px;overflow:hidden"
+					class="mint-h-[200px] mint-overflow-hidden mint-rounded-[14px]"
 				>
-					<img :src="featuredImageUrl" alt="" style="width:100%;height:100%;object-fit:cover" />
+					<img :src="featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
 				</div>
 
-				<div style="display:flex;align-items:center;gap:10px;margin-top:14px">
-					<button type="button" class="mint-btn mint-btn--secondary mint-btn--sm" @click="pickImage()">
-						<?php echo esc_html__( 'Upload', 'mint-lms' ); ?>
-					</button>
+				<div class="mint-mt-[14px] mint-flex mint-items-center mint-gap-[10px]">
+					<?php
+					echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
+						'button',
+						array(
+							'variant' => 'secondary',
+							'size'    => 'sm',
+							'label'   => esc_html__( 'Upload', 'mint-lms' ),
+							'type'    => 'button',
+							'attrs'   => '@click="pickImage()"',
+						)
+					);
+					?>
 					<button
 						type="button"
-						class="mint-btn mint-btn--ghost mint-btn--sm"
-						style="color:var(--mint-ink-3)"
+						class="mint-inline-flex mint-h-control-md mint-items-center mint-justify-center mint-rounded-md mint-bg-transparent mint-px-[14px] mint-text-sm mint-font-semibold mint-text-ink-3 hover:mint-bg-bg-subtle"
 						x-show="form.featuredImageId"
 						x-cloak
 						@click="clearImage()"
@@ -143,13 +140,12 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 				</div>
 			</div>
 
-			<!-- ── Who can see it ──────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:20px">
+			<div class="<?php echo esc_attr( $sectionBorder ); ?>">
+				<span class="mint-mb-5 mint-block mint-text-over mint-font-semibold mint-uppercase mint-text-ink-3">
 					<?php echo esc_html__( 'Who can see it', 'mint-lms' ); ?>
 				</span>
 
-				<div style="display:flex;flex-direction:column;gap:18px">
+				<div class="mint-flex mint-flex-col mint-gap-[18px]">
 					<?php
 					$visibilityOptions = array(
 						array(
@@ -171,23 +167,22 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 					foreach ( $visibilityOptions as $opt ) :
 					?>
 					<label
-						style="display:flex;align-items:flex-start;gap:14px;cursor:pointer"
+						class="mint-flex mint-cursor-pointer mint-items-start mint-gap-[14px]"
 						@click="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
 					>
 						<span
-							class="mint-radio"
-							:class="{ 'is-selected': form.status === '<?php echo esc_attr( $opt['value'] ); ?>' }"
+							class="<?php echo esc_attr( $radioBase ); ?>"
+							:class="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'mint-border-[7px] mint-border-accent' : ''"
 							role="radio"
 							tabindex="0"
 							:aria-checked="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
 							@keydown.space.prevent="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
-							style="margin-top:2px"
 						></span>
 						<span>
-							<span style="display:block;font-size:16px;font-weight:600;color:var(--mint-ink);line-height:24px">
+							<span class="mint-block mint-text-base mint-font-semibold mint-leading-6 mint-text-ink">
 								<?php echo esc_html( $opt['label'] ); ?>
 							</span>
-							<span style="display:block;font-size:15px;color:var(--mint-ink-2);line-height:22px;margin-top:2px">
+							<span class="mint-mt-[2px] mint-block mint-text-sm mint-leading-[22px] mint-text-ink-2">
 								<?php echo esc_html( $opt['desc'] ); ?>
 							</span>
 						</span>
@@ -196,13 +191,12 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 				</div>
 			</div>
 
-			<!-- ── Enrollment ──────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:20px">
+			<div class="<?php echo esc_attr( $sectionBorder ); ?>">
+				<span class="mint-mb-5 mint-block mint-text-over mint-font-semibold mint-uppercase mint-text-ink-3">
 					<?php echo esc_html__( 'Enrollment', 'mint-lms' ); ?>
 				</span>
 
-				<div style="display:flex;flex-direction:column;gap:18px">
+				<div class="mint-flex mint-flex-col mint-gap-[18px]">
 					<?php
 					$enrollmentOptions = array(
 						array(
@@ -219,23 +213,22 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 					foreach ( $enrollmentOptions as $opt ) :
 						?>
 					<label
-						style="display:flex;align-items:flex-start;gap:14px;cursor:pointer"
+						class="mint-flex mint-cursor-pointer mint-items-start mint-gap-[14px]"
 						@click="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
 					>
 						<span
-							class="mint-radio"
-							:class="{ 'is-selected': form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' }"
+							class="<?php echo esc_attr( $radioBase ); ?>"
+							:class="form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'mint-border-[7px] mint-border-accent' : ''"
 							role="radio"
 							tabindex="0"
 							:aria-checked="form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
 							@keydown.space.prevent="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
-							style="margin-top:2px"
 						></span>
 						<span>
-							<span style="display:block;font-size:16px;font-weight:600;color:var(--mint-ink);line-height:24px">
+							<span class="mint-block mint-text-base mint-font-semibold mint-leading-6 mint-text-ink">
 								<?php echo esc_html( $opt['label'] ); ?>
 							</span>
-							<span style="display:block;font-size:15px;color:var(--mint-ink-2);line-height:22px;margin-top:2px">
+							<span class="mint-mt-[2px] mint-block mint-text-sm mint-leading-[22px] mint-text-ink-2">
 								<?php echo esc_html( $opt['desc'] ); ?>
 							</span>
 						</span>
@@ -244,17 +237,25 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 				</div>
 			</div>
 
-			<!-- ── Delete ──────────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:8px;color:var(--mint-danger)">
+			<div class="<?php echo esc_attr( $sectionBorder ); ?>">
+				<span class="mint-mb-2 mint-block mint-text-over mint-font-semibold mint-uppercase mint-text-danger">
 					<?php echo esc_html__( 'Delete', 'mint-lms' ); ?>
 				</span>
-				<p style="font-size:16px;color:var(--mint-ink-2);line-height:24px;margin:0 0 16px">
+				<p class="mint-m-0 mint-mb-4 mint-text-base mint-leading-6 mint-text-ink-2">
 					<?php echo esc_html__( 'Permanently remove this course and all its content. This action cannot be undone.', 'mint-lms' ); ?>
 				</p>
-				<button type="button" class="mint-btn mint-btn--danger-outline mint-btn--sm" @click="deleteCourse()">
-					<?php echo esc_html__( 'Delete this course', 'mint-lms' ); ?>
-				</button>
+				<?php
+				echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
+					'button',
+					array(
+						'variant' => 'danger-outline',
+						'size'    => 'sm',
+						'label'   => esc_html__( 'Delete this course', 'mint-lms' ),
+						'type'    => 'button',
+						'attrs'   => '@click="deleteCourse()"',
+					)
+				);
+				?>
 			</div>
 
 		</form>

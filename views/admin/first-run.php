@@ -7,32 +7,28 @@ defined( 'ABSPATH' ) || exit;
 
 use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 ?>
-<div class="wrap mint-lms-admin-wrap">
+<div class="wrap mint-lms-admin-wrap mint-m-0 mint-p-0">
 	<?php echo MintLMS\Infrastructure\Ui\UiRoot::open( 'admin' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 
-		<div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(360px,1fr));min-height:100vh">
+		<div class="mint-grid mint-min-h-screen mint-grid-cols-1 md:mint-grid-cols-[repeat(auto-fit,minmax(360px,1fr))]">
 
-			<!-- Left: hero column -->
-			<div style="padding:48px 40px;display:flex;flex-direction:column;justify-content:space-between">
+			<div class="mint-flex mint-flex-col mint-justify-between mint-p-10 mint-px-10">
 				<div>
-					<!-- Brand -->
-					<div style="display:flex;align-items:center;gap:11px">
-						<div style="width:28px;height:28px;border-radius:8px;background:var(--mint-accent);display:flex;align-items:center;justify-content:center;flex:none;outline:2.5px solid #FFFFFF;outline-offset:-1px">
-							<div style="width:10px;height:10px;border:2px solid #FFFFFF;border-radius:3px"></div>
+					<div class="mint-flex mint-items-center mint-gap-[11px]">
+						<div class="mint-flex mint-h-7 mint-w-7 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-lg mint-bg-accent mint-outline mint-outline-[2.5px] mint-outline-offset-[-1px] mint-outline-bg">
+							<div class="mint-h-[10px] mint-w-[10px] mint-rounded-[3px] mint-border-2 mint-border-neutral-50"></div>
 						</div>
-						<span style="font-size:17px;font-weight:600;letter-spacing:-0.015em;color:var(--mint-ink)"><?php esc_html_e( 'Mint LMS', 'mint-lms' ); ?></span>
+						<span class="mint-text-[17px] mint-font-semibold mint-tracking-tight mint-text-ink"><?php esc_html_e( 'Mint LMS', 'mint-lms' ); ?></span>
 					</div>
 
-					<!-- Headline -->
-					<h1 style="font-size:44px;line-height:48px;letter-spacing:-0.04em;font-weight:600;color:var(--mint-ink);margin:56px 0 0;max-width:420px">
+					<h1 class="mint-m-0 mint-mt-14 mint-max-w-[420px] mint-text-[44px] mint-font-semibold mint-leading-[48px] mint-tracking-[-0.04em] mint-text-ink">
 						<?php esc_html_e( 'Teach what you already know.', 'mint-lms' ); ?>
 					</h1>
-					<p style="font-size:19px;line-height:30px;color:var(--mint-ink-2);margin:16px 0 0;max-width:420px">
+					<p class="mint-m-0 mint-mt-4 mint-max-w-[420px] mint-text-[19px] mint-leading-[30px] mint-text-ink-2">
 						<?php esc_html_e( 'Structured lessons, clear progress, and a focused learning experience — without configuring fifty settings first.', 'mint-lms' ); ?>
 					</p>
 
-					<!-- Feature bullets -->
-					<div style="margin-top:44px;display:flex;flex-direction:column;gap:28px">
+					<div class="mint-mt-11 mint-flex mint-flex-col mint-gap-7">
 						<?php
 						$features = array(
 							array(
@@ -53,34 +49,33 @@ use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 						);
 						foreach ( $features as $f ) :
 							?>
-							<div style="display:flex;align-items:flex-start;gap:16px">
-								<div style="width:38px;height:38px;border-radius:10px;background:var(--mint-accent-wash);color:var(--mint-accent);display:flex;align-items:center;justify-content:center;flex:none">
+							<div class="mint-flex mint-items-start mint-gap-4">
+								<div class="mint-flex mint-h-[38px] mint-w-[38px] mint-shrink-0 mint-items-center mint-justify-center mint-rounded-lg mint-bg-accent-wash mint-text-accent">
 									<?php echo $f['icon']; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 								</div>
 								<div>
-									<div style="font-size:16px;font-weight:600;color:var(--mint-ink);line-height:22px"><?php echo esc_html( $f['title'] ); ?></div>
-									<div style="font-size:15px;color:var(--mint-ink-2);line-height:22px;margin-top:2px"><?php echo esc_html( $f['desc'] ); ?></div>
+									<div class="mint-text-base mint-font-semibold mint-leading-[22px] mint-text-ink"><?php echo esc_html( $f['title'] ); ?></div>
+									<div class="mint-mt-[2px] mint-text-sm mint-leading-[22px] mint-text-ink-2"><?php echo esc_html( $f['desc'] ); ?></div>
 								</div>
 							</div>
 						<?php endforeach; ?>
 					</div>
 				</div>
 
-				<p style="font-size:15px;color:var(--mint-ink-3);margin-top:48px">
+				<p class="mint-mt-12 mint-text-sm mint-text-ink-3">
 					<?php esc_html_e( 'Trusted by educators who want simplicity over bloat.', 'mint-lms' ); ?>
 				</p>
 			</div>
 
-			<!-- Right: form column -->
-			<div style="padding:48px 40px;background:#FAF8FF;display:flex;align-items:center;justify-content:center">
-				<div style="max-width:400px;width:100%">
-					<span class="mint-t-over" style="color:var(--mint-accent)"><?php esc_html_e( "LET'S START", 'mint-lms' ); ?></span>
-					<h2 style="font-size:28px;line-height:34px;letter-spacing:-0.025em;font-weight:600;color:var(--mint-ink);margin:12px 0 0">
+			<div class="mint-flex mint-items-center mint-justify-center mint-bg-tint-pane mint-p-10 mint-px-10">
+				<div class="mint-w-full mint-max-w-[400px]">
+					<span class="mint-text-over mint-font-semibold mint-uppercase mint-text-accent"><?php esc_html_e( "LET'S START", 'mint-lms' ); ?></span>
+					<h2 class="mint-m-0 mint-mt-3 mint-text-h2 mint-font-semibold mint-text-ink">
 						<?php esc_html_e( 'What are you teaching?', 'mint-lms' ); ?>
 					</h2>
 
-					<form method="post" action="<?php echo esc_url( FirstRunRedirect::startGuidedUrl() ); ?>" style="margin-top:32px">
-						<label for="mint-first-run-title" style="font-size:16px;font-weight:600;color:var(--mint-ink);display:block;margin-bottom:8px">
+					<form method="post" action="<?php echo esc_url( FirstRunRedirect::startGuidedUrl() ); ?>" class="mint-mt-8">
+						<label for="mint-first-run-title" class="mint-mb-2 mint-block mint-text-base mint-font-semibold mint-text-ink">
 							<?php esc_html_e( 'Course name', 'mint-lms' ); ?>
 						</label>
 						<input
@@ -88,21 +83,18 @@ use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 							type="text"
 							name="course_title"
 							placeholder="<?php echo esc_attr__( 'e.g. Introduction to Photography', 'mint-lms' ); ?>"
-							style="display:block;width:100%;height:50px;padding:0 16px;border:1.5px solid #CBC8DD;border-radius:10px;font-family:var(--mint-font);font-size:17px;color:var(--mint-ink);background:#FFFFFF;outline:none;transition:border-color 120ms ease-out,box-shadow 120ms ease-out;box-sizing:border-box"
-							onfocus="this.style.borderColor='var(--mint-accent)';this.style.boxShadow='var(--mint-focus)'"
-							onblur="this.style.borderColor='#CBC8DD';this.style.boxShadow='none'"
+							class="mint-box-border mint-block mint-h-[50px] mint-w-full mint-rounded-lg mint-border-[1.5px] mint-border-[#CBC8DD] mint-bg-bg mint-px-4 mint-text-[17px] mint-text-ink focus:mint-border-accent focus:mint-shadow-focus focus:mint-outline-none"
 						/>
 
-						<button type="submit" class="mint-btn mint-btn--primary" style="width:100%;height:48px;margin-top:20px;font-size:17px;border-radius:10px">
+						<button type="submit" class="mint-mt-5 mint-inline-flex mint-h-12 mint-w-full mint-items-center mint-justify-center mint-rounded-lg mint-bg-accent mint-text-[17px] mint-font-semibold mint-text-neutral-50 hover:mint-bg-accent-hover focus:mint-shadow-focus focus:mint-outline-none">
 							<?php esc_html_e( 'Create your first course', 'mint-lms' ); ?>
 						</button>
 					</form>
 
-					<div style="text-align:center;margin-top:16px">
+					<div class="mint-mt-4 mint-text-center">
 						<a
 							href="<?php echo esc_url( FirstRunRedirect::skipFirstRunUrl() ); ?>"
-							class="mint-btn mint-btn--ghost"
-							style="font-size:15px;font-weight:500;height:auto;padding:8px 16px"
+							class="mint-inline-flex mint-h-auto mint-items-center mint-justify-center mint-rounded-lg mint-bg-transparent mint-px-4 mint-py-2 mint-text-sm mint-font-medium mint-text-ink-2 mint-no-underline hover:mint-bg-bg-subtle hover:mint-text-ink"
 						><?php esc_html_e( 'Skip for now', 'mint-lms' ); ?></a>
 					</div>
 				</div>
@@ -112,4 +104,3 @@ use MintLMS\Infrastructure\Admin\FirstRunRedirect;
 
 	<?php echo MintLMS\Infrastructure\Ui\UiRoot::close(); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 </div>
-<style>.mint-lms-admin-wrap{margin:0;padding:0}</style>
