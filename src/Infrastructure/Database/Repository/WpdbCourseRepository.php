@@ -7,6 +7,7 @@ defined( 'ABSPATH' ) || exit;
 
 use MintLMS\Domain\Course\Course;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
+use MintLMS\Domain\Course\CourseSettings;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
 use MintLMS\Infrastructure\Database\Schema;
@@ -24,7 +25,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
-				"SELECT id, title, slug, description, featured_image_id, status, enrollment_type, author_id, created_at, updated_at
+				"SELECT *
 				FROM {$table}
 				WHERE id = %d",
 				$id
@@ -45,7 +46,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$row = $this->wpdb->get_row(
 			$this->wpdb->prepare(
-				"SELECT id, title, slug, description, featured_image_id, status, enrollment_type, author_id, created_at, updated_at
+				"SELECT *
 				FROM {$table}
 				WHERE slug = %s",
 				$slug
@@ -66,6 +67,8 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 
 		if ( 0 === $course->id ) {
 			$created = $course->createdAt->format( 'Y-m-d H:i:s' );
+			$settingsJson = wp_json_encode( $course->settings->toArray() );
+			$settingsJson = is_string( $settingsJson ) ? $settingsJson : '{}';
 
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery
 			$inserted = $this->wpdb->insert(
@@ -77,11 +80,12 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 					'featured_image_id' => $course->featuredImageId,
 					'status'            => $course->status->value,
 					'enrollment_type'   => $course->enrollmentType->value,
+					'settings_json'     => $settingsJson,
 					'author_id'         => $course->authorId,
 					'created_at'        => $created,
 					'updated_at'        => $now,
 				),
-				array( '%s', '%s', '%s', '%d', '%s', '%s', '%d', '%s', '%s' )
+				array( '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%d', '%s', '%s' )
 			);
 
 			if ( false === $inserted ) {
@@ -99,8 +103,12 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 				$course->authorId,
 				$course->createdAt,
 				$course->updatedAt,
+				$course->settings,
 			);
 		}
+
+		$settingsJson = wp_json_encode( $course->settings->toArray() );
+		$settingsJson = is_string( $settingsJson ) ? $settingsJson : '{}';
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 		$updated = $this->wpdb->update(
@@ -112,10 +120,11 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 				'featured_image_id' => $course->featuredImageId,
 				'status'            => $course->status->value,
 				'enrollment_type'   => $course->enrollmentType->value,
+				'settings_json'     => $settingsJson,
 				'updated_at'        => $now,
 			),
 			array( 'id' => $course->id ),
-			array( '%s', '%s', '%s', '%d', '%s', '%s', '%s' ),
+			array( '%s', '%s', '%s', '%d', '%s', '%s', '%s', '%s' ),
 			array( '%d' )
 		);
 
@@ -154,6 +163,9 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 		if ( null !== $status ) {
 			$where[]  = 'status = %s';
 			$params[] = $status->value;
+		} else {
+			$where[]  = 'status != %s';
+			$params[] = CourseStatus::Trashed->value;
 		}
 
 		if ( null !== $search && '' !== trim( $search ) ) {
@@ -164,7 +176,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 		$whereSql = implode( ' AND ', $where );
 
 		$countSql = "SELECT COUNT(*) FROM {$table} WHERE {$whereSql}";
-		$listSql  = "SELECT id, title, slug, description, featured_image_id, status, enrollment_type, author_id, created_at, updated_at
+		$listSql  = "SELECT *
 			FROM {$table}
 			WHERE {$whereSql}
 			ORDER BY created_at DESC
@@ -203,8 +215,15 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 	private function mapRowToCourse( object $row ): Course {
 		$featuredImageId = null;
 
-		if ( null !== $row->featured_image_id && '' !== $row->featured_image_id ) {
+		if ( null !== $row->featured_image_id && '' !== $row->featured_image_id && (int) $row->featured_image_id > 0 ) {
 			$featuredImageId = (int) $row->featured_image_id;
+		}
+
+		$settings = CourseSettings::defaults();
+
+		if ( isset( $row->settings_json ) && is_string( $row->settings_json ) && '' !== $row->settings_json ) {
+			$decoded = json_decode( $row->settings_json, true );
+			$settings = CourseSettings::fromArray( is_array( $decoded ) ? $decoded : null );
 		}
 
 		return new Course(
@@ -218,6 +237,7 @@ final class WpdbCourseRepository implements CourseRepositoryInterface {
 			(int) $row->author_id,
 			new \DateTimeImmutable( (string) $row->created_at ),
 			new \DateTimeImmutable( (string) $row->updated_at ),
+			$settings,
 		);
 	}
 }

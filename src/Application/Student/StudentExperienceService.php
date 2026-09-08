@@ -247,6 +247,7 @@ final class StudentExperienceService {
 			$quiz,
 			$quizRequired,
 			$hasPassedQuiz,
+			$course->settings->studentComplete,
 		);
 	}
 
@@ -408,6 +409,8 @@ final class StudentExperienceService {
 			$lesson->sortOrder,
 			$lesson->createdAt->format( 'c' ),
 			$lesson->updatedAt->format( 'c' ),
+			$canAccess ? $lesson->featuredImageId : null,
+			'',
 		);
 	}
 

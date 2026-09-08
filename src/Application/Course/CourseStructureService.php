@@ -94,6 +94,8 @@ final class CourseStructureService {
 				$lesson->sortOrder,
 				$lesson->createdAt->format( 'c' ),
 				$lesson->updatedAt->format( 'c' ),
+				$lesson->featuredImageId,
+				'',
 			);
 
 			$sectionsById[ $section->id ] = new CourseStructureSectionDto(

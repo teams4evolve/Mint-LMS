@@ -246,8 +246,12 @@ final class EnrollmentService {
 				throw new ForbiddenException();
 			}
 
-			if ( EnrollmentType::Manual === $enrollmentType ) {
-				throw new ForbiddenException( 'This course requires manual enrollment.' );
+			if ( EnrollmentType::Manual === $enrollmentType || EnrollmentType::Paid === $enrollmentType ) {
+				throw new ForbiddenException(
+					EnrollmentType::Paid === $enrollmentType
+						? 'This course requires purchase.'
+						: 'This course requires manual enrollment.'
+				);
 			}
 
 			if ( CourseStatus::Published !== $courseStatus ) {

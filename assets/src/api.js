@@ -7,6 +7,7 @@ export function joinRestUrl(base, path) {
 export function getAdminConfig() {
   return window.mintLmsAdmin || {
     restBase: '/wp-json/mintlms/v1',
+    mediaBase: '/wp-json/wp/v2/media',
     nonce: '',
     urls: {},
   };

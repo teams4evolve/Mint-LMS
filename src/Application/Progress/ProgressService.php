@@ -10,6 +10,7 @@ use MintLMS\Application\Exception\NotFoundException;
 use MintLMS\Application\Progress\Dto\ProgressDto;
 use MintLMS\Application\Lesson\LessonAccessService;
 use MintLMS\Application\Quiz\QuizService;
+use MintLMS\Domain\Course\CourseRepositoryInterface;
 use MintLMS\Domain\Event\CourseCompleted;
 use MintLMS\Domain\Event\LessonCompleted;
 use MintLMS\Domain\Progress\CompleteLessonResult;
@@ -25,12 +26,21 @@ final class ProgressService implements ProgressLifecycleInterface {
 		private Clock $clock,
 		private ?QuizService $quizService = null,
 		private ?LessonAccessService $lessonAccessService = null,
+		private ?CourseRepositoryInterface $courseRepository = null,
 	) {
 	}
 
 	public function completeLesson( int $userId, int $lessonId, ?int $expectedCourseId = null ): CompleteLessonResult {
 		$courseId = $this->resolveLessonCourse( $lessonId, $expectedCourseId );
 		$this->assertEnrolled( $userId, $courseId );
+
+		if ( null !== $this->courseRepository ) {
+			$course = $this->courseRepository->findById( $courseId );
+
+			if ( null !== $course && ! $course->settings->studentComplete ) {
+				throw new ForbiddenException( 'Students cannot mark lessons complete in this course.' );
+			}
+		}
 
 		if ( null !== $this->lessonAccessService ) {
 			$this->lessonAccessService->assertCanAccessLesson( $userId, $lessonId );

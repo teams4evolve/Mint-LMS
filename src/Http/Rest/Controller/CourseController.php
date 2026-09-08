@@ -18,6 +18,7 @@ use MintLMS\Domain\Course\EnrollmentType;
 use MintLMS\Http\Rest\Response\ApiResponse;
 use MintLMS\Infrastructure\Http\RestContentSanitizer;
 use MintLMS\Infrastructure\Setup\PageSettings;
+use MintLMS\Infrastructure\WooCommerce\WooCommerceIntegration;
 
 final class CourseController {
 
@@ -94,6 +95,43 @@ final class CourseController {
 				'permission_callback' => array( $this, 'canManageCourses' ),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/woocommerce-product',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'createWooCommerceProduct' ),
+				'permission_callback' => array( $this, 'canManageCourses' ),
+				'args'                => array(
+					'price' => array(
+						'type'              => 'string',
+						'required'          => true,
+						'sanitize_callback' => 'sanitize_text_field',
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/trash',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'trash' ),
+				'permission_callback' => array( $this, 'canManageCourses' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/restore',
+			array(
+				'methods'             => \WP_REST_Server::CREATABLE,
+				'callback'            => array( $this, 'restore' ),
+				'permission_callback' => array( $this, 'canManageCourses' ),
+			)
+		);
 	}
 
 	public function canListCourses(): bool {
@@ -158,7 +196,7 @@ final class CourseController {
 
 			$course = $this->courseService->create( $dto, $userId );
 
-			return ApiResponse::success( $course->toArray(), 201 );
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ), 201 );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( ForbiddenException $exception ) {
@@ -173,7 +211,7 @@ final class CourseController {
 
 			$course = $this->courseService->get( $id, $userId );
 
-			return ApiResponse::success( $course->toArray() );
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
@@ -186,22 +224,28 @@ final class CourseController {
 			$userId = $this->authorization->getCurrentUserId();
 			$id     = (int) $request->get_param( 'id' );
 
+			[ $updateFeaturedImage, $featuredImageId ] = $this->featuredImageFromRequest( $request );
+
 			$dto = new UpdateCourseDto(
 				$request->offsetExists( 'title' ) ? (string) $request->get_param( 'title' ) : null,
 				$request->offsetExists( 'slug' ) ? $this->nullableString( $request->get_param( 'slug' ) ) : null,
 				$request->offsetExists( 'description' ) ? (string) $request->get_param( 'description' ) : null,
-				$request->offsetExists( 'featured_image_id' ) ? $this->nullableInt( $request->get_param( 'featured_image_id' ) ) : null,
+				$updateFeaturedImage,
+				$featuredImageId,
 				$request->offsetExists( 'enrollment_type' )
 					? EnrollmentType::from( (string) $request->get_param( 'enrollment_type' ) )
 					: null,
 				$request->offsetExists( 'status' )
 					? CourseStatus::from( (string) $request->get_param( 'status' ) )
 					: null,
+				$request->has_param( 'email_on_publish' ) ? (bool) $request->get_param( 'email_on_publish' ) : null,
+				$request->has_param( 'student_complete' ) ? (bool) $request->get_param( 'student_complete' ) : null,
+				$request->has_param( 'certificate' ) ? (bool) $request->get_param( 'certificate' ) : null,
 			);
 
 			$course = $this->courseService->update( $id, $dto, $userId );
 
-			return ApiResponse::success( $course->toArray() );
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ) );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {
@@ -233,7 +277,7 @@ final class CourseController {
 
 			$structure = $this->courseStructureService->getStructure( $id, $userId );
 
-			return ApiResponse::success( $structure->toArray() );
+			return ApiResponse::success( $this->presentStructure( $structure->toArray() ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
@@ -248,12 +292,193 @@ final class CourseController {
 
 			$course = $this->courseService->publish( $id, $userId );
 
-			return ApiResponse::success( $course->toArray() );
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
 			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
 		}
+	}
+
+	public function trash( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+			$id     = (int) $request->get_param( 'id' );
+
+			$course = $this->courseService->trash( $id, $userId );
+
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ) );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function restore( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+			$id     = (int) $request->get_param( 'id' );
+
+			$course = $this->courseService->restore( $id, $userId );
+
+			return ApiResponse::success( $this->presentCourse( $course->toArray() ) );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function createWooCommerceProduct( \WP_REST_Request $request ): \WP_REST_Response {
+		if ( ! WooCommerceIntegration::isAvailable() ) {
+			return ApiResponse::error( 'woocommerce_inactive', 'WooCommerce is not active.', 400 );
+		}
+
+		$integration = WooCommerceIntegration::instance();
+
+		if ( null === $integration ) {
+			return ApiResponse::error( 'woocommerce_inactive', 'WooCommerce integration is not loaded.', 400 );
+		}
+
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+			$id     = (int) $request->get_param( 'id' );
+
+			// Ensure the actor can manage this course before creating a product.
+			$this->courseService->get( $id, $userId );
+
+			$result = $integration->productSync()->createOrUpdateForCourse(
+				$id,
+				(string) $request->get_param( 'price' ),
+				$userId
+			);
+
+			$course = $this->courseService->get( $id, $userId );
+
+			return ApiResponse::success(
+				array_merge(
+					$this->presentCourse( $course->toArray() ),
+					$result
+				)
+			);
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	/**
+	 * @param array<string, mixed> $course
+	 * @return array<string, mixed>
+	 */
+	private function presentCourse( array $course ): array {
+		$course = $this->withCommerce( $course );
+
+		$imageId = isset( $course['featuredImageId'] ) ? (int) $course['featuredImageId'] : 0;
+		$url     = '';
+
+		if ( $imageId > 0 ) {
+			$resolved = wp_get_attachment_image_url( $imageId, 'large' );
+			if ( ! is_string( $resolved ) || '' === $resolved ) {
+				$resolved = wp_get_attachment_url( $imageId );
+			}
+			$url = is_string( $resolved ) ? $resolved : '';
+		}
+
+		$course['featuredImageUrl'] = $url;
+
+		return $course;
+	}
+
+	/**
+	 * @param array<string, mixed> $structure
+	 * @return array<string, mixed>
+	 */
+	private function presentStructure( array $structure ): array {
+		if ( ! isset( $structure['sections'] ) || ! is_array( $structure['sections'] ) ) {
+			return $structure;
+		}
+
+		foreach ( $structure['sections'] as $sectionIndex => $section ) {
+			if ( ! is_array( $section ) || ! isset( $section['lessons'] ) || ! is_array( $section['lessons'] ) ) {
+				continue;
+			}
+
+			foreach ( $section['lessons'] as $lessonIndex => $lesson ) {
+				if ( ! is_array( $lesson ) ) {
+					continue;
+				}
+
+				$imageId = isset( $lesson['featuredImageId'] ) ? (int) $lesson['featuredImageId'] : 0;
+				$url     = '';
+
+				if ( $imageId > 0 ) {
+					$resolved = wp_get_attachment_image_url( $imageId, 'large' );
+					if ( ! is_string( $resolved ) || '' === $resolved ) {
+						$resolved = wp_get_attachment_url( $imageId );
+					}
+					$url = is_string( $resolved ) ? $resolved : '';
+				}
+
+				$structure['sections'][ $sectionIndex ]['lessons'][ $lessonIndex ]['featuredImageUrl'] = $url;
+			}
+		}
+
+		return $structure;
+	}
+
+	/**
+	 * @return array{0: bool, 1: ?int}
+	 */
+	private function featuredImageFromRequest( \WP_REST_Request $request ): array {
+		$json = $request->get_json_params();
+
+		if ( is_array( $json ) && array_key_exists( 'featured_image_id', $json ) ) {
+			return array( true, $this->nullableInt( $json['featured_image_id'] ) );
+		}
+
+		if ( $request->has_param( 'featured_image_id' ) ) {
+			return array( true, $this->nullableInt( $request->get_param( 'featured_image_id' ) ) );
+		}
+
+		return array( false, null );
+	}
+
+	/**
+	 * @param array<string, mixed> $course
+	 * @return array<string, mixed>
+	 */
+	private function withCommerce( array $course ): array {
+		$course['woocommerceAvailable'] = WooCommerceIntegration::isAvailable() && null !== WooCommerceIntegration::instance();
+		$course['productId']            = 0;
+		$course['productUrl']           = '';
+		$course['editUrl']              = '';
+		$course['productPrice']         = '';
+		$course['purchaseUrl']          = '';
+
+		if ( ! $course['woocommerceAvailable'] || ! isset( $course['id'] ) ) {
+			return $course;
+		}
+
+		$sync      = WooCommerceIntegration::instance()->productSync();
+		$courseId  = (int) $course['id'];
+		$productId = $sync->findProductIdForCourse( $courseId );
+
+		if ( $productId <= 0 ) {
+			return $course;
+		}
+
+		$course['productId']    = $productId;
+		$course['productUrl']   = (string) get_permalink( $productId );
+		$course['editUrl']      = (string) get_edit_post_link( $productId, 'raw' );
+		$course['productPrice'] = $sync->getProductPrice( $productId );
+		$course['purchaseUrl']  = $sync->getPurchaseUrl( $courseId );
+
+		return $course;
 	}
 
 	/**
@@ -276,7 +501,7 @@ final class CourseController {
 			),
 			'status'   => array(
 				'type'              => 'string',
-				'enum'              => array( 'draft', 'published', 'archived' ),
+				'enum'              => array( 'draft', 'published', 'archived', 'trashed' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'search'   => array(
@@ -311,7 +536,7 @@ final class CourseController {
 			'enrollment_type'   => array(
 				'type'              => 'string',
 				'default'           => 'open',
-				'enum'              => array( 'open', 'manual' ),
+				'enum'              => array( 'open', 'manual', 'paid' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 		);
@@ -335,18 +560,40 @@ final class CourseController {
 				'sanitize_callback' => array( RestContentSanitizer::class, 'richText' ),
 			),
 			'featured_image_id' => array(
-				'type'              => 'integer',
-				'sanitize_callback' => 'absint',
+				'validate_callback' => static function ( $value ): bool {
+					return null === $value || is_numeric( $value ) || '' === $value;
+				},
+				'sanitize_callback' => static function ( $value ): ?int {
+					if ( null === $value || '' === $value ) {
+						return null;
+					}
+
+					$id = absint( $value );
+
+					return $id > 0 ? $id : null;
+				},
 			),
 			'enrollment_type'   => array(
 				'type'              => 'string',
-				'enum'              => array( 'open', 'manual' ),
+				'enum'              => array( 'open', 'manual', 'paid' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'status'            => array(
 				'type'              => 'string',
-				'enum'              => array( 'draft', 'published', 'archived' ),
+				'enum'              => array( 'draft', 'published', 'archived', 'trashed' ),
 				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'email_on_publish'  => array(
+				'type'              => 'boolean',
+				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
+			),
+			'student_complete'  => array(
+				'type'              => 'boolean',
+				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
+			),
+			'certificate'       => array(
+				'type'              => 'boolean',
+				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
 			),
 		);
 	}

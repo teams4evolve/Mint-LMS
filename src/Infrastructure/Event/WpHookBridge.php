@@ -15,6 +15,7 @@ final class WpHookBridge {
 	private const HOOK_MAP = array(
 		'lesson.completed'     => 'mintlms_lesson_completed',
 		'course.completed'     => 'mintlms_course_completed',
+		'course.published'     => 'mintlms_course_published',
 		'enrollment.created'   => 'mintlms_enrollment_created',
 		'enrollment.cancelled' => 'mintlms_enrollment_cancelled',
 	);

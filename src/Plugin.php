@@ -144,6 +144,16 @@ final class Plugin {
 		);
 	}
 
+	public static function courseService(): CourseService {
+		self::requireBoot();
+
+		if ( null === self::$courseService ) {
+			throw new \RuntimeException( 'Mint LMS course service has not been registered.' );
+		}
+
+		return self::$courseService;
+	}
+
 	public static function registerEnrollmentService( EnrollmentService $service ): void {
 		self::requireBoot();
 

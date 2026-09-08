@@ -14,14 +14,38 @@ final class OrderHandler {
 	}
 
 	public function register(): void {
-		add_action( 'woocommerce_order_status_completed', array( $this, 'handleOrderCompleted' ), 10, 2 );
+		foreach ( $this->enrollStatuses() as $status ) {
+			add_action( 'woocommerce_order_status_' . $status, array( $this, 'handleOrderCompleted' ), 10, 2 );
+		}
+
 		add_action( 'woocommerce_order_status_refunded', array( $this, 'handleOrderRevoked' ), 10, 2 );
 		add_action( 'woocommerce_order_status_cancelled', array( $this, 'handleOrderRevoked' ), 10, 2 );
 	}
 
 	/**
-	 * @param int            $orderId Order ID.
-	 * @param \WC_Order|false $order  Order object when HPOS provides it.
+	 * @return list<string>
+	 */
+	public function enrollStatuses(): array {
+		$raw = (string) get_option( 'mintlms_wc_enroll_statuses', 'processing,completed' );
+		$parts = array_filter( array_map( 'trim', explode( ',', $raw ) ) );
+
+		/**
+		 * Filter WooCommerce order statuses that trigger Mint LMS enrollment.
+		 *
+		 * @param list<string> $statuses Status slugs without the `wc-` prefix.
+		 */
+		$statuses = apply_filters( 'mintlms_wc_enroll_order_statuses', $parts );
+
+		if ( ! is_array( $statuses ) || array() === $statuses ) {
+			return array( 'processing', 'completed' );
+		}
+
+		return array_values( array_unique( array_map( 'strval', $statuses ) ) );
+	}
+
+	/**
+	 * @param int             $orderId Order ID.
+	 * @param \WC_Order|false $order   Order object when HPOS provides it.
 	 */
 	public function handleOrderCompleted( int $orderId, $order = false ): void {
 		$order = $this->getOrder( $orderId, $order );
@@ -58,23 +82,20 @@ final class OrderHandler {
 			$productId   = (int) $item->get_product_id();
 			$variationId = (int) $item->get_variation_id();
 			$lookupId    = $variationId > 0 ? $variationId : $productId;
-			$courseId    = $this->productMeta->getCourseIdForProduct( $lookupId );
 
-			if ( $courseId <= 0 ) {
-				continue;
+			foreach ( $this->productMeta->getCourseIdsForProduct( $lookupId ) as $courseId ) {
+				$enrollment = $this->bridge->enrollUser( $userId, $courseId, $order->get_id(), $lookupId );
+
+				if ( null === $enrollment ) {
+					continue;
+				}
+
+				$records[] = array(
+					'course_id'     => $courseId,
+					'product_id'    => $lookupId,
+					'enrollment_id' => $enrollment->id,
+				);
 			}
-
-			$enrollment = $this->bridge->enrollUser( $userId, $courseId, $order->get_id(), $lookupId );
-
-			if ( null === $enrollment ) {
-				continue;
-			}
-
-			$records[] = array(
-				'course_id'     => $courseId,
-				'product_id'    => $lookupId,
-				'enrollment_id' => $enrollment->id,
-			);
 		}
 
 		if ( array() !== $records ) {
@@ -85,7 +106,7 @@ final class OrderHandler {
 		$order->save();
 
 		/**
-		 * Fires after Mint LMS enrollments are processed for a completed order.
+		 * Fires after Mint LMS enrollments are processed for a paid order.
 		 *
 		 * @param \WC_Order $order   WooCommerce order.
 		 * @param array     $records Enrollment records stored on the order.
@@ -94,8 +115,8 @@ final class OrderHandler {
 	}
 
 	/**
-	 * @param int            $orderId Order ID.
-	 * @param \WC_Order|false $order  Order object when HPOS provides it.
+	 * @param int             $orderId Order ID.
+	 * @param \WC_Order|false $order   Order object when HPOS provides it.
 	 */
 	public function handleOrderRevoked( int $orderId, $order = false ): void {
 		$order = $this->getOrder( $orderId, $order );
@@ -150,8 +171,8 @@ final class OrderHandler {
 	}
 
 	/**
-	 * @param int            $orderId Order ID.
-	 * @param \WC_Order|false $order  Order object.
+	 * @param int             $orderId Order ID.
+	 * @param \WC_Order|false $order   Order object.
 	 */
 	private function getOrder( int $orderId, $order ): ?\WC_Order {
 		if ( $order instanceof \WC_Order ) {

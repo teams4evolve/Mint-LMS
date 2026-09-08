@@ -7,6 +7,7 @@ defined( 'ABSPATH' ) || exit;
 
 use MintLMS\Application\Contract\AdminDashboardRepositoryInterface;
 use MintLMS\Infrastructure\Database\Schema;
+use MintLMS\Infrastructure\PostType\PostTypes;
 
 final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInterface {
 
@@ -21,26 +22,31 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 	 */
 	public function getAuthorStats( int $authorId, array $courseIds ): array {
 		// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() lists for author course ids., PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$prefix = $this->wpdb->prefix;
-
-		$coursesTable     = Schema::validateTable( Schema::coursesTable( $prefix ), $prefix );
+		$prefix           = $this->wpdb->prefix;
+		$postsTable       = $this->wpdb->posts;
+		$postmetaTable    = $this->wpdb->postmeta;
 		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
 		$progressTable    = Schema::validateTable( Schema::progressTable( $prefix ), $prefix );
-		$summaryTable     = Schema::validateTable( Schema::progressSummaryTable( $prefix ), $prefix );
 		$sectionsTable    = Schema::validateTable( Schema::sectionsTable( $prefix ), $prefix );
-		$lessonsTable     = Schema::validateTable( Schema::lessonsTable( $prefix ), $prefix );
+		$courseType  = PostTypes::COURSE;
+		$lessonType  = PostTypes::LESSON;
+		$sectionMeta = PostTypes::META_SECTION_ID;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$publishedCount = (int) $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT COUNT(*) FROM {$coursesTable} WHERE author_id = %d AND status = 'published'",
+				"SELECT COUNT(*) FROM {$postsTable}
+				WHERE post_type = %s AND post_author = %d AND post_status = 'publish'",
+				$courseType,
 				$authorId
 			)
 		);
 
 		$draftCount = (int) $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT COUNT(*) FROM {$coursesTable} WHERE author_id = %d AND status = 'draft'",
+				"SELECT COUNT(*) FROM {$postsTable}
+				WHERE post_type = %s AND post_author = %d AND post_status = 'draft'",
+				$courseType,
 				$authorId
 			)
 		);
@@ -52,7 +58,6 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		if ( array() !== $courseIds ) {
 			$placeholders = implode( ',', array_fill( 0, count( $courseIds ), '%d' ) );
 
-			// phpcs:disable WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare -- Dynamic IN() course id lists., PluginCheck.Security.DirectDB.UnescapedDBParameter
 			$studentsTotal = (int) $this->wpdb->get_var(
 				$this->wpdb->prepare(
 					"SELECT COUNT(DISTINCT user_id) FROM {$enrollmentsTable} WHERE course_id IN ({$placeholders}) AND status = 'active'",
@@ -82,13 +87,12 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		$lessonsDone7d = 0;
 
 		if ( array() !== $courseIds ) {
-			$placeholders = implode( ',', array_fill( 0, count( $courseIds ), '%d' ) );
-
 			$lessonsDone7d = (int) $this->wpdb->get_var(
 				$this->wpdb->prepare(
 					"SELECT COUNT(*) FROM {$progressTable} p
-					INNER JOIN {$coursesTable} c ON c.id = p.course_id
-					WHERE c.author_id = %d AND p.completed_at >= %s",
+					INNER JOIN {$postsTable} c ON c.ID = p.course_id AND c.post_type = %s
+					WHERE c.post_author = %d AND p.completed_at >= %s",
+					$courseType,
 					$authorId,
 					$weekAgo
 				)
@@ -121,8 +125,14 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 					$this->wpdb->prepare(
 						"SELECT COUNT(*) FROM {$sectionsTable} s
 						WHERE s.course_id = %d
-						AND NOT EXISTS (SELECT 1 FROM {$lessonsTable} l WHERE l.section_id = s.id)",
-						$courseId
+						AND NOT EXISTS (
+							SELECT 1 FROM {$postmetaTable} pm
+							INNER JOIN {$postsTable} l ON l.ID = pm.post_id AND l.post_type = %s AND l.post_status != 'trash'
+							WHERE pm.meta_key = %s AND pm.meta_value = CAST(s.id AS CHAR)
+						)",
+						$courseId,
+						$lessonType,
+						$sectionMeta
 					)
 				);
 
@@ -137,22 +147,24 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 
 			$completedRows = $this->wpdb->get_results(
 				$this->wpdb->prepare(
-					"SELECT e.user_id, c.title AS course_title, e.completed_at AS occurred_at, 'completed' AS type
+					"SELECT e.user_id, c.post_title AS course_title, e.completed_at AS occurred_at, 'completed' AS type
 					FROM {$enrollmentsTable} e
-					INNER JOIN {$coursesTable} c ON c.id = e.course_id
+					INNER JOIN {$postsTable} c ON c.ID = e.course_id AND c.post_type = %s
 					WHERE e.course_id IN ({$placeholders}) AND e.completed_at IS NOT NULL
 					ORDER BY e.completed_at DESC LIMIT 5",
+					$courseType,
 					...$courseIds
 				)
 			);
 
 			$enrolledRows = $this->wpdb->get_results(
 				$this->wpdb->prepare(
-					"SELECT e.user_id, c.title AS course_title, e.enrolled_at AS occurred_at, 'enrolled' AS type
+					"SELECT e.user_id, c.post_title AS course_title, e.enrolled_at AS occurred_at, 'enrolled' AS type
 					FROM {$enrollmentsTable} e
-					INNER JOIN {$coursesTable} c ON c.id = e.course_id
+					INNER JOIN {$postsTable} c ON c.ID = e.course_id AND c.post_type = %s
 					WHERE e.course_id IN ({$placeholders})
 					ORDER BY e.enrolled_at DESC LIMIT 5",
+					$courseType,
 					...$courseIds
 				)
 			);
@@ -237,6 +249,8 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		return array(
 			'students_total'  => $studentsTotal,
 			'finished_pct'    => $finishedPct,
+			'finished_count'  => $finishedCount,
+			'started_count'   => $startedCount,
 			'published_count' => $publishedCount,
 			'draft_count'     => $draftCount,
 			'lessons_done_7d' => $lessonsDone7d,
@@ -258,10 +272,13 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		}
 
 		$prefix           = $this->wpdb->prefix;
+		$postsTable       = $this->wpdb->posts;
+		$postmetaTable    = $this->wpdb->postmeta;
 		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
 		$summaryTable     = Schema::validateTable( Schema::progressSummaryTable( $prefix ), $prefix );
-		$lessonsTable     = Schema::validateTable( Schema::lessonsTable( $prefix ), $prefix );
 		$placeholders     = implode( ',', array_fill( 0, count( $courseIds ), '%d' ) );
+		$lessonType       = PostTypes::LESSON;
+		$courseMeta       = PostTypes::META_COURSE_ID;
 		$stats            = array();
 
 		foreach ( $courseIds as $courseId ) {
@@ -275,7 +292,15 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$lessonRows = $this->wpdb->get_results(
 			$this->wpdb->prepare(
-				"SELECT course_id, COUNT(*) AS lesson_count FROM {$lessonsTable} WHERE course_id IN ({$placeholders}) GROUP BY course_id",
+				"SELECT CAST(pm.meta_value AS UNSIGNED) AS course_id, COUNT(*) AS lesson_count
+				FROM {$postsTable} p
+				INNER JOIN {$postmetaTable} pm ON pm.post_id = p.ID AND pm.meta_key = %s
+				WHERE p.post_type = %s
+					AND p.post_status != 'trash'
+					AND CAST(pm.meta_value AS UNSIGNED) IN ({$placeholders})
+				GROUP BY CAST(pm.meta_value AS UNSIGNED)",
+				$courseMeta,
+				$lessonType,
 				...$courseIds
 			)
 		);
@@ -329,34 +354,55 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 	 * @return array<string, mixed>
 	 */
 	public function getReportsSummary( ?int $authorId ): array {
-		$prefix           = $this->wpdb->prefix;
-		$coursesTable     = Schema::validateTable( Schema::coursesTable( $prefix ), $prefix );
-		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $prefix ), $prefix );
-		$progressTable    = Schema::validateTable( Schema::progressTable( $prefix ), $prefix );
-
-		$where  = '1=1';
-		$params = array();
-
-		if ( null !== $authorId ) {
-			$where    = 'author_id = %d';
-			$params[] = $authorId;
-		}
+		$postsTable       = $this->wpdb->posts;
+		$enrollmentsTable = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+		$progressTable    = Schema::validateTable( Schema::progressTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+		$courseType       = PostTypes::COURSE;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, WordPress.DB.PreparedSQLPlaceholders.UnfinishedPrepare, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$totalCourses = (int) $this->wpdb->get_var(
-			array() === $params
-				? "SELECT COUNT(*) FROM {$coursesTable}"
-				: $this->wpdb->prepare( "SELECT COUNT(*) FROM {$coursesTable} WHERE {$where}", ...$params )
-		);
+		$archived = PostTypes::STATUS_ARCHIVED;
 
-		$courseIdSql = array() === $params
-			? "SELECT id FROM {$coursesTable}"
-			: $this->wpdb->prepare( "SELECT id FROM {$coursesTable} WHERE {$where}", ...$params );
+		if ( null !== $authorId ) {
+			$totalCourses = (int) $this->wpdb->get_var(
+				$this->wpdb->prepare(
+					"SELECT COUNT(*) FROM {$postsTable}
+					WHERE post_type = %s AND post_author = %d AND post_status IN ('draft','publish','{$archived}')",
+					$courseType,
+					$authorId
+				)
+			);
 
-		$courseIds = array_map(
-			static fn( object $row ): int => (int) $row->id,
-			$this->wpdb->get_results( $courseIdSql ) ?: array()
-		);
+			$courseIds = array_map(
+				'intval',
+				$this->wpdb->get_col(
+					$this->wpdb->prepare(
+						"SELECT ID FROM {$postsTable}
+						WHERE post_type = %s AND post_author = %d AND post_status IN ('draft','publish','{$archived}')",
+						$courseType,
+						$authorId
+					)
+				) ?: array()
+			);
+		} else {
+			$totalCourses = (int) $this->wpdb->get_var(
+				$this->wpdb->prepare(
+					"SELECT COUNT(*) FROM {$postsTable}
+					WHERE post_type = %s AND post_status IN ('draft','publish','{$archived}')",
+					$courseType
+				)
+			);
+
+			$courseIds = array_map(
+				'intval',
+				$this->wpdb->get_col(
+					$this->wpdb->prepare(
+						"SELECT ID FROM {$postsTable}
+						WHERE post_type = %s AND post_status IN ('draft','publish','{$archived}')",
+						$courseType
+					)
+				) ?: array()
+			);
+		}
 
 		$studentsTotal    = 0;
 		$enrollmentsTotal = 0;
@@ -395,7 +441,10 @@ final class WpdbAdminDashboardRepository implements AdminDashboardRepositoryInte
 		if ( null !== $authorId ) {
 			$lessonsCompleted = (int) $this->wpdb->get_var(
 				$this->wpdb->prepare(
-					"SELECT COUNT(*) FROM {$progressTable} p INNER JOIN {$coursesTable} c ON c.id = p.course_id WHERE c.author_id = %d",
+					"SELECT COUNT(*) FROM {$progressTable} p
+					INNER JOIN {$postsTable} c ON c.ID = p.course_id AND c.post_type = %s
+					WHERE c.post_author = %d",
+					$courseType,
 					$authorId
 				)
 			);

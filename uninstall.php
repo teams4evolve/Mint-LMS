@@ -24,6 +24,7 @@ foreach ( Schema::allTables( $wpdb->prefix ) as $mintlms_table ) {
 // phpcs:enable WordPress.DB.DirectDatabaseQuery.SchemaChange, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.DirectDatabaseQuery.DirectQuery
 
 delete_option( 'mintlms_db_version' );
+delete_option( 'mintlms_cpt_content_migrated' );
 delete_option( 'mintlms_first_run_complete' );
 delete_option( 'mintlms_guided_course_complete' );
 delete_option( 'mintlms_certificate_template' );
@@ -48,6 +49,23 @@ if ( $deletePages ) {
 	foreach ( array_unique( array_filter( $pageIds ) ) as $pageId ) {
 		wp_delete_post( $pageId, true );
 	}
+}
+
+// Remove CPT-backed LMS content.
+$mintlms_cpt_ids = get_posts(
+	array(
+		'post_type'              => array( 'mint-course', 'mint-lesson', 'mint-quiz', 'mint-question' ),
+		'post_status'            => 'any',
+		'posts_per_page'         => -1,
+		'fields'                 => 'ids',
+		'no_found_rows'          => true,
+		'update_post_meta_cache' => false,
+		'update_post_term_cache' => false,
+	)
+);
+
+foreach ( $mintlms_cpt_ids as $mintlms_post_id ) {
+	wp_delete_post( (int) $mintlms_post_id, true );
 }
 
 remove_role( 'mintlms_instructor' );

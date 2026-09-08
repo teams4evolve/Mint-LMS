@@ -9,6 +9,7 @@ use MintLMS\Application\Contract\CertificateUrlBuilderInterface;
 use MintLMS\Application\Contract\UserLookupInterface;
 use MintLMS\Domain\Course\Course;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
+use MintLMS\Domain\Course\CourseSettings;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
 use MintLMS\Domain\Progress\ProgressRepositoryInterface;
@@ -96,6 +97,7 @@ final class CertificateServiceTest extends TestCase
             1,
             new \DateTimeImmutable('2026-01-01 00:00:00'),
             new \DateTimeImmutable('2026-01-01 00:00:00'),
+            new CourseSettings(true, true, true),
         );
     }
 }

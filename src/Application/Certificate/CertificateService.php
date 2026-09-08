@@ -61,6 +61,12 @@ final class CertificateService {
 			return false;
 		}
 
+		$course = $this->courseRepository->findById( $courseId );
+
+		if ( null === $course || ! $course->settings->certificate ) {
+			return false;
+		}
+
 		$summary = $this->progressRepository->getSummary( $userId, $courseId );
 
 		return null !== $summary && $summary->isCourseComplete();

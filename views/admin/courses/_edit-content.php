@@ -8,17 +8,16 @@ defined( 'ABSPATH' ) || exit;
 /** @var MintLMS\Infrastructure\Admin\ViewRenderer $renderer */
 /** @var int $courseId */
 
-$builderUrl = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId );
 $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
+
+$inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-border-[1.5px] mint-border-[#B9B6CE] mint-bg-white mint-px-[14px] mint-text-[17px] mint-leading-7 mint-text-ink focus:mint-outline-none';
 ?>
 <div
-	style="max-width:560px;margin:0 auto;padding:48px var(--mint-page-pad) 96px"
 	x-data="courseEdit(<?php echo esc_attr( (string) $courseId ); ?>)"
 	x-init="init()"
 	@mint-save-course.window="save()"
 >
-	<!-- Loading -->
-	<div x-show="loading" x-cloak style="padding-top:40px">
+	<div x-show="loading" x-cloak class="mint-pt-10">
 		<?php
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'skeleton',
@@ -27,8 +26,7 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 		?>
 	</div>
 
-	<!-- Error -->
-	<div x-show="error && !loading" x-cloak style="padding-top:40px">
+	<div x-show="error && !loading" x-cloak class="mint-pt-10">
 		<?php
 		$mintlms_retry_button = $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped -- ViewRenderer returns escaped component HTML.
 			'button',
@@ -50,213 +48,267 @@ $coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
 		?>
 	</div>
 
-	<!-- Main form -->
 	<div x-show="!loading && !error" x-cloak>
-
-		<!-- Breadcrumb -->
-		<nav style="font-size:16px;line-height:24px;color:var(--mint-ink-2);margin-bottom:12px">
-			<a href="<?php echo esc_url( $coursesUrl ); ?>"
-			   style="color:var(--mint-ink-2);text-decoration:none"
-			   onmouseover="this.style.color='var(--mint-ink)'"
-			   onmouseout="this.style.color='var(--mint-ink-2)'"
-			><?php echo esc_html__( 'Courses', 'mint-lms' ); ?></a>
-			<span style="margin:0 6px;opacity:.5">›</span>
-			<span x-text="form.title || '<?php echo esc_attr__( 'Untitled', 'mint-lms' ); ?>'"></span>
+		<nav class="mint-flex mint-items-center mint-gap-3 mint-pb-2 mint-pt-12 mint-text-base mint-text-ink-2">
+			<a href="<?php echo esc_url( $coursesUrl ); ?>" class="mint-font-medium mint-text-ink-2 mint-no-underline hover:mint-text-ink"><?php esc_html_e( 'Courses', 'mint-lms' ); ?></a>
+			<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#33334A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4.5 5.5 5.5L8 15.5"/></svg>
+			<span class="mint-truncate" x-text="form.title || '<?php echo esc_attr__( 'Untitled', 'mint-lms' ); ?>'"></span>
 		</nav>
 
-		<!-- Page title -->
-		<h1 style="font-size:48px;line-height:52px;font-weight:600;letter-spacing:-.04em;color:var(--mint-ink);margin:0 0 44px">
-			<?php echo esc_html__( 'Course settings', 'mint-lms' ); ?>
+		<h1 class="mint-m-0 mint-pb-8 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink">
+			<?php esc_html_e( 'Course settings', 'mint-lms' ); ?>
 		</h1>
 
-		<form @submit.prevent="save()">
+		<form class="mint-max-w-[560px] mint-pb-[72px]" @submit.prevent="save()">
+			<div class="mint-grid mint-gap-8">
 
-			<!-- ── Course name ─────────────────────────────── -->
-			<div>
-				<label for="mint-course-title" class="mint-label">
-					<?php echo esc_html__( 'Course name', 'mint-lms' ); ?>
-				</label>
-				<input
-					id="mint-course-title"
-					type="text"
-					class="mint-input"
-					style="height:50px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px"
-					x-model="form.title"
-					required
-				/>
-				<span class="mint-helper"><?php echo esc_html__( 'Students see this on their dashboard.', 'mint-lms' ); ?></span>
-			</div>
+				<div class="mint-grid mint-gap-[26px]">
+					<div class="mint-grid mint-gap-[9px]">
+						<label for="mint-course-title" class="mint-text-base mint-font-semibold mint-text-ink">
+							<?php esc_html_e( 'Course name', 'mint-lms' ); ?>
+						</label>
+						<input
+							id="mint-course-title"
+							type="text"
+							class="<?php echo esc_attr( $inputClass ); ?> mint-h-[50px]"
+							x-model="form.title"
+							required
+						/>
+						<p class="mint-m-0 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Students see this on their dashboard.', 'mint-lms' ); ?></p>
+					</div>
 
-			<!-- ── Short description ───────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<label for="mint-course-desc" class="mint-label">
-					<?php echo esc_html__( 'Short description', 'mint-lms' ); ?>
-				</label>
-				<textarea
-					id="mint-course-desc"
-					class="mint-textarea"
-					style="min-height:110px;border-width:1.5px;border-color:#B9B6CE;border-radius:8px"
-					x-model="form.description"
-				></textarea>
-				<span class="mint-helper"><?php echo esc_html__( 'Two sentences is plenty.', 'mint-lms' ); ?></span>
-			</div>
-
-			<!-- ── Cover image ─────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:16px">
-					<?php echo esc_html__( 'Cover image', 'mint-lms' ); ?>
-				</span>
-
-				<!-- Image placeholder / preview -->
-				<div
-					x-show="!featuredImageUrl"
-					style="height:200px;border-radius:14px;border:1.5px dashed #A79FE0;display:flex;align-items:center;justify-content:center;background:var(--mint-tint)"
-				>
-					<svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="var(--mint-ink-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="opacity:.45">
-						<rect x="3" y="3" width="18" height="18" rx="3"/>
-						<circle cx="9" cy="9" r="1.5"/>
-						<path d="m21 15-3.086-3.086a2 2 0 0 0-2.828 0L6 21"/>
-					</svg>
-				</div>
-				<div
-					x-show="featuredImageUrl"
-					x-cloak
-					style="height:200px;border-radius:14px;overflow:hidden"
-				>
-					<img :src="featuredImageUrl" alt="" style="width:100%;height:100%;object-fit:cover" />
+					<div class="mint-grid mint-gap-[9px]">
+						<label for="mint-course-desc" class="mint-text-base mint-font-semibold mint-text-ink">
+							<?php esc_html_e( 'Short description', 'mint-lms' ); ?>
+						</label>
+						<textarea
+							id="mint-course-desc"
+							class="<?php echo esc_attr( $inputClass ); ?> mint-min-h-[110px] mint-resize-y mint-py-[13px]"
+							x-model="form.description"
+						></textarea>
+						<p class="mint-m-0 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Two sentences is plenty.', 'mint-lms' ); ?></p>
+					</div>
 				</div>
 
-				<div style="display:flex;align-items:center;gap:10px;margin-top:14px">
-					<button type="button" class="mint-btn mint-btn--secondary mint-btn--sm" @click="pickImage()">
-						<?php echo esc_html__( 'Upload', 'mint-lms' ); ?>
-					</button>
+				<section class="mint-grid mint-gap-[14px] mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+					<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
+						<?php esc_html_e( 'Cover image', 'mint-lms' ); ?>
+					</div>
+
+					<div
+						x-show="!featuredImageUrl"
+						class="mint-cover-placeholder mint-flex mint-h-[200px] mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0]"
+					>
+						<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'cover image · 1200×675', 'mint-lms' ); ?></span>
+					</div>
+					<div
+						x-show="featuredImageUrl"
+						x-cloak
+						class="mint-h-[200px] mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
+					>
+						<img :src="featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
+					</div>
+
+					<p class="mint-m-0 mint-text-base mint-leading-[26px] mint-text-ink-2">
+						<?php esc_html_e( 'Optional. Shown on the student dashboard and course page. Landscape works best.', 'mint-lms' ); ?>
+					</p>
+
+					<div class="mint-flex mint-flex-wrap mint-gap-2.5">
+						<button
+							type="button"
+							class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-base mint-font-semibold mint-text-cta-ink"
+							@click="pickImage()"
+						><?php esc_html_e( 'Upload image', 'mint-lms' ); ?></button>
+						<button
+							type="button"
+							class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-[15px] mint-text-base mint-font-semibold mint-text-cta-ink"
+							@click="clearImage()"
+						><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+					</div>
+				</section>
+
+				<section class="mint-grid mint-gap-5 mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+					<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
+						<?php esc_html_e( 'Who can see it', 'mint-lms' ); ?>
+					</div>
+
+					<div class="mint-grid mint-gap-5">
+						<?php
+						$visibility_options = array(
+							array(
+								'value' => 'published',
+								'label' => __( 'Live', 'mint-lms' ),
+								'desc'  => __( 'Anyone you enroll can start it now.', 'mint-lms' ),
+							),
+							array(
+								'value' => 'draft',
+								'label' => __( 'Draft', 'mint-lms' ),
+								'desc'  => __( "Only you can see it. Students can't open it yet.", 'mint-lms' ),
+							),
+							array(
+								'value' => 'archived',
+								'label' => __( 'Hidden', 'mint-lms' ),
+								'desc'  => __( 'Enrolled students keep access; nobody new can join.', 'mint-lms' ),
+							),
+						);
+						foreach ( $visibility_options as $opt ) :
+							?>
+						<label
+							class="mint-flex mint-cursor-pointer mint-items-start mint-gap-[13px] mint-rounded-md mint-outline-none focus-within:mint-shadow-[0_0_0_3px_rgba(152,251,203,0.55)]"
+							@click="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
+						>
+							<span
+								class="mint-settings-radio mint-mt-[3px] mint-shrink-0"
+								:class="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'mint-settings-radio--on' : ''"
+								role="radio"
+								tabindex="0"
+								:aria-checked="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
+								@keydown.space.prevent="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
+							></span>
+							<span>
+								<span class="mint-block mint-text-[17px] mint-font-semibold mint-text-ink"><?php echo esc_html( $opt['label'] ); ?></span>
+								<span class="mint-mt-0.5 mint-block mint-text-base mint-leading-6 mint-text-ink-2"><?php echo esc_html( $opt['desc'] ); ?></span>
+							</span>
+						</label>
+						<?php endforeach; ?>
+					</div>
+				</section>
+
+				<section class="mint-grid mint-gap-5 mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+					<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
+						<?php esc_html_e( 'Enrollment', 'mint-lms' ); ?>
+					</div>
+
+					<div class="mint-grid mint-gap-5">
+						<?php
+						$enrollment_options = array(
+							array(
+								'value' => 'open',
+								'label' => __( 'Open', 'mint-lms' ),
+								'desc'  => __( 'Students can enroll themselves for free.', 'mint-lms' ),
+							),
+							array(
+								'value' => 'manual',
+								'label' => __( 'Manual', 'mint-lms' ),
+								'desc'  => __( 'Only you (or staff) can enroll students.', 'mint-lms' ),
+							),
+							array(
+								'value' => 'paid',
+								'label' => __( 'Paid (WooCommerce)', 'mint-lms' ),
+								'desc'  => __( 'Students buy a WooCommerce product to get access.', 'mint-lms' ),
+							),
+						);
+						foreach ( $enrollment_options as $opt ) :
+							?>
+						<label
+							class="mint-flex mint-cursor-pointer mint-items-start mint-gap-[13px] mint-rounded-md mint-outline-none focus-within:mint-shadow-[0_0_0_3px_rgba(152,251,203,0.55)]"
+							@click="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
+						>
+							<span
+								class="mint-settings-radio mint-mt-[3px] mint-shrink-0"
+								:class="form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'mint-settings-radio--on' : ''"
+								role="radio"
+								tabindex="0"
+								:aria-checked="form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
+								@keydown.space.prevent="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
+							></span>
+							<span>
+								<span class="mint-block mint-text-[17px] mint-font-semibold mint-text-ink"><?php echo esc_html( $opt['label'] ); ?></span>
+								<span class="mint-mt-0.5 mint-block mint-text-base mint-leading-6 mint-text-ink-2"><?php echo esc_html( $opt['desc'] ); ?></span>
+							</span>
+						</label>
+						<?php endforeach; ?>
+					</div>
+
+					<div
+						x-show="woocommerceAvailable && (form.enrollmentType === 'paid' || commerce.productId)"
+						x-cloak
+						class="mint-grid mint-gap-3 mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6] mint-bg-[#F7F6FB] mint-p-4"
+					>
+						<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Sell with WooCommerce', 'mint-lms' ); ?></div>
+						<p class="mint-m-0 mint-text-sm mint-leading-5 mint-text-ink-2">
+							<?php esc_html_e( 'Creates a “Mint LMS Course” product linked to this course. Buyers are enrolled when the order is processing or completed.', 'mint-lms' ); ?>
+						</p>
+						<div class="mint-flex mint-flex-wrap mint-items-end mint-gap-3">
+							<div class="mint-grid mint-gap-1.5">
+								<label for="mint-wc-price" class="mint-text-sm mint-font-semibold mint-text-ink"><?php esc_html_e( 'Price', 'mint-lms' ); ?></label>
+								<input
+									id="mint-wc-price"
+									type="text"
+									inputmode="decimal"
+									class="<?php echo esc_attr( $inputClass ); ?> mint-h-[42px] mint-w-[140px]"
+									x-model="wcPrice"
+									placeholder="29.00"
+								/>
+							</div>
+							<button
+								type="button"
+								class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-base mint-font-semibold mint-text-cta-ink disabled:mint-opacity-50"
+								:disabled="creatingProduct || !wcPrice"
+								@click="createWooProduct()"
+							>
+								<span x-text="commerce.productId ? '<?php echo esc_js( __( 'Update product', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Create product', 'mint-lms' ) ); ?>'"></span>
+							</button>
+							<template x-if="commerce.editUrl">
+								<a :href="commerce.editUrl" target="_blank" rel="noopener noreferrer" class="mint-inline-flex mint-h-[42px] mint-items-center mint-text-base mint-font-semibold mint-text-[#0B4F3F] mint-no-underline">
+									<?php esc_html_e( 'Edit in WooCommerce', 'mint-lms' ); ?>
+								</a>
+							</template>
+						</div>
+						<p x-show="commerce.productId" x-cloak class="mint-m-0 mint-text-sm mint-text-ink-2">
+							<span><?php esc_html_e( 'Linked product #', 'mint-lms' ); ?></span><span x-text="commerce.productId"></span>
+						</p>
+					</div>
+
+					<p
+						x-show="!woocommerceAvailable && form.enrollmentType === 'paid'"
+						x-cloak
+						class="mint-m-0 mint-text-sm mint-text-[#C22B2B]"
+					>
+						<?php esc_html_e( 'WooCommerce is not active. Install and activate WooCommerce to sell this course.', 'mint-lms' ); ?>
+					</p>
+				</section>
+
+				<section class="mint-grid mint-gap-5 mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+					<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
+						<?php esc_html_e( 'Options', 'mint-lms' ); ?>
+					</div>
+
+					<div class="mint-grid mint-gap-5">
+						<template x-for="option in options" :key="option.key">
+							<div class="mint-flex mint-items-center mint-justify-between mint-gap-4">
+								<div
+									class="mint-text-[17px] mint-font-medium"
+									:class="option.on ? 'mint-text-ink' : 'mint-text-ink-2'"
+									x-text="option.label"
+								></div>
+								<button
+									type="button"
+									class="mint-settings-toggle"
+									:class="option.on ? 'mint-settings-toggle--on' : 'mint-settings-toggle--off'"
+									:aria-pressed="option.on ? 'true' : 'false'"
+									@click="option.on = !option.on"
+								>
+									<span class="mint-settings-toggle__knob"></span>
+								</button>
+							</div>
+						</template>
+					</div>
+				</section>
+
+				<section class="mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-4 mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+					<div>
+						<div class="mint-text-[17px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Delete this course', 'mint-lms' ); ?></div>
+						<div class="mint-mt-0.5 mint-text-base mint-text-ink-2" x-text="deleteHint()"></div>
+					</div>
 					<button
 						type="button"
-						class="mint-btn mint-btn--ghost mint-btn--sm"
-						style="color:var(--mint-ink-3)"
-						x-show="form.featuredImageId"
-						x-cloak
-						@click="clearImage()"
-					>
-						<?php echo esc_html__( 'Remove', 'mint-lms' ); ?>
-					</button>
-				</div>
+						class="mint-settings-delete mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-[1.5px] mint-border-[#D98B84] mint-bg-white mint-px-[18px] mint-text-base mint-font-semibold mint-text-[#C22B2B]"
+						@click="deleteCourse()"
+					><?php esc_html_e( 'Delete course', 'mint-lms' ); ?></button>
+				</section>
+
 			</div>
-
-			<!-- ── Who can see it ──────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:20px">
-					<?php echo esc_html__( 'Who can see it', 'mint-lms' ); ?>
-				</span>
-
-				<div style="display:flex;flex-direction:column;gap:18px">
-					<?php
-					$visibilityOptions = array(
-						array(
-							'value' => 'published',
-							'label' => __( 'Live', 'mint-lms' ),
-							'desc'  => __( 'Visible to everyone. Students can enrol.', 'mint-lms' ),
-						),
-						array(
-							'value' => 'draft',
-							'label' => __( 'Draft', 'mint-lms' ),
-							'desc'  => __( 'Only you can see it. Useful while building.', 'mint-lms' ),
-						),
-						array(
-							'value' => 'archived',
-							'label' => __( 'Hidden', 'mint-lms' ),
-							'desc'  => __( 'Unlisted. Only direct link holders can access it.', 'mint-lms' ),
-						),
-					);
-					foreach ( $visibilityOptions as $opt ) :
-					?>
-					<label
-						style="display:flex;align-items:flex-start;gap:14px;cursor:pointer"
-						@click="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
-					>
-						<span
-							class="mint-radio"
-							:class="{ 'is-selected': form.status === '<?php echo esc_attr( $opt['value'] ); ?>' }"
-							role="radio"
-							tabindex="0"
-							:aria-checked="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
-							@keydown.space.prevent="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
-							style="margin-top:2px"
-						></span>
-						<span>
-							<span style="display:block;font-size:16px;font-weight:600;color:var(--mint-ink);line-height:24px">
-								<?php echo esc_html( $opt['label'] ); ?>
-							</span>
-							<span style="display:block;font-size:15px;color:var(--mint-ink-2);line-height:22px;margin-top:2px">
-								<?php echo esc_html( $opt['desc'] ); ?>
-							</span>
-						</span>
-					</label>
-					<?php endforeach; ?>
-				</div>
-			</div>
-
-			<!-- ── Enrollment ──────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:20px">
-					<?php echo esc_html__( 'Enrollment', 'mint-lms' ); ?>
-				</span>
-
-				<div style="display:flex;flex-direction:column;gap:18px">
-					<?php
-					$enrollmentOptions = array(
-						array(
-							'value' => 'open',
-							'label' => __( 'Open enrollment', 'mint-lms' ),
-							'desc'  => __( 'Students can enroll themselves from the course page.', 'mint-lms' ),
-						),
-						array(
-							'value' => 'manual',
-							'label' => __( 'Manual enrollment', 'mint-lms' ),
-							'desc'  => __( 'Only students you add can access the course.', 'mint-lms' ),
-						),
-					);
-					foreach ( $enrollmentOptions as $opt ) :
-						?>
-					<label
-						style="display:flex;align-items:flex-start;gap:14px;cursor:pointer"
-						@click="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
-					>
-						<span
-							class="mint-radio"
-							:class="{ 'is-selected': form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' }"
-							role="radio"
-							tabindex="0"
-							:aria-checked="form.enrollmentType === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
-							@keydown.space.prevent="form.enrollmentType = '<?php echo esc_attr( $opt['value'] ); ?>'"
-							style="margin-top:2px"
-						></span>
-						<span>
-							<span style="display:block;font-size:16px;font-weight:600;color:var(--mint-ink);line-height:24px">
-								<?php echo esc_html( $opt['label'] ); ?>
-							</span>
-							<span style="display:block;font-size:15px;color:var(--mint-ink-2);line-height:22px;margin-top:2px">
-								<?php echo esc_html( $opt['desc'] ); ?>
-							</span>
-						</span>
-					</label>
-					<?php endforeach; ?>
-				</div>
-			</div>
-
-			<!-- ── Delete ──────────────────────────────────── -->
-			<div style="border-top:1.5px solid #DAD7E6;padding-top:32px;margin-top:32px">
-				<span class="mint-t-over" style="display:block;margin-bottom:8px;color:var(--mint-danger)">
-					<?php echo esc_html__( 'Delete', 'mint-lms' ); ?>
-				</span>
-				<p style="font-size:16px;color:var(--mint-ink-2);line-height:24px;margin:0 0 16px">
-					<?php echo esc_html__( 'Permanently remove this course and all its content. This action cannot be undone.', 'mint-lms' ); ?>
-				</p>
-				<button type="button" class="mint-btn mint-btn--danger-outline mint-btn--sm" @click="deleteCourse()">
-					<?php echo esc_html__( 'Delete this course', 'mint-lms' ); ?>
-				</button>
-			</div>
-
 		</form>
 	</div>
 </div>

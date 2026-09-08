@@ -5,6 +5,7 @@ namespace MintLMS\Application\Course;
 
 use MintLMS\Application\Contract\AdminDashboardRepositoryInterface;
 use MintLMS\Application\Contract\AuthorizationInterface;
+use MintLMS\Application\Contract\UserLookupInterface;
 use MintLMS\Application\Course\Dto\CourseDto;
 use MintLMS\Application\Course\Dto\CourseListDto;
 use MintLMS\Application\Course\Dto\CreateCourseDto;
@@ -12,10 +13,12 @@ use MintLMS\Application\Course\Dto\UpdateCourseDto;
 use MintLMS\Application\Exception\ForbiddenException;
 use MintLMS\Application\Exception\NotFoundException;
 use MintLMS\Application\Exception\ValidationException;
+use MintLMS\Application\Event\DomainEventPublisher;
 use MintLMS\Domain\Course\Course;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
+use MintLMS\Domain\Event\CoursePublished;
 use MintLMS\Domain\Shared\Clock;
 
 final class CourseService {
@@ -29,6 +32,8 @@ final class CourseService {
 		private AuthorizationInterface $authorization,
 		private Clock $clock,
 		private ?AdminDashboardRepositoryInterface $dashboardRepository = null,
+		private ?UserLookupInterface $users = null,
+		private ?DomainEventPublisher $events = null,
 	) {
 	}
 
@@ -77,9 +82,19 @@ final class CourseService {
 		$title       = null !== $dto->title ? trim( $dto->title ) : $course->title;
 		$slug        = null !== $dto->slug ? $this->normalizeSlug( $dto->slug ) : $course->slug;
 		$description = null !== $dto->description ? $dto->description : $course->description;
-		$imageId     = null !== $dto->featuredImageId ? $dto->featuredImageId : $course->featuredImageId;
+		$imageId     = $dto->updateFeaturedImage ? $dto->featuredImageId : $course->featuredImageId;
 		$enrollment  = null !== $dto->enrollmentType ? $dto->enrollmentType : $course->enrollmentType;
 		$status      = null !== $dto->status ? $dto->status : $course->status;
+		$settings    = $course->settings->with(
+			$dto->emailOnPublish,
+			$dto->studentComplete,
+			$dto->certificate,
+		);
+		$wasPublished = CourseStatus::Published === $course->status;
+
+		if ( null !== $imageId && $imageId <= 0 ) {
+			$imageId = null;
+		}
 
 		if ( '' === $title ) {
 			throw new ValidationException( 'Validation failed.', array( 'title' => 'Title is required.' ) );
@@ -105,9 +120,16 @@ final class CourseService {
 			$course->authorId,
 			$course->createdAt,
 			$this->clock->now(),
+			$settings,
 		);
 
-		return CourseDto::fromCourse( $this->repository->save( $updated ) );
+		$saved = $this->repository->save( $updated );
+
+		if ( ! $wasPublished && CourseStatus::Published === $saved->status && $saved->settings->emailOnPublish ) {
+			$this->dispatchPublished( $saved->id );
+		}
+
+		return CourseDto::fromCourse( $saved );
 	}
 
 	public function delete( int $id, int $userId ): void {
@@ -118,6 +140,62 @@ final class CourseService {
 		}
 
 		$this->repository->delete( $course->id );
+	}
+
+	public function trash( int $id, int $userId ): CourseDto {
+		$course = $this->findCourseOrFail( $id );
+
+		if ( ! $this->authorization->canDeleteCourse( $userId, $course->authorId ) ) {
+			throw new ForbiddenException();
+		}
+
+		if ( CourseStatus::Trashed === $course->status ) {
+			return CourseDto::fromCourse( $course );
+		}
+
+		$trashed = new Course(
+			$course->id,
+			$course->title,
+			$course->slug,
+			$course->description,
+			$course->featuredImageId,
+			CourseStatus::Trashed,
+			$course->enrollmentType,
+			$course->authorId,
+			$course->createdAt,
+			$this->clock->now(),
+			$course->settings,
+		);
+
+		return CourseDto::fromCourse( $this->repository->save( $trashed ) );
+	}
+
+	public function restore( int $id, int $userId ): CourseDto {
+		$course = $this->findCourseOrFail( $id );
+
+		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+			throw new ForbiddenException();
+		}
+
+		if ( CourseStatus::Trashed !== $course->status ) {
+			return CourseDto::fromCourse( $course );
+		}
+
+		$restored = new Course(
+			$course->id,
+			$course->title,
+			$course->slug,
+			$course->description,
+			$course->featuredImageId,
+			CourseStatus::Draft,
+			$course->enrollmentType,
+			$course->authorId,
+			$course->createdAt,
+			$this->clock->now(),
+			$course->settings,
+		);
+
+		return CourseDto::fromCourse( $this->repository->save( $restored ) );
 	}
 
 	public function get( int $id, int $userId ): CourseDto {
@@ -152,6 +230,14 @@ final class CourseService {
 
 		$result = $this->repository->list( $page, $perPage, $authorId, $status, $search );
 
+		$trashTotal = 0;
+		if ( CourseStatus::Trashed !== $status ) {
+			$trashResult = $this->repository->list( 1, 1, $authorId, CourseStatus::Trashed, null );
+			$trashTotal  = $trashResult['total'];
+		} else {
+			$trashTotal = $result['total'];
+		}
+
 		$courseIds = array_map( static fn( Course $course ): int => $course->id, $result['courses'] );
 		$stats     = array();
 
@@ -159,15 +245,24 @@ final class CourseService {
 			$stats = $this->dashboardRepository->getCourseStatsBatch( $courseIds );
 		}
 
+		$users = $this->users;
 		$courses = array_map(
-			static fn( Course $course ): CourseDto => CourseDto::fromCourse(
-				$course,
-				$stats[ $course->id ] ?? null
-			),
+			static function ( Course $course ) use ( $stats, $users ): CourseDto {
+				$authorName = '';
+				if ( null !== $users ) {
+					$authorName = (string) ( $users->getDisplayName( $course->authorId ) ?? '' );
+				}
+
+				return CourseDto::fromCourse(
+					$course,
+					$stats[ $course->id ] ?? null,
+					$authorName
+				);
+			},
 			$result['courses']
 		);
 
-		return new CourseListDto( $courses, $result['total'], $page, $perPage );
+		return new CourseListDto( $courses, $result['total'], $page, $perPage, $trashTotal );
 	}
 
 	public function publish( int $id, int $userId ): CourseDto {
@@ -192,9 +287,29 @@ final class CourseService {
 			$course->authorId,
 			$course->createdAt,
 			$this->clock->now(),
+			$course->settings,
 		);
 
-		return CourseDto::fromCourse( $this->repository->save( $published ) );
+		$saved = $this->repository->save( $published );
+
+		if ( $saved->settings->emailOnPublish ) {
+			$this->dispatchPublished( $saved->id );
+		}
+
+		return CourseDto::fromCourse( $saved );
+	}
+
+	private function dispatchPublished( int $courseId ): void {
+		if ( null === $this->events ) {
+			return;
+		}
+
+		$this->events->publish(
+			new CoursePublished(
+				$courseId,
+				$this->clock->now(),
+			)
+		);
 	}
 
 	private function findCourseOrFail( int $id ): Course {

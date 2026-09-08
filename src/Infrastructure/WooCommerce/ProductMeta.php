@@ -5,6 +5,11 @@ namespace MintLMS\Infrastructure\WooCommerce;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Plugin;
+
+/**
+ * LearnDash-style product ↔ course association UI and helpers.
+ */
 final class ProductMeta {
 
 	public function register(): void {
@@ -12,51 +17,77 @@ final class ProductMeta {
 		add_action( 'woocommerce_process_product_meta', array( $this, 'saveField' ) );
 		add_action( 'woocommerce_product_after_variable_attributes', array( $this, 'renderVariationField' ), 10, 3 );
 		add_action( 'woocommerce_save_product_variation', array( $this, 'saveVariationField' ), 10, 2 );
+		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueAdminAssets' ) );
+	}
+
+	public function enqueueAdminAssets( string $hook ): void {
+		if ( ! in_array( $hook, array( 'post.php', 'post-new.php' ), true ) ) {
+			return;
+		}
+
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( ! $screen || 'product' !== $screen->post_type ) {
+			return;
+		}
+
+		wp_enqueue_script( 'selectWoo' );
+		wp_enqueue_style( 'select2' );
 	}
 
 	public function renderField(): void {
-		echo '<div class="options_group show_if_simple show_if_variable">';
+		$productId = (int) get_the_ID();
+		$courseId  = $this->getCourseIdForProduct( $productId );
+		$options   = $this->courseOptions( $courseId );
 
-		woocommerce_wp_text_input(
-			array(
-				'id'                => EnrollmentBridge::META_COURSE_ID,
-				'label'             => __( 'Mint LMS Course ID', 'mint-lms' ),
-				'desc_tip'          => true,
-				'description'       => __( 'Link this product to a Mint LMS course. Customers are enrolled when the order is completed.', 'mint-lms' ),
-				'type'              => 'number',
-				'custom_attributes' => array(
-					'min'  => '0',
-					'step' => '1',
-				),
-				'value'             => $this->getCourseIdForProduct( (int) get_the_ID() ),
-			)
-		);
+		echo '<div class="options_group show_if_simple show_if_variable show_if_' . esc_attr( CourseProductType::TYPE ) . '">';
+		echo '<p class="form-field">';
+		echo '<label for="' . esc_attr( EnrollmentBridge::META_COURSE_ID ) . '">' . esc_html__( 'Mint LMS course', 'mint-lms' ) . '</label>';
+		echo '<select class="wc-enhanced-select mintlms-course-select" style="width:50%" id="' . esc_attr( EnrollmentBridge::META_COURSE_ID ) . '" name="' . esc_attr( EnrollmentBridge::META_COURSE_ID ) . '" data-placeholder="' . esc_attr__( 'Search courses…', 'mint-lms' ) . '">';
+		echo '<option value="">' . esc_html__( '— Select a course —', 'mint-lms' ) . '</option>';
 
+		foreach ( $options as $id => $label ) {
+			printf(
+				'<option value="%1$d" %2$s>%3$s</option>',
+				(int) $id,
+				selected( $courseId, (int) $id, false ),
+				esc_html( $label )
+			);
+		}
+
+		echo '</select>';
+		echo '<span class="description">' . esc_html__( 'Customers are enrolled in this course when the order is paid (processing/completed).', 'mint-lms' ) . '</span>';
+		echo '</p>';
 		echo '</div>';
 	}
 
 	/**
-	 * @param int     $loop           Variation loop index.
-	 * @param array   $variationData  Variation data.
+	 * @param int      $loop          Variation loop index.
+	 * @param array    $variationData Variation data.
 	 * @param \WP_Post $variation     Variation post.
 	 */
 	public function renderVariationField( int $loop, array $variationData, \WP_Post $variation ): void {
-		woocommerce_wp_text_input(
-			array(
-				'id'                => EnrollmentBridge::META_COURSE_ID . "[{$loop}]",
-				'name'              => EnrollmentBridge::META_COURSE_ID . "[{$loop}]",
-				'label'             => __( 'Mint LMS Course ID', 'mint-lms' ),
-				'desc_tip'          => true,
-				'description'       => __( 'Optional course for this variation. Overrides the parent product course ID.', 'mint-lms' ),
-				'type'              => 'number',
-				'custom_attributes' => array(
-					'min'  => '0',
-					'step' => '1',
-				),
-				'value'             => $this->getCourseIdForProduct( (int) $variation->ID ),
-				'wrapper_class'     => 'form-row form-row-full',
-			)
-		);
+		$courseId = $this->getCourseIdForProduct( (int) $variation->ID );
+		$options  = $this->courseOptions( $courseId );
+		$fieldId  = EnrollmentBridge::META_COURSE_ID . "_{$loop}";
+		$fieldName = EnrollmentBridge::META_COURSE_ID . "[{$loop}]";
+
+		echo '<div class="form-row form-row-full">';
+		echo '<label for="' . esc_attr( $fieldId ) . '">' . esc_html__( 'Mint LMS course', 'mint-lms' ) . '</label>';
+		echo '<select class="wc-enhanced-select" style="width:100%" id="' . esc_attr( $fieldId ) . '" name="' . esc_attr( $fieldName ) . '">';
+		echo '<option value="">' . esc_html__( '— Use parent product course —', 'mint-lms' ) . '</option>';
+
+		foreach ( $options as $id => $label ) {
+			printf(
+				'<option value="%1$d" %2$s>%3$s</option>',
+				(int) $id,
+				selected( $courseId, (int) $id, false ),
+				esc_html( $label )
+			);
+		}
+
+		echo '</select>';
+		echo '</div>';
 	}
 
 	public function saveField( int $productId ): void {
@@ -64,10 +95,7 @@ final class ProductMeta {
 			return;
 		}
 
-		check_admin_referer( 'woocommerce_save_data', 'woocommerce_meta_nonce' );
-
-		$postId = isset( $_POST['post_ID'] ) ? absint( wp_unslash( (string) $_POST['post_ID'] ) ) : 0;
-		if ( $postId > 0 && $postId !== $productId ) {
+		if ( empty( $_POST['woocommerce_meta_nonce'] ) || ! wp_verify_nonce( sanitize_text_field( wp_unslash( (string) $_POST['woocommerce_meta_nonce'] ) ), 'woocommerce_save_data' ) ) {
 			return;
 		}
 
@@ -93,7 +121,7 @@ final class ProductMeta {
 
 		$posted = isset( $_POST[ EnrollmentBridge::META_COURSE_ID ] )
 			&& is_array( $_POST[ EnrollmentBridge::META_COURSE_ID ] )
-			? wp_unslash( $_POST[ EnrollmentBridge::META_COURSE_ID ] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Array values sanitized via absint() below.
+			? wp_unslash( $_POST[ EnrollmentBridge::META_COURSE_ID ] ) // phpcs:ignore WordPress.Security.ValidatedSanitizedInput.InputNotSanitized -- Absint below.
 			: array();
 
 		$courseId = isset( $posted[ $loop ] ) ? absint( (string) $posted[ $loop ] ) : 0;
@@ -133,6 +161,20 @@ final class ProductMeta {
 		return 0;
 	}
 
+	/**
+	 * @return list<int>
+	 */
+	public function getCourseIdsForProduct( int $productId ): array {
+		$courseId = $this->getCourseIdForProduct( $productId );
+
+		return $courseId > 0 ? array( $courseId ) : array();
+	}
+
+	public function linkCourse( int $productId, int $courseId ): void {
+		$this->updateCourseId( $productId, $courseId );
+		wp_set_object_terms( $productId, CourseProductType::TYPE, 'product_type' );
+	}
+
 	private function updateCourseId( int $productId, int $courseId ): void {
 		$product = wc_get_product( $productId );
 
@@ -147,5 +189,27 @@ final class ProductMeta {
 		}
 
 		$product->save();
+	}
+
+	/**
+	 * @return array<int, string>
+	 */
+	private function courseOptions( int $selectedId ): array {
+		$options = array();
+
+		try {
+			$service = Plugin::courseService();
+			$list    = $service->list( 1, 100, get_current_user_id(), null, null );
+			foreach ( $list->courses as $course ) {
+				$options[ $course->id ] = sprintf( '#%d — %s', $course->id, $course->title );
+			}
+		} catch ( \Throwable $e ) { // phpcs:ignore Generic.CodeAnalysis.EmptyStatement.DetectedCatch -- Fall through to selected-only options.
+		}
+
+		if ( $selectedId > 0 && ! isset( $options[ $selectedId ] ) ) {
+			$options[ $selectedId ] = sprintf( '#%d', $selectedId );
+		}
+
+		return $options;
 	}
 }

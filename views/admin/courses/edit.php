@@ -26,10 +26,13 @@ $content = $renderer->render(
 	)
 );
 
-$headerActions = '<a href="' . esc_url( $builderUrl ) . '" class="mint-btn mint-btn--secondary mint-btn--xs" style="text-decoration:none">'
+$btnSecondary = 'mint-inline-flex mint-h-[38px] mint-items-center mint-justify-center mint-rounded-md mint-border-[1.5px] mint-border-[#B9B6CE] mint-bg-white mint-px-[15px] mint-text-[15px] mint-font-semibold mint-text-ink mint-no-underline mint-transition-colors mint-duration-hover hover:mint-bg-[#F4F3F8] focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(63,0,255,0.32)]';
+$btnPrimary   = 'mint-settings-save mint-inline-flex mint-h-[38px] mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-[15px] mint-font-semibold mint-text-cta-ink mint-transition-colors mint-duration-hover focus-visible:mint-outline-none';
+
+$headerActions = '<a href="' . esc_url( $builderUrl ) . '" class="' . esc_attr( $btnSecondary ) . '">'
 	. esc_html__( 'Open builder', 'mint-lms' )
 	. '</a>'
-	. '<button type="button" class="mint-btn mint-btn--primary mint-btn--xs" onclick="window.dispatchEvent(new CustomEvent(\'mint-save-course\'))">'
+	. '<button type="button" class="' . esc_attr( $btnPrimary ) . '" onclick="window.dispatchEvent(new CustomEvent(\'mint-save-course\'))">'
 	. esc_html__( 'Save changes', 'mint-lms' )
 	. '</button>';
 
@@ -40,6 +43,7 @@ $renderer->echo(
 		'pageLabel'     => __( 'Course settings', 'mint-lms' ),
 		'activeNav'     => 'courses',
 		'headerActions' => $headerActions,
+		'maxWidthClass' => 'mint-max-w-[1000px]',
 		'content'       => $content,
 	)
 );

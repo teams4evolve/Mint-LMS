@@ -24,16 +24,24 @@ foreach ( $courses as $c ) {
 
 $pageTitle = __( 'My courses', 'mint-lms' );
 $userName  = '';
+$huePalette = array(
+	array( 'bg' => 'mint-bg-hue-1', 'text' => 'mint-text-hue-1i' ),
+	array( 'bg' => 'mint-bg-hue-2', 'text' => 'mint-text-hue-2i' ),
+	array( 'bg' => 'mint-bg-hue-3', 'text' => 'mint-text-hue-3i' ),
+	array( 'bg' => 'mint-bg-hue-4', 'text' => 'mint-text-hue-4i' ),
+	array( 'bg' => 'mint-bg-hue-5', 'text' => 'mint-text-hue-5i' ),
+	array( 'bg' => 'mint-bg-hue-6', 'text' => 'mint-text-hue-6i' ),
+);
 include MINTLMS_PATH . 'views/student/partials/student-header.php';
 ?>
 
-<div class="mint-student-page">
+<div class="mint-max-w-content mint-mx-auto mint-px-4 sm:mint-px-6 mint-pb-10">
 
-	<div class="mint-student-hero">
-		<h1 class="mint-student-greeting">
+	<div class="mint-mb-8">
+		<h1 class="mint-text-h1 mint-font-semibold mint-text-ink mint-tracking-tight">
 			<?php esc_html_e( 'My courses', 'mint-lms' ); ?>
 		</h1>
-		<p class="mint-student-lead">
+		<p class="mint-mt-2 mint-text-body mint-text-ink-2">
 			<?php
 			printf(
 				/* translators: 1: total course count, 2: finished course count */
@@ -52,23 +60,29 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 		'completed'   => __( 'Completed', 'mint-lms' ),
 	);
 	?>
-	<div class="mint-filter-tabs" style="margin-bottom:28px">
-		<?php foreach ( $filters as $key => $label ) : ?>
+	<div class="mint-flex mint-flex-wrap mint-gap-2 mint-mb-7">
+		<?php foreach ( $filters as $key => $label ) :
+			$isActive = $filter === $key;
+			$tabClass = $isActive
+				? 'mint-bg-accent mint-text-neutral-50 mint-border-accent'
+				: 'mint-bg-bg mint-text-ink-2 mint-border-rule hover:mint-bg-bg-hover hover:mint-text-ink';
+			?>
 			<a
 				href="<?php echo esc_url( add_query_arg( 'filter', $key, $pageUrl ) ); ?>"
-				class="mint-filter-tab<?php echo $filter === $key ? ' is-active' : ''; ?>"
+				class="mint-inline-flex mint-items-center mint-h-control mint-px-4 mint-text-sm mint-font-medium mint-rounded-full mint-border mint-transition-colors mint-duration-hover mint-no-underline <?php echo esc_attr( $tabClass ); ?>"
+				<?php echo $isActive ? 'aria-current="page"' : ''; ?>
 			><?php echo esc_html( $label ); ?></a>
 		<?php endforeach; ?>
 	</div>
 
 	<?php if ( array() === $courses ) : ?>
-		<div class="mint-student-empty">
-			<p class="mint-student-lead"><?php esc_html_e( 'No courses found. Enroll in a course to get started.', 'mint-lms' ); ?></p>
+		<div class="mint-py-12 mint-text-center">
+			<p class="mint-text-body mint-text-ink-2"><?php esc_html_e( 'No courses found. Enroll in a course to get started.', 'mint-lms' ); ?></p>
 		</div>
 	<?php else : ?>
-		<div class="mint-student-grid">
+		<div class="mint-grid mint-grid-cols-1 sm:mint-grid-cols-2 lg:mint-grid-cols-3 mint-gap-5">
 			<?php foreach ( $courses as $idx => $course ) :
-				$hue     = MintUi::hueByIndex( $idx );
+				$hue     = $huePalette[ $idx % count( $huePalette ) ];
 				$initial = MintUi::courseInitial( $course->title );
 				$pctVal  = (int) round( $course->progressPct );
 				$isDone  = $course->isComplete;
@@ -81,27 +95,36 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 					: $playerUrl;
 
 				$ctaLabel = $isDone ? __( 'Review course', 'mint-lms' ) : __( 'Continue', 'mint-lms' );
-			?>
-				<div class="mint-course-card mint-course-card--static">
-					<div class="mint-course-card__banner mint-course-card__banner--tall" style="background:<?php echo esc_attr( $hue['bg'] ); ?>">
-						<span class="mint-course-card__initial mint-course-card__initial--lg" style="color:<?php echo esc_attr( $hue['ink'] ); ?>"><?php echo esc_html( $initial ); ?></span>
+				$barTrack = $isDone
+					? '[&::-webkit-progress-value]:mint-bg-success [&::-moz-progress-bar]:mint-bg-success'
+					: '[&::-webkit-progress-value]:mint-bg-accent [&::-moz-progress-bar]:mint-bg-accent';
+				$btnClass = $isDone
+					? 'mint-border mint-border-control mint-bg-bg mint-text-ink hover:mint-bg-bg-hover'
+					: 'mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover';
+				?>
+				<article class="mint-flex mint-flex-col mint-overflow-hidden mint-rounded-xl mint-border mint-border-rule mint-bg-bg mint-shadow-card">
+					<div class="mint-relative mint-flex mint-h-36 mint-items-center mint-justify-center <?php echo esc_attr( $hue['bg'] ); ?>">
+						<span class="mint-text-display mint-font-semibold mint-leading-none <?php echo esc_attr( $hue['text'] ); ?>"><?php echo esc_html( $initial ); ?></span>
 						<?php if ( $isDone ) : ?>
-							<div class="mint-course-card__done-badge">
-								<svg width="14" height="14" viewBox="0 0 20 20" fill="#FFFFFF" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+							<div class="mint-absolute mint-top-3 mint-right-3 mint-flex mint-h-7 mint-w-7 mint-items-center mint-justify-center mint-rounded-full mint-bg-success mint-text-neutral-50">
+								<svg class="mint-h-3.5 mint-w-3.5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
 							</div>
 						<?php endif; ?>
 					</div>
-					<div class="mint-course-card__body mint-course-card__body--tall">
-						<div class="mint-course-card__title mint-course-card__title--lg"><?php echo esc_html( $course->title ); ?></div>
-						<div class="mint-course-card__meta"><?php echo esc_html( $course->enrollmentType ); ?></div>
-						<div class="mint-progress mint-progress--md">
-							<div class="mint-progress__fill" style="width:<?php echo esc_attr( (string) absint( $pctVal ) ); ?>%;background:<?php echo $isDone ? 'var(--mint-success)' : 'var(--mint-accent)'; ?>"></div>
-						</div>
-						<a href="<?php echo esc_url( $actionUrl ); ?>" class="mint-btn mint-btn--<?php echo $isDone ? 'secondary' : 'primary'; ?> mint-course-card__cta">
+					<div class="mint-flex mint-flex-1 mint-flex-col mint-gap-3 mint-p-5">
+						<div class="mint-text-h3 mint-font-semibold mint-text-ink mint-line-clamp-2"><?php echo esc_html( $course->title ); ?></div>
+						<div class="mint-text-xs mint-font-medium mint-uppercase mint-tracking-wide mint-text-ink-3"><?php echo esc_html( $course->enrollmentType ); ?></div>
+						<progress
+							class="mint-block mint-h-2 mint-w-full mint-appearance-none mint-overflow-hidden mint-rounded-full mint-bg-bg-track [&::-webkit-progress-bar]:mint-rounded-full [&::-webkit-progress-bar]:mint-bg-bg-track <?php echo esc_attr( $barTrack ); ?>"
+							value="<?php echo esc_attr( (string) absint( $pctVal ) ); ?>"
+							max="100"
+							aria-label="<?php echo esc_attr( $course->title ); ?>"
+						></progress>
+						<a href="<?php echo esc_url( $actionUrl ); ?>" class="mint-mt-auto mint-inline-flex mint-w-full mint-items-center mint-justify-center mint-h-control-md mint-px-4 mint-text-sm mint-font-medium mint-rounded-md mint-transition-colors mint-duration-hover mint-no-underline <?php echo esc_attr( $btnClass ); ?>">
 							<?php echo esc_html( $ctaLabel ); ?>
 						</a>
 					</div>
-				</div>
+				</article>
 			<?php endforeach; ?>
 		</div>
 	<?php endif; ?>

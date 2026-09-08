@@ -16,6 +16,7 @@ final readonly class Course {
 		public int $authorId,
 		public \DateTimeImmutable $createdAt,
 		public \DateTimeImmutable $updatedAt,
+		public CourseSettings $settings = new CourseSettings(),
 	) {
 	}
 }

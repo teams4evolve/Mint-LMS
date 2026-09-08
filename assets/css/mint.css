@@ -5,3 +5,516 @@
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/*
+ * Unlayered on purpose: scoped-reset sets a:hover/a:active { background: transparent }
+ * which beats Tailwind @layer utilities and was wiping button fills on click.
+ */
+#mint-lms-root a.mint-welcome-cta,
+#mint-lms-root a.mint-welcome-cta:visited,
+#mint-lms-root a.mint-welcome-cta:hover,
+#mint-lms-root a.mint-welcome-cta:active,
+#mint-lms-root a.mint-welcome-cta:focus,
+#mint-lms-root a.mint-welcome-cta:focus-visible {
+  color: #0B4F3F !important;
+  background-color: #98FB98 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  opacity: 1;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+#mint-lms-root a.mint-welcome-cta:hover,
+#mint-lms-root a.mint-welcome-cta:focus-visible {
+  background-color: #7FE87F !important;
+  box-shadow: 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+#mint-lms-root a.mint-welcome-skip,
+#mint-lms-root a.mint-welcome-skip:visited {
+  color: #0B4F3F !important;
+  background-color: #98FB98 !important;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+#mint-lms-root a.mint-welcome-skip:hover,
+#mint-lms-root a.mint-welcome-skip:focus-visible {
+  color: #0B4F3F !important;
+  background-color: #7FE87F !important;
+  border-color: transparent !important;
+  box-shadow: 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+#mint-lms-root a.mint-welcome-cta:focus-visible,
+#mint-lms-root a.mint-welcome-skip:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55), 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+}
+
+/* Dashboard / Courses header — New course */
+#mint-lms-root a.mint-dash-new-course,
+#mint-lms-root a.mint-dash-new-course:visited,
+#mint-lms-root a.mint-dash-new-course:hover,
+#mint-lms-root a.mint-dash-new-course:active,
+#mint-lms-root a.mint-dash-new-course:focus,
+#mint-lms-root a.mint-dash-new-course:focus-visible {
+  color: #0B4F3F !important;
+  background-color: #98FB98 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+#mint-lms-root a.mint-dash-new-course:hover,
+#mint-lms-root a.mint-dash-new-course:focus-visible {
+  background-color: #7FE87F !important;
+  box-shadow: 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+#mint-lms-root a.mint-dash-new-course:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55), 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+}
+
+/* Dashboard v2 — Continue editing */
+#mint-lms-root a.mint-dash-continue,
+#mint-lms-root a.mint-dash-continue:visited,
+#mint-lms-root a.mint-dash-continue:hover,
+#mint-lms-root a.mint-dash-continue:active,
+#mint-lms-root a.mint-dash-continue:focus,
+#mint-lms-root a.mint-dash-continue:focus-visible {
+  color: #ffffff !important;
+  background-color: #0F0E1A !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: opacity 120ms ease-out;
+}
+
+#mint-lms-root a.mint-dash-continue:hover,
+#mint-lms-root a.mint-dash-continue:focus-visible {
+  opacity: 0.86;
+}
+
+#mint-lms-root a.mint-dash-continue:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55) !important;
+}
+
+/* Dashboard v2 — search / details / course row */
+#mint-lms-root a.mint-dash-search {
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root a.mint-dash-search:hover,
+#mint-lms-root a.mint-dash-search:focus-visible {
+  background-color: #F4F3F8 !important;
+}
+
+#mint-lms-root a.mint-dash-search:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55);
+}
+
+#mint-lms-root button.mint-dash-details-toggle {
+  transition: all 120ms ease-out;
+}
+
+#mint-lms-root button.mint-dash-details-toggle:hover {
+  background-color: #F4F3F8 !important;
+  color: #0F0E1A !important;
+}
+
+#mint-lms-root button.mint-dash-details-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55);
+}
+
+#mint-lms-root a.mint-dash-course-row {
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root a.mint-dash-course-row:hover,
+#mint-lms-root a.mint-dash-course-row:focus-visible {
+  background-color: #EAFFF6 !important;
+}
+
+#mint-lms-root a.mint-dash-course-row:focus-visible {
+  box-shadow: 0 0 0 2px rgba(152, 251, 203, 0.55);
+}
+
+/* A4 Courses list grid — exact Admin Screens.dc columns */
+#mint-lms-root .mint-courses-grid {
+  display: grid;
+  grid-template-columns: minmax(320px, 1.4fr) 70px 100px 80px 110px 110px 130px 160px;
+  align-items: center;
+  gap: 18px;
+  min-width: 1200px;
+  box-sizing: border-box;
+}
+
+#mint-lms-root .mint-courses-row {
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root .mint-courses-row:hover,
+#mint-lms-root .mint-courses-row:focus-visible {
+  background-color: #F8F6FE !important;
+}
+
+#mint-lms-root .mint-courses-row:focus-visible {
+  box-shadow: 0 0 0 2px rgba(152, 251, 203, 0.55);
+}
+
+/* A8 Lessons / A9 Quizzes — Title | Author | Date (horizontal columns) */
+#mint-lms-root .mint-content-grid {
+  display: grid !important;
+  grid-template-columns: minmax(0, 1fr) 160px 200px !important;
+  align-items: center !important;
+  gap: 16px !important;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+#mint-lms-root .mint-content-row {
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root .mint-content-row:hover,
+#mint-lms-root .mint-content-row:focus-visible {
+  background-color: #F8F6FE !important;
+}
+
+#mint-lms-root .mint-content-row:focus-visible {
+  box-shadow: 0 0 0 2px rgba(152, 251, 203, 0.55);
+}
+
+/* A8/A9 status filters — active = ink box (design file) */
+#mint-lms-root .mint-status-filter {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: #33334A;
+  font-size: 15px;
+  font-weight: 500;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 120ms ease-out;
+}
+
+#mint-lms-root .mint-status-filter:hover {
+  background: #F4F3F8;
+  color: #0F0E1A;
+}
+
+#mint-lms-root .mint-status-filter.is-active {
+  background: #FFFFFF;
+  border-color: #0F0E1A;
+  color: #0F0E1A;
+  font-weight: 600;
+}
+
+#mint-lms-root .mint-status-filter:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55);
+}
+
+/* Design file primary CTA — #98FB98 lime (all primary buttons) */
+#mint-lms-root a.mint-cta-lime,
+#mint-lms-root a.mint-cta-lime:visited,
+#mint-lms-root button.mint-cta-lime,
+#mint-lms-root .mint-cta-lime {
+  color: #0B4F3F !important;
+  background-color: #98FB98 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+#mint-lms-root a.mint-cta-lime:hover,
+#mint-lms-root a.mint-cta-lime:focus-visible,
+#mint-lms-root button.mint-cta-lime:hover,
+#mint-lms-root button.mint-cta-lime:focus-visible,
+#mint-lms-root .mint-cta-lime:hover,
+#mint-lms-root .mint-cta-lime:focus-visible {
+  color: #0B4F3F !important;
+  background-color: #7FE87F !important;
+  box-shadow: 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+#mint-lms-root a.mint-cta-lime:focus-visible,
+#mint-lms-root button.mint-cta-lime:focus-visible,
+#mint-lms-root .mint-cta-lime:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55), 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+}
+
+#mint-lms-root button.mint-cta-lime:disabled,
+#mint-lms-root .mint-cta-lime:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none !important;
+  box-shadow: none !important;
+}
+
+/* Row hover action links — beat scoped-reset a { color: inherit } */
+#mint-lms-root .mint-course-action,
+#mint-lms-root a.mint-course-action,
+#mint-lms-root a.mint-course-action:visited,
+#mint-lms-root a.mint-course-action:hover,
+#mint-lms-root a.mint-course-action:focus,
+#mint-lms-root button.mint-course-action {
+  color: #0B4F3F !important;
+  background: transparent !important;
+  border: 0;
+  padding: 0;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1.2;
+  white-space: nowrap;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+
+#mint-lms-root .mint-course-action--danger,
+#mint-lms-root a.mint-course-action--danger,
+#mint-lms-root a.mint-course-action--danger:visited,
+#mint-lms-root a.mint-course-action--danger:hover,
+#mint-lms-root a.mint-course-action--danger:focus,
+#mint-lms-root button.mint-course-action--danger {
+  color: #B3261E !important;
+}
+
+#mint-lms-root .mint-course-actions {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: center;
+  gap: 6px;
+  margin-top: 4px;
+  overflow: visible;
+}
+
+@layer components {
+  /* WordPress TinyMCE chrome inside the builder — minimal isolation only */
+  #mint-lms-root .mint-wp-editor .wp-editor-wrap {
+    @apply mint-border-0 mint-shadow-none;
+  }
+
+  #mint-lms-root .mint-wp-editor .wp-editor-tools {
+    @apply mint-border-b mint-border-rule-soft mint-bg-bg mint-px-3 mint-py-2;
+  }
+
+  #mint-lms-root .mint-wp-editor .wp-editor-area {
+    @apply mint-min-h-[280px] mint-border-0 mint-font-sans mint-text-base mint-text-ink;
+  }
+
+  /* A1 dashboard structure tree — interactive, design-accurate */
+  #mint-lms-root .mint-structure-tree {
+    display: grid;
+    gap: 0;
+    width: 100%;
+  }
+
+  #mint-lms-root .mint-structure-row {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    width: 100%;
+  }
+
+  #mint-lms-root .mint-structure-l {
+    flex: none;
+    width: 18px;
+    height: 40px;
+    margin-right: 2px;
+    border-left: 2px solid #98FBCB;
+    border-bottom: 2px solid #98FBCB;
+    border-radius: 0 0 0 8px;
+    box-sizing: border-box;
+    pointer-events: none;
+  }
+
+  #mint-lms-root .mint-structure-node {
+    flex: 1 1 auto;
+    display: block;
+    width: 100%;
+    box-sizing: border-box;
+    margin: 4px 0;
+    padding: 0 18px;
+    border-radius: 9px;
+    border: 1.5px solid #98FBCB;
+    background-color: #ffffff;
+    color: #0B4F3F;
+    font-weight: 600;
+    line-height: 1.25;
+    letter-spacing: -0.01em;
+    text-align: left;
+    cursor: pointer;
+    outline: none;
+    transition: background-color 120ms ease-out;
+  }
+
+  #mint-lms-root .mint-structure-node:hover {
+    background-color: #EAFFF6;
+  }
+
+  #mint-lms-root .mint-structure-node:focus-visible {
+    box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55);
+  }
+
+  #mint-lms-root .mint-structure-node.is-active {
+    background-color: #98FBCB;
+    color: #06281F;
+    font-weight: 700;
+  }
+
+  #mint-lms-root .mint-structure-node.is-active:hover {
+    background-color: #EAFFF6;
+    color: #06281F;
+  }
+}
+
+/* A6 Course settings — inputs, cover, toggles, actions */
+#mint-lms-root .mint-settings-input {
+  border: 1.5px solid #B9B6CE !important;
+  border-radius: 8px !important;
+  background: #FFFFFF !important;
+  box-shadow: none !important;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+#mint-lms-root .mint-settings-input:focus {
+  border-color: #98FBCB !important;
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55) !important;
+}
+
+/* A4 Courses search — mint focus like Admin Screens.dc */
+#mint-lms-root .mint-search-input {
+  height: 38px;
+  border: 1.5px solid #B9B6CE !important;
+  border-radius: 8px !important;
+  background: #FFFFFF !important;
+  color: #33334A !important;
+  font-size: 15px;
+  box-shadow: none !important;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out;
+}
+
+#mint-lms-root .mint-search-input:focus {
+  outline: none !important;
+  border-color: #98FBCB !important;
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55) !important;
+}
+
+#mint-lms-root .mint-search-input::placeholder {
+  color: #33334A !important;
+}
+
+#mint-lms-root .mint-cover-placeholder {
+  background: repeating-linear-gradient(
+    135deg,
+    #EFEBFF 0 10px,
+    #F8F6FF 10px 20px
+  );
+}
+
+#mint-lms-root .mint-settings-radio {
+  width: 22px;
+  height: 22px;
+  margin-top: 3px;
+  flex: none;
+  display: block;
+  box-sizing: border-box;
+  border-radius: 999px;
+  background: #FFFFFF !important;
+  border: 2px solid #9C99B5 !important;
+}
+
+#mint-lms-root .mint-settings-radio--on {
+  border: 7px solid #98FBCB !important;
+  background: #FFFFFF !important;
+}
+
+#mint-lms-root .mint-settings-toggle {
+  width: 46px;
+  height: 28px;
+  border: 0;
+  border-radius: 999px;
+  padding: 3px;
+  display: flex;
+  flex: none;
+  cursor: pointer;
+  outline: none;
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root .mint-settings-toggle--on {
+  background: #98FBCB;
+  justify-content: flex-end;
+}
+
+#mint-lms-root .mint-settings-toggle--off {
+  background: #ABA8C2;
+  justify-content: flex-start;
+}
+
+#mint-lms-root .mint-settings-toggle:focus-visible {
+  box-shadow: 0 0 0 3px rgba(63, 0, 255, 0.32);
+}
+
+#mint-lms-root .mint-settings-toggle__knob {
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: #FFFFFF;
+  display: block;
+}
+
+#mint-lms-root a.mint-settings-save,
+#mint-lms-root button.mint-settings-save,
+#mint-lms-root a.mint-settings-save:visited,
+#mint-lms-root button.mint-settings-save:hover,
+#mint-lms-root button.mint-settings-save:active,
+#mint-lms-root button.mint-settings-save:focus,
+#mint-lms-root button.mint-settings-action,
+#mint-lms-root button.mint-settings-action:hover,
+#mint-lms-root button.mint-settings-action:active,
+#mint-lms-root button.mint-settings-action:focus {
+  color: #0B4F3F !important;
+  background-color: #98FB98 !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  transition: background 150ms ease-out, box-shadow 150ms ease-out, transform 150ms ease-out;
+}
+
+#mint-lms-root button.mint-settings-save:hover,
+#mint-lms-root button.mint-settings-save:focus-visible,
+#mint-lms-root button.mint-settings-action:hover,
+#mint-lms-root button.mint-settings-action:focus-visible,
+#mint-lms-root a.mint-settings-save:hover,
+#mint-lms-root a.mint-settings-save:focus-visible {
+  background-color: #7FE87F !important;
+  box-shadow: 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+  transform: translateY(-1px);
+}
+
+#mint-lms-root button.mint-settings-save:focus-visible,
+#mint-lms-root button.mint-settings-action:focus-visible,
+#mint-lms-root a.mint-settings-save:focus-visible {
+  box-shadow: 0 0 0 3px rgba(152, 251, 203, 0.55), 0 4px 12px rgba(11, 79, 63, 0.18) !important;
+}
+
+#mint-lms-root button.mint-settings-delete {
+  color: #C22B2B !important;
+  background-color: #FFFFFF !important;
+  border: 1.5px solid #D98B84 !important;
+  transition: background-color 120ms ease-out;
+}
+
+#mint-lms-root button.mint-settings-delete:hover,
+#mint-lms-root button.mint-settings-delete:focus-visible {
+  background-color: #FBE9E9 !important;
+}
+
+#mint-lms-root button.mint-settings-delete:focus-visible {
+  box-shadow: 0 0 0 3px rgba(194, 43, 43, 0.26) !important;
+}

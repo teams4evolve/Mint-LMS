@@ -29,6 +29,24 @@ $dashboardService = new CreatorDashboardService(
 
 $dashboard = $dashboardService->getDashboard( $userId );
 
+// Empty dashboard: Dashboard v2 empty state (header + hero CTA).
+if ( $dashboard->isEmpty ) {
+	$content = $renderer->render(
+		'admin/dashboard/_empty-content',
+		array(
+			'createUrl' => admin_url( 'admin.php?page=mint-lms-guided-course' ),
+		)
+	);
+
+	$renderer->echo(
+		'admin/layout',
+		array(
+			'content' => $content,
+		)
+	);
+	return;
+}
+
 $content = $renderer->render(
 	'admin/dashboard/_dashboard-content',
 	array(

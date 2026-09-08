@@ -5,7 +5,7 @@ namespace MintLMS\Infrastructure\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use MintLMS\Infrastructure\Database\Schema;
+use MintLMS\Infrastructure\PostType\PostTypes;
 
 final class FirstRunState {
 
@@ -30,24 +30,24 @@ final class FirstRunState {
 	}
 
 	public static function userCourseCount( int $userId ): int {
-		global $wpdb;
-
-		if ( ! $wpdb instanceof \wpdb || $userId <= 0 ) {
+		if ( $userId <= 0 ) {
 			return 0;
 		}
 
-		$table = Schema::validateTable( Schema::coursesTable( $wpdb->prefix ), $wpdb->prefix );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$count = $wpdb->get_var(
-			$wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE author_id = %d",
-				$userId
+		$query = new \WP_Query(
+			array(
+				'post_type'              => PostTypes::COURSE,
+				'post_status'            => array( 'draft', 'publish', PostTypes::STATUS_ARCHIVED ),
+				'author'                 => $userId,
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'no_found_rows'          => false,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 
-		return (int) $count;
+		return (int) $query->found_posts;
 	}
 
 	public static function shouldOfferGuidedFlow( int $userId ): bool {

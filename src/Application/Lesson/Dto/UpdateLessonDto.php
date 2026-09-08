@@ -14,6 +14,8 @@ final readonly class UpdateLessonDto {
 		public ?bool $isPreview = null,
 		public ?int $availableAfterDays = null,
 		public bool $hasAvailableAfterDays = false,
+		public ?int $featuredImageId = null,
+		public bool $updateFeaturedImage = false,
 	) {
 	}
 }

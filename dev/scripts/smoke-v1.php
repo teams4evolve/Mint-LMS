@@ -29,7 +29,7 @@ function mintlms_smoke_assert( bool $condition, string $label ): void {
 	WP_CLI::warning( 'FAIL: ' . $label );
 }
 
-$course = ( new MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository( $wpdb ) )->findBySlug( 'mint-lms-demo-course' );
+$course = ( new MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository() )->findBySlug( 'mint-lms-demo-course' );
 
 mintlms_smoke_assert( null !== $course, 'Demo course exists' );
 
@@ -42,12 +42,12 @@ mintlms_smoke_assert( $student instanceof WP_User, 'Demo student user exists' );
 
 $studentId = $student instanceof WP_User ? (int) $student->ID : 0;
 
-$courseRepo     = new MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository( $wpdb );
-$sectionRepo    = new MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository( $wpdb );
+$courseRepo     = new MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository();
+$lessonRepo     = new MintLMS\Infrastructure\Database\Repository\WpPostLessonRepository();
+$sectionRepo    = new MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository( $wpdb, $lessonRepo );
 $enrollmentRepo = new MintLMS\Infrastructure\Database\Repository\WpdbEnrollmentRepository( $wpdb );
 $progressRepo   = new MintLMS\Infrastructure\Database\Repository\WpdbProgressRepository( $wpdb );
-$quizRepo       = new MintLMS\Infrastructure\Database\Repository\WpdbQuizRepository( $wpdb );
-$lessonRepo     = new MintLMS\Infrastructure\Database\Repository\WpdbLessonRepository( $wpdb );
+$quizRepo       = new MintLMS\Infrastructure\Database\Repository\WpPostQuizRepository( $wpdb );
 $clock          = new MintLMS\Infrastructure\Clock\SystemClock();
 $auth           = MintLMS\Plugin::authorization();
 $lessonAccess   = new MintLMS\Application\Lesson\LessonAccessService( $lessonRepo, $enrollmentRepo, $progressRepo, $clock );

@@ -5,6 +5,8 @@ namespace MintLMS\Infrastructure\WooCommerce;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository;
+
 final class WooCommerceIntegration {
 
 	private static ?self $instance = null;
@@ -14,6 +16,10 @@ final class WooCommerceIntegration {
 	private ProductMeta $productMeta;
 
 	private OrderHandler $orderHandler;
+
+	private CourseProductSync $productSync;
+
+	private CourseProductType $productType;
 
 	public static function isAvailable(): bool {
 		return class_exists( 'WooCommerce' );
@@ -32,10 +38,21 @@ final class WooCommerceIntegration {
 		self::$instance->boot();
 	}
 
+	public static function instance(): ?self {
+		return self::$instance;
+	}
+
 	private function boot(): void {
-		$this->bridge        = new EnrollmentBridge();
-		$this->productMeta   = new ProductMeta();
-		$this->orderHandler  = new OrderHandler( $this->bridge, $this->productMeta );
+		$this->bridge       = new EnrollmentBridge();
+		$this->productMeta  = new ProductMeta();
+		$this->orderHandler = new OrderHandler( $this->bridge, $this->productMeta );
+		$this->productType  = new CourseProductType();
+		$this->productSync  = new CourseProductSync(
+			new WpPostCourseRepository(),
+			$this->productMeta
+		);
+
+		$this->productType->register();
 
 		if ( is_admin() ) {
 			$this->productMeta->register();
@@ -62,5 +79,9 @@ final class WooCommerceIntegration {
 
 	public function orderHandler(): OrderHandler {
 		return $this->orderHandler;
+	}
+
+	public function productSync(): CourseProductSync {
+		return $this->productSync;
 	}
 }

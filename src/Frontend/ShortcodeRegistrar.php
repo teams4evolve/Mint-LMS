@@ -13,6 +13,7 @@ use MintLMS\Application\Exception\ValidationException;
 use MintLMS\Application\Student\StudentExperienceService;
 use MintLMS\Infrastructure\Setup\PageSettings;
 use MintLMS\Infrastructure\Ui\UiRoot;
+use MintLMS\Infrastructure\WooCommerce\WooCommerceIntegration;
 
 final class ShortcodeRegistrar {
 
@@ -190,6 +191,15 @@ final class ShortcodeRegistrar {
 
 		$settings = $this->settings();
 
+		$purchaseUrl   = '';
+		$productPrice  = '';
+		$wc            = WooCommerceIntegration::instance();
+		if ( null !== $wc && 'paid' === $overview->enrollmentType ) {
+			$purchaseUrl  = $wc->productSync()->getPurchaseUrl( $courseId );
+			$productId    = $wc->productSync()->findProductIdForCourse( $courseId );
+			$productPrice = $productId > 0 ? $wc->productSync()->getProductPrice( $productId ) : '';
+		}
+
 		return $this->wrap(
 			$this->templateLoader->render(
 				'student/course-overview.php',
@@ -201,6 +211,8 @@ final class ShortcodeRegistrar {
 					'enrollUrl'     => $this->enrollActionUrl( $courseId ),
 					'enrollMessage' => $enrollMessage,
 					'featuredUrl'   => $this->attachmentUrl( $overview->featuredImageId ),
+					'purchaseUrl'   => $purchaseUrl,
+					'productPrice'  => $productPrice,
 				)
 			)
 		);

@@ -95,6 +95,8 @@ final class CreatorDashboardService {
 			new DashboardMetricsDto(
 				$stats['students_total'],
 				$stats['finished_pct'],
+				(int) ( $stats['finished_count'] ?? 0 ),
+				(int) ( $stats['started_count'] ?? 0 ),
 				$stats['published_count'],
 				$stats['draft_count'],
 				$stats['lessons_done_7d'],

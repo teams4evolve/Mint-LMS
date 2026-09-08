@@ -14,6 +14,7 @@ final class AssetLoader {
 	public function register(): void {
 		add_action( 'admin_enqueue_scripts', array( $this, 'enqueueAdminAssets' ), self::ENQUEUE_PRIORITY );
 		add_action( 'admin_head', array( $this, 'hideWordPressChrome' ) );
+		add_filter( 'admin_body_class', array( $this, 'focusModeBodyClass' ) );
 	}
 
 	public function enqueueAdminAssets( string $hookSuffix ): void {
@@ -40,11 +41,15 @@ final class AssetLoader {
 			'mintLmsAdmin',
 			array(
 				'restBase'           => $restBase,
+				'mediaBase'          => esc_url_raw( rest_url( 'wp/v2/media' ) ),
 				'nonce'              => wp_create_nonce( 'wp_rest' ),
 				'defaultEnrollment'  => $pageSettings->getDefaultEnrollment(),
 				'urls'               => array(
 					'courses'      => admin_url( 'admin.php?page=mint-lms-courses' ),
+					'lessons'      => admin_url( 'admin.php?page=mint-lms-lessons' ),
+					'quizzes'      => admin_url( 'admin.php?page=mint-lms-quizzes' ),
 					'builder'      => admin_url( 'admin.php?page=mint-lms-builder' ),
+					'editQuiz'     => admin_url( 'admin.php?page=mint-lms-edit-quiz' ),
 					'edit'         => admin_url( 'admin.php?page=mint-lms-course-edit' ),
 					'dashboard'    => admin_url( 'admin.php?page=mint-lms' ),
 					'playerPage'   => $pageSettings->getPlayerUrl(),
@@ -79,6 +84,17 @@ final class AssetLoader {
 		}
 	}
 
+	/**
+	 * LearnDash-style focus mode: hide the WP admin sidebar on builder + course edit.
+	 */
+	public function focusModeBodyClass( string $classes ): string {
+		if ( $this->isFocusModeScreen() ) {
+			$classes .= ' mint-lms-focus-mode';
+		}
+
+		return $classes;
+	}
+
 	public function hideWordPressChrome(): void {
 		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
 
@@ -86,21 +102,51 @@ final class AssetLoader {
 			return;
 		}
 
-		$isBuilder = str_contains( (string) $screen->id, 'mint-lms-builder' );
-
 		echo '<style>
 			.mint-lms-admin-wrap{margin:0;padding:0}
 			.mint-lms-admin-wrap>.notice{display:none}
 			#wpbody-content{padding-bottom:0}
 		';
 
-		if ( $isBuilder ) {
+		if ( $this->isFocusModeScreen() ) {
 			echo '
-			body.admin_page_mint-lms-builder #wpcontent{padding-bottom:0}
+			/* LearnDash-style: hide WP admin menu on course builder / edit */
+			body.mint-lms-focus-mode #adminmenuback,
+			body.mint-lms-focus-mode #adminmenuwrap,
+			body.mint-lms-focus-mode #adminmenumain {
+				display: none !important;
+			}
+			body.mint-lms-focus-mode #wpcontent,
+			body.mint-lms-focus-mode #wpfooter {
+				margin-left: 0 !important;
+			}
+			body.mint-lms-focus-mode #wpfooter {
+				display: none !important;
+			}
+			body.mint-lms-focus-mode #wpbody-content {
+				padding-bottom: 0 !important;
+			}
+			body.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
+				margin-left: 0;
+				margin-right: 0;
+			}
 			';
 		}
 
 		echo '</style>';
+	}
+
+	private function isFocusModeScreen(): bool {
+		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
+
+		if ( null === $screen ) {
+			return false;
+		}
+
+		$id = (string) $screen->id;
+
+		return str_contains( $id, 'mint-lms-builder' )
+			|| str_contains( $id, 'mint-lms-course-edit' );
 	}
 
 	private function enqueueStyles( string $handle ): void {

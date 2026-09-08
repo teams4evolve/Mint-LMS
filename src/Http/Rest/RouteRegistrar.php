@@ -5,6 +5,7 @@ namespace MintLMS\Http\Rest;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Http\Rest\Controller\ContentPostListController;
 use MintLMS\Http\Rest\Controller\CourseController;
 use MintLMS\Http\Rest\Controller\EnrollmentController;
 use MintLMS\Http\Rest\Controller\LessonController;
@@ -27,6 +28,7 @@ final class RouteRegistrar {
 		private QuizController $quizController,
 		private OnboardingController $onboardingController,
 		private UserController $userController,
+		private ContentPostListController $contentPostListController,
 	) {
 	}
 
@@ -43,6 +45,7 @@ final class RouteRegistrar {
 		$this->quizController->registerRoutes();
 		$this->onboardingController->registerRoutes();
 		$this->userController->registerRoutes();
+		$this->contentPostListController->registerRoutes();
 
 		register_rest_route(
 			'mintlms/v1',

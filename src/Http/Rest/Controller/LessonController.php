@@ -138,7 +138,25 @@ final class LessonController {
 				$request->offsetExists( 'is_preview' ) ? (bool) $request->get_param( 'is_preview' ) : null,
 				$request->offsetExists( 'available_after_days' ) ? $this->nullableNonNegativeInt( $request->get_param( 'available_after_days' ) ) : null,
 				$request->offsetExists( 'available_after_days' ),
+				$request->offsetExists( 'featured_image_id' ) ? $this->nullableInt( $request->get_param( 'featured_image_id' ) ) : null,
+				$request->offsetExists( 'featured_image_id' ),
 			);
+
+			// Treat 0 as cleared featured image.
+			if ( $dto->updateFeaturedImage && null !== $dto->featuredImageId && $dto->featuredImageId <= 0 ) {
+				$dto = new UpdateLessonDto(
+					$dto->title,
+					$dto->slug,
+					$dto->content,
+					$dto->videoUrl,
+					$dto->attachmentId,
+					$dto->isPreview,
+					$dto->availableAfterDays,
+					$dto->hasAvailableAfterDays,
+					null,
+					true,
+				);
+			}
 
 			$lesson = $this->lessonService->update( $id, $dto, $userId );
 
@@ -251,6 +269,18 @@ final class LessonController {
 			'available_after_days' => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
+			),
+			'featured_image_id' => array(
+				'type'              => array( 'integer', 'null' ),
+				'sanitize_callback' => static function ( mixed $value ): ?int {
+					if ( null === $value || '' === $value || false === $value ) {
+						return null;
+					}
+
+					$id = (int) $value;
+
+					return $id > 0 ? $id : null;
+				},
 			),
 		);
 	}

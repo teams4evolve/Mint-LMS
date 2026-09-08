@@ -39,6 +39,7 @@ module.exports = {
           900: '#0F0E1A',
         },
         accent: { DEFAULT: '#3F00FF', hover: '#3200CC', wash: '#EFEBFF' },
+        cta: { DEFAULT: '#98FB98', hover: '#7FE87F', ink: '#0B4F3F' },
         bg: { DEFAULT: '#FFFFFF', hover: '#FAFAFC', subtle: '#F4F3F8', track: '#E7E4F3', ink: '#0F0E1A' },
         ink: { DEFAULT: '#0F0E1A', 2: '#33334A', 3: '#5C5C77' },
         hue: {
@@ -111,6 +112,7 @@ module.exports = {
       },
       maxWidth: {
         content: '1000px',
+        wide: '1320px',
         prose: '680px',
       },
       height: {

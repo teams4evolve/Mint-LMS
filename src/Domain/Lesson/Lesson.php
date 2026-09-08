@@ -19,6 +19,7 @@ final readonly class Lesson {
 		public int $sortOrder,
 		public \DateTimeImmutable $createdAt,
 		public \DateTimeImmutable $updatedAt,
+		public ?int $featuredImageId = null,
 	) {
 	}
 }

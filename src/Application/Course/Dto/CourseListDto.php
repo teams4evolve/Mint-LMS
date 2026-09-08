@@ -13,6 +13,7 @@ final readonly class CourseListDto {
 		public int $total,
 		public int $page,
 		public int $perPage,
+		public int $trashTotal = 0,
 	) {
 	}
 
@@ -21,13 +22,14 @@ final readonly class CourseListDto {
 	 */
 	public function toArray(): array {
 		return array(
-			'items'   => array_map(
+			'items'      => array_map(
 				static fn( CourseDto $course ): array => $course->toArray(),
 				$this->courses
 			),
-			'total'   => $this->total,
-			'page'    => $this->page,
-			'perPage' => $this->perPage,
+			'total'      => $this->total,
+			'page'       => $this->page,
+			'perPage'    => $this->perPage,
+			'trashTotal' => $this->trashTotal,
 		);
 	}
 }

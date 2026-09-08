@@ -71,7 +71,7 @@ global $wpdb;
 $adminId   = 1;
 $student   = get_user_by( 'login', 'mintstudent' );
 $studentId = $student instanceof WP_User ? (int) $student->ID : 0;
-$course    = ( new MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository( $wpdb ) )->findBySlug( 'mint-lms-demo-course' );
+$course    = ( new MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository() )->findBySlug( 'mint-lms-demo-course' );
 $courseId  = null !== $course ? $course->id : 0;
 
 wp_set_current_user( $adminId );
@@ -110,8 +110,8 @@ wp_set_current_user( $adminId );
 
 if ( $courseId > 0 ) {
 	$experience = new MintLMS\Application\Student\StudentExperienceService(
-		new MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository( $wpdb ),
-		new MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository( $wpdb ),
+		new MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository(),
+		new MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository( $wpdb, new MintLMS\Infrastructure\Database\Repository\WpPostLessonRepository() ),
 		new MintLMS\Infrastructure\Database\Repository\WpdbEnrollmentRepository( $wpdb ),
 		new MintLMS\Infrastructure\Database\Repository\WpdbProgressRepository( $wpdb ),
 		new MintLMS\Infrastructure\Clock\SystemClock(),
@@ -126,7 +126,7 @@ if ( $courseId > 0 ) {
 		mintlms_verify( false, 'Course overview for admin (' . $exception->getMessage() . ')' );
 	}
 
-	$draftCourse = ( new MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository( $wpdb ) )->list( 1, 50, $adminId, MintLMS\Domain\Course\CourseStatus::Draft );
+	$draftCourse = ( new MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository() )->list( 1, 50, $adminId, MintLMS\Domain\Course\CourseStatus::Draft );
 	$draft       = $draftCourse['courses'][0] ?? null;
 
 	if ( null !== $draft ) {

@@ -68,6 +68,7 @@ final class LessonService {
 			$this->lessonRepository->nextSortOrder( $sectionId ),
 			$now,
 			$now,
+			null,
 		);
 
 		return LessonDto::fromLesson( $this->lessonRepository->save( $lesson ) );
@@ -90,6 +91,7 @@ final class LessonService {
 		$availableAfterDays = $dto->hasAvailableAfterDays
 			? $this->normalizeAvailableAfterDays( $dto->availableAfterDays )
 			: $lesson->availableAfterDays;
+		$featuredImageId = $dto->updateFeaturedImage ? $dto->featuredImageId : $lesson->featuredImageId;
 
 		if ( '' === $title ) {
 			throw new ValidationException( 'Validation failed.', array( 'title' => 'Title is required.' ) );
@@ -118,6 +120,7 @@ final class LessonService {
 			$lesson->sortOrder,
 			$lesson->createdAt,
 			$this->clock->now(),
+			$featuredImageId,
 		);
 
 		return LessonDto::fromLesson( $this->lessonRepository->save( $updated ) );

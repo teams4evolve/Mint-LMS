@@ -16,6 +16,7 @@ use MintLMS\Application\Student\StudentExperienceService;
 use MintLMS\Frontend\ShortcodeRegistrar;
 use MintLMS\Frontend\StudentAssetLoader;
 use MintLMS\Frontend\TemplateLoader;
+use MintLMS\Http\Rest\Controller\ContentPostListController;
 use MintLMS\Http\Rest\Controller\CourseController;
 use MintLMS\Http\Rest\Controller\EnrollmentController;
 use MintLMS\Http\Rest\Controller\LessonController;
@@ -39,16 +40,20 @@ use MintLMS\Infrastructure\Database\Migration\Migration_001_InitialSchema;
 use MintLMS\Infrastructure\Database\Migration\Migration_002_Quizzes;
 use MintLMS\Infrastructure\Database\Migration\Migration_003_Drip;
 use MintLMS\Infrastructure\Database\Migration\Migration_004_CertificateTemplate;
+use MintLMS\Infrastructure\Database\Migration\Migration_005_CourseSettings;
+use MintLMS\Infrastructure\Database\Migration\Migration_006_CptHybrid;
 use MintLMS\Infrastructure\Database\Migration\MigrationRunner;
-use MintLMS\Infrastructure\Database\Repository\WpdbCourseRepository;
 use MintLMS\Infrastructure\Database\Repository\WpdbAdminDashboardRepository;
 use MintLMS\Infrastructure\Database\Repository\WpdbEnrollmentRepository;
-use MintLMS\Infrastructure\Database\Repository\WpdbLessonRepository;
 use MintLMS\Infrastructure\Database\Repository\WpdbProgressRepository;
-use MintLMS\Infrastructure\Database\Repository\WpdbQuizRepository;
 use MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository;
+use MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository;
+use MintLMS\Infrastructure\Database\Repository\WpPostLessonRepository;
+use MintLMS\Infrastructure\Database\Repository\WpPostQuizRepository;
 use MintLMS\Infrastructure\Notification\EmailNotificationRegistrar;
+use MintLMS\Infrastructure\PostType\PostTypeRegistrar;
 use MintLMS\Infrastructure\Setup\Activator;
+use MintLMS\Infrastructure\Setup\ContentMigrator;
 use MintLMS\Infrastructure\Setup\PageSettings;
 use MintLMS\Infrastructure\User\WpUserLookup;
 use MintLMS\Infrastructure\WooCommerce\WooCommerceIntegration;
@@ -77,6 +82,21 @@ final class Bootstrap {
 
 		self::runMigrations();
 
+		( new PostTypeRegistrar() )->register();
+
+		// Needs registered CPTs + WP_Rewrite (after init). plugins_loaded is too early for wp_insert_post.
+		add_action(
+			'init',
+			static function (): void {
+				global $wpdb;
+
+				if ( $wpdb instanceof \wpdb ) {
+					( new ContentMigrator( $wpdb ) )->maybeMigrate();
+				}
+			},
+			20
+		);
+
 		Plugin::boot();
 
 		( new MenuRegistrar() )->register();
@@ -92,17 +112,21 @@ final class Bootstrap {
 		}
 
 		self::registerFrontend();
+		WooCommerceIntegration::register();
 		self::registerRestApi();
 		self::registerNotifications( $wpdb );
 		self::registerCertificateHandler( $wpdb );
-		WooCommerceIntegration::register();
 	}
 
 	private static function registerNotifications( \wpdb $wpdb ): void {
 		$clock   = new SystemClock();
 		$service = self::createCertificateService( $wpdb, $clock );
 
-		( new EmailNotificationRegistrar( new WpdbCourseRepository( $wpdb ), $service ) )->register();
+		( new EmailNotificationRegistrar(
+			new WpPostCourseRepository(),
+			$service,
+			new WpdbEnrollmentRepository( $wpdb )
+		) )->register();
 	}
 
 	private static function registerCertificateHandler( \wpdb $wpdb ): void {
@@ -118,7 +142,7 @@ final class Bootstrap {
 		$userLookup = new WpUserLookup();
 
 		return new CertificateService(
-			new WpdbCourseRepository( $wpdb ),
+			new WpPostCourseRepository(),
 			new WpdbProgressRepository( $wpdb ),
 			$clock,
 			new WpCertificateTemplateProvider(),
@@ -134,12 +158,12 @@ final class Bootstrap {
 			return;
 		}
 
-		$courseRepo     = new WpdbCourseRepository( $wpdb );
-		$sectionRepo    = new WpdbSectionRepository( $wpdb );
+		$courseRepo     = new WpPostCourseRepository();
+		$lessonRepo     = new WpPostLessonRepository();
+		$sectionRepo    = new WpdbSectionRepository( $wpdb, $lessonRepo );
 		$enrollmentRepo = new WpdbEnrollmentRepository( $wpdb );
 		$progressRepo   = new WpdbProgressRepository( $wpdb );
-		$quizRepo       = new WpdbQuizRepository( $wpdb );
-		$lessonRepo     = new WpdbLessonRepository( $wpdb );
+		$quizRepo       = new WpPostQuizRepository( $wpdb );
 		$clock          = new SystemClock();
 		$authorization  = Plugin::authorization();
 		$userLookup     = new WpUserLookup();
@@ -193,15 +217,15 @@ final class Bootstrap {
 
 		$authorization     = Plugin::authorization();
 		$clock             = new SystemClock();
-		$courseRepo        = new WpdbCourseRepository( $wpdb );
-		$sectionRepo       = new WpdbSectionRepository( $wpdb );
-		$lessonRepo        = new WpdbLessonRepository( $wpdb );
+		$courseRepo        = new WpPostCourseRepository();
+		$lessonRepo        = new WpPostLessonRepository();
+		$sectionRepo       = new WpdbSectionRepository( $wpdb, $lessonRepo );
 		$enrollmentRepo    = new WpdbEnrollmentRepository( $wpdb );
 		$progressRepo      = new WpdbProgressRepository( $wpdb );
-		$quizRepo          = new WpdbQuizRepository( $wpdb );
+		$quizRepo          = new WpPostQuizRepository( $wpdb );
 		$dashboardRepo     = new WpdbAdminDashboardRepository( $wpdb );
 		$userLookup        = new WpUserLookup();
-		$courseService     = new CourseService( $courseRepo, $authorization, $clock, $dashboardRepo );
+		$courseService     = new CourseService( $courseRepo, $authorization, $clock, $dashboardRepo, $userLookup, Plugin::eventPublisher() );
 		$sectionService    = new SectionService( $sectionRepo, $lessonRepo, $courseRepo, $authorization, $clock );
 		$lessonAccessService = new LessonAccessService(
 			$lessonRepo,
@@ -210,7 +234,7 @@ final class Bootstrap {
 			$clock,
 		);
 		$quizService       = new QuizService( $quizRepo, $lessonRepo, $courseRepo, $authorization, $clock, $progressRepo, $userLookup, $lessonAccessService );
-		$progressService   = new ProgressService( $progressRepo, Plugin::eventPublisher(), $clock, $quizService, $lessonAccessService );
+		$progressService   = new ProgressService( $progressRepo, Plugin::eventPublisher(), $clock, $quizService, $lessonAccessService, $courseRepo );
 		$enrollmentService = new EnrollmentService(
 			$enrollmentRepo,
 			$courseRepo,
@@ -251,6 +275,7 @@ final class Bootstrap {
 			$quizController,
 			$onboardingController,
 			$userController,
+			new ContentPostListController(),
 		);
 
 		$routeRegistrar->register();
@@ -270,6 +295,8 @@ final class Bootstrap {
 				new Migration_002_Quizzes(),
 				new Migration_003_Drip(),
 				new Migration_004_CertificateTemplate(),
+				new Migration_005_CourseSettings(),
+				new Migration_006_CptHybrid(),
 			)
 		);
 

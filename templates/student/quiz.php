@@ -21,8 +21,7 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 }
 ?>
 <div
-	class="mint-quiz-panel"
-	style="border:1px solid var(--mint-border);border-radius:var(--mint-r-xl);padding:24px;margin-bottom:32px"
+	class="mint-my-8 mint-rounded-xl mint-border mint-border-rule mint-bg-bg mint-p-6"
 	x-data="mintLessonQuiz({
 		quizId: <?php echo (int) $quiz->id; ?>,
 		passPercent: <?php echo (int) $quiz->passPercent; ?>,
@@ -30,9 +29,9 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 		questions: <?php echo wp_json_encode( array_map( static fn( $q ) => $q->toArray(), $quiz->questions ) ); ?>
 	})"
 >
-	<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
-		<h2 class="mint-t-over" style="margin:0"><?php echo esc_html( $quiz->title ); ?></h2>
-		<span style="font-size:14px;color:var(--mint-ink-2)">
+	<div class="mint-mb-5 mint-flex mint-items-center mint-justify-between mint-gap-4">
+		<h2 class="mint-text-over mint-font-semibold mint-uppercase mint-tracking-widest mint-text-ink"><?php echo esc_html( $quiz->title ); ?></h2>
+		<span class="mint-shrink-0 mint-text-sm mint-text-ink-2">
 			<?php
 			printf(
 				/* translators: %d: minimum pass percentage */
@@ -44,33 +43,33 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 	</div>
 
 	<template x-if="hasPassed">
-		<div style="padding:16px;background:#E8F6EE;border-radius:8px;margin-bottom:16px">
-			<p style="margin:0;font-size:15px;color:#0B7A57;font-weight:500" x-text="mintLmsStudent.i18n.quizPassed"></p>
+		<div class="mint-mb-4 mint-rounded-lg mint-bg-success-wash mint-px-4 mint-py-4">
+			<p class="mint-text-sm mint-font-medium mint-text-success" x-text="mintLmsStudent.i18n.quizPassed"></p>
 		</div>
 	</template>
 
 	<template x-if="!hasPassed && !submitted">
-		<div style="display:flex;flex-direction:column;gap:20px">
+		<div class="mint-flex mint-flex-col mint-gap-5">
 			<template x-for="(question, qIndex) in questions" :key="question.id">
-				<div style="padding:16px;background:var(--mint-bg-subtle);border-radius:8px">
-					<p style="font-size:16px;font-weight:600;color:var(--mint-ink);margin:0 0 12px" x-text="(qIndex + 1) + '. ' + question.prompt"></p>
+				<div class="mint-rounded-lg mint-bg-bg-subtle mint-p-4">
+					<p class="mint-mb-3 mint-text-base mint-font-semibold mint-text-ink" x-text="(qIndex + 1) + '. ' + question.prompt"></p>
 					<template x-if="question.type === 'true_false'">
-						<div style="display:flex;gap:12px">
-							<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:15px">
-								<input type="radio" :name="'q-' + question.id" value="true" x-model="answers[question.id]" />
+						<div class="mint-flex mint-gap-4">
+							<label class="mint-flex mint-cursor-pointer mint-items-center mint-gap-2 mint-text-sm mint-text-ink-2">
+								<input type="radio" class="mint-h-4 mint-w-4 mint-accent-accent" :name="'q-' + question.id" value="true" x-model="answers[question.id]" />
 								<?php esc_html_e( 'True', 'mint-lms' ); ?>
 							</label>
-							<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:15px">
-								<input type="radio" :name="'q-' + question.id" value="false" x-model="answers[question.id]" />
+							<label class="mint-flex mint-cursor-pointer mint-items-center mint-gap-2 mint-text-sm mint-text-ink-2">
+								<input type="radio" class="mint-h-4 mint-w-4 mint-accent-accent" :name="'q-' + question.id" value="false" x-model="answers[question.id]" />
 								<?php esc_html_e( 'False', 'mint-lms' ); ?>
 							</label>
 						</div>
 					</template>
 					<template x-if="question.type === 'mcq'">
-						<div style="display:flex;flex-direction:column;gap:8px">
+						<div class="mint-flex mint-flex-col mint-gap-2">
 							<template x-for="(option, oIndex) in question.options" :key="oIndex">
-								<label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:15px">
-									<input type="radio" :name="'q-' + question.id" :value="option" x-model="answers[question.id]" />
+								<label class="mint-flex mint-cursor-pointer mint-items-center mint-gap-2 mint-text-sm mint-text-ink-2">
+									<input type="radio" class="mint-h-4 mint-w-4 mint-accent-accent" :name="'q-' + question.id" :value="option" x-model="answers[question.id]" />
 									<span x-text="option"></span>
 								</label>
 							</template>
@@ -79,7 +78,7 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 				</div>
 			</template>
 			<div>
-				<button type="button" class="mint-btn mint-btn--primary mint-btn--sm" @click="submitQuiz()" :disabled="submitting">
+				<button type="button" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control mint-px-4 mint-text-sm mint-font-medium mint-rounded-md mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover mint-transition-colors mint-duration-hover" @click="submitQuiz()" :disabled="submitting">
 					<span x-text="submitting ? mintLmsStudent.i18n.submittingQuiz : mintLmsStudent.i18n.submitQuiz"></span>
 				</button>
 			</div>
@@ -88,15 +87,15 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 
 	<template x-if="submitted && !hasPassed">
 		<div>
-			<div style="padding:16px;background:#FEF3F2;border-radius:8px;margin-bottom:16px">
-				<p style="margin:0 0 4px;font-size:15px;color:#B42318;font-weight:500" x-text="mintLmsStudent.i18n.quizFailed"></p>
-				<p style="margin:0;font-size:14px;color:var(--mint-ink-2)" x-text="Math.round(scorePercent) + '% — ' + mintLmsStudent.i18n.quizRetry"></p>
+			<div class="mint-mb-4 mint-rounded-lg mint-bg-danger-wash mint-px-4 mint-py-4">
+				<p class="mint-mb-1 mint-text-sm mint-font-medium mint-text-danger" x-text="mintLmsStudent.i18n.quizFailed"></p>
+				<p class="mint-text-sm mint-text-ink-2" x-text="Math.round(scorePercent) + '% — ' + mintLmsStudent.i18n.quizRetry"></p>
 			</div>
-			<button type="button" class="mint-btn mint-btn--secondary mint-btn--sm" @click="retry()">
+			<button type="button" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control mint-px-4 mint-text-sm mint-font-medium mint-rounded-md mint-border mint-border-control mint-bg-bg mint-text-ink hover:mint-bg-bg-hover mint-transition-colors mint-duration-hover" @click="retry()">
 				<?php esc_html_e( 'Try again', 'mint-lms' ); ?>
 			</button>
 		</div>
 	</template>
 
-	<p x-show="error" x-text="error" style="margin-top:12px;font-size:14px;color:#B42318"></p>
+	<p x-show="error" x-text="error" class="mint-mt-3 mint-text-sm mint-text-danger"></p>
 </div>

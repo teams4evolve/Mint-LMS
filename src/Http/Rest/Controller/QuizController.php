@@ -17,6 +17,7 @@ use MintLMS\Application\Quiz\Dto\UpdateQuizDto;
 use MintLMS\Application\Quiz\QuizService;
 use MintLMS\Domain\Quiz\QuizQuestion;
 use MintLMS\Http\Rest\Response\ApiResponse;
+use MintLMS\Infrastructure\PostType\PostTypes;
 
 final class QuizController {
 
@@ -29,6 +30,18 @@ final class QuizController {
 	}
 
 	public function registerRoutes(): void {
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/quizzes',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::READABLE,
+					'callback'            => array( $this, 'listByCourse' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
+			)
+		);
+
 		register_rest_route(
 			self::NAMESPACE,
 			'/lessons/(?P<id>\d+)/quiz',
@@ -141,6 +154,56 @@ final class QuizController {
 		return $this->canManageCourses() || $this->canTrackProgress();
 	}
 
+	public function listByCourse( \WP_REST_Request $request ): \WP_REST_Response {
+		$courseId = (int) $request->get_param( 'id' );
+
+		if ( $courseId <= 0 ) {
+			return ApiResponse::error( 'validation_error', 'Invalid course id.', 400 );
+		}
+
+		$query = new \WP_Query(
+			array(
+				'post_type'              => PostTypes::QUIZ,
+				'post_status'            => array( 'publish', 'draft', 'private' ),
+				'posts_per_page'         => 200,
+				'orderby'                => 'title',
+				'order'                  => 'ASC',
+				'no_found_rows'          => true,
+				'update_post_meta_cache' => true,
+				'update_post_term_cache' => false,
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Course-scoped quiz list for builder sidebar.
+					array(
+						'key'     => PostTypes::META_COURSE_ID,
+						'value'   => $courseId,
+						'compare' => '=',
+						'type'    => 'NUMERIC',
+					),
+				),
+			)
+		);
+
+		$items = array();
+
+		foreach ( $query->posts as $post ) {
+			if ( ! $post instanceof \WP_Post ) {
+				continue;
+			}
+
+			$lessonId  = (int) get_post_meta( $post->ID, PostTypes::META_LESSON_ID, true );
+			$sectionId = $lessonId > 0 ? (int) get_post_meta( $lessonId, PostTypes::META_SECTION_ID, true ) : 0;
+
+			$items[] = array(
+				'id'        => (int) $post->ID,
+				'title'     => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
+				'lessonId'  => $lessonId,
+				'sectionId' => $sectionId,
+				'courseId'  => $courseId,
+			);
+		}
+
+		return ApiResponse::success( array( 'items' => $items ) );
+	}
+
 	public function getByLesson( \WP_REST_Request $request ): \WP_REST_Response {
 		try {
 			$userId   = $this->authorization->getCurrentUserId();
@@ -151,7 +214,7 @@ final class QuizController {
 				return ApiResponse::success( null );
 			}
 
-			return ApiResponse::success( $quiz->toArray() );
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
@@ -172,7 +235,7 @@ final class QuizController {
 
 			$quiz = $this->quizService->create( $lessonId, $dto, $userId );
 
-			return ApiResponse::success( $quiz->toArray(), 201 );
+			return ApiResponse::success( $this->quizPayload( $quiz ), 201 );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {
@@ -190,7 +253,7 @@ final class QuizController {
 
 			$quiz = $this->quizService->get( $id, $userId, $forStudent );
 
-			return ApiResponse::success( $quiz->toArray() );
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
@@ -210,7 +273,15 @@ final class QuizController {
 
 			$quiz = $this->quizService->update( $id, $dto, $userId );
 
-			return ApiResponse::success( $quiz->toArray() );
+			if ( $request->offsetExists( 'settings' ) && is_array( $request->get_param( 'settings' ) ) ) {
+				$this->saveQuizSettings( $quiz->id, $request->get_param( 'settings' ) );
+			}
+
+			if ( $request->offsetExists( 'featured_image_id' ) ) {
+				$this->saveQuizFeaturedImage( $quiz->id, (int) $request->get_param( 'featured_image_id' ) );
+			}
+
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {
@@ -244,7 +315,7 @@ final class QuizController {
 
 			$quiz = $this->quizService->addQuestion( $id, $dto, $userId );
 
-			return ApiResponse::success( $quiz->toArray() );
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {
@@ -271,7 +342,7 @@ final class QuizController {
 
 			$quiz = $this->quizService->updateQuestion( $quizId, $questionId, $dto, $userId );
 
-			return ApiResponse::success( $quiz->toArray() );
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {
@@ -289,7 +360,7 @@ final class QuizController {
 
 			$quiz = $this->quizService->deleteQuestion( $quizId, $questionId, $userId );
 
-			return ApiResponse::success( $quiz->toArray() );
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( NotFoundException $exception ) {
 			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
 		} catch ( ForbiddenException $exception ) {
@@ -368,13 +439,20 @@ final class QuizController {
 	 */
 	private function updateQuizArgs(): array {
 		return array(
-			'title'        => array(
+			'title'              => array(
 				'type'              => 'string',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
-			'pass_percent' => array(
+			'pass_percent'       => array(
 				'type'              => 'integer',
 				'sanitize_callback' => 'absint',
+			),
+			'featured_image_id'  => array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+			),
+			'settings'           => array(
+				'type' => 'object',
 			),
 		);
 	}
@@ -432,5 +510,97 @@ final class QuizController {
 			is_array( $options ) ? array_values( array_map( 'strval', $options ) ) : array(),
 			(string) $request->get_param( 'correct_answer' ),
 		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function quizPayload( \MintLMS\Application\Quiz\Dto\QuizDto $quiz ): array {
+		$data = $quiz->toArray();
+		$data['settings']         = $this->readQuizSettings( $quiz->id );
+		$data['featuredImageId']  = null;
+		$data['featuredImageUrl'] = '';
+
+		$thumbId = (int) get_post_thumbnail_id( $quiz->id );
+		if ( $thumbId > 0 ) {
+			$data['featuredImageId']  = $thumbId;
+			$url                      = wp_get_attachment_image_url( $thumbId, 'large' );
+			$data['featuredImageUrl'] = is_string( $url ) ? $url : '';
+		}
+
+		return $data;
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function defaultQuizSettings(): array {
+		return array(
+			'restrictRetakes'     => false,
+			'retriesAllowed'      => 0,
+			'retriesApplicableTo' => 'all',
+			'questionCompletion'  => false,
+			'timeLimitEnabled'    => false,
+			'timeLimitHours'      => '00',
+			'timeLimitMinutes'    => '00',
+			'timeLimitSeconds'    => '00',
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function readQuizSettings( int $quizId ): array {
+		$raw = get_post_meta( $quizId, PostTypes::META_QUIZ_SETTINGS, true );
+		if ( ! is_array( $raw ) ) {
+			return $this->defaultQuizSettings();
+		}
+
+		return array_merge( $this->defaultQuizSettings(), $raw );
+	}
+
+	/**
+	 * @param array<string, mixed> $settings
+	 */
+	private function saveQuizSettings( int $quizId, array $settings ): void {
+		$defaults = $this->defaultQuizSettings();
+		$clean    = array(
+			'restrictRetakes'     => ! empty( $settings['restrictRetakes'] ),
+			'retriesAllowed'      => absint( $settings['retriesAllowed'] ?? 0 ),
+			'retriesApplicableTo' => sanitize_key( (string) ( $settings['retriesApplicableTo'] ?? 'all' ) ),
+			'questionCompletion'  => ! empty( $settings['questionCompletion'] ),
+			'timeLimitEnabled'    => ! empty( $settings['timeLimitEnabled'] ),
+			'timeLimitHours'      => $this->sanitizeTimePart( $settings['timeLimitHours'] ?? '00' ),
+			'timeLimitMinutes'    => $this->sanitizeTimePart( $settings['timeLimitMinutes'] ?? '00' ),
+			'timeLimitSeconds'    => $this->sanitizeTimePart( $settings['timeLimitSeconds'] ?? '00' ),
+		);
+
+		if ( ! in_array( $clean['retriesApplicableTo'], array( 'all' ), true ) ) {
+			$clean['retriesApplicableTo'] = 'all';
+		}
+
+		update_post_meta( $quizId, PostTypes::META_QUIZ_SETTINGS, array_merge( $defaults, $clean ) );
+	}
+
+	private function sanitizeTimePart( mixed $value ): string {
+		$digits = preg_replace( '/\D+/', '', (string) $value );
+		if ( ! is_string( $digits ) || '' === $digits ) {
+			return '00';
+		}
+
+		return str_pad( substr( $digits, 0, 2 ), 2, '0', STR_PAD_LEFT );
+	}
+
+	private function saveQuizFeaturedImage( int $quizId, int $attachmentId ): void {
+		if ( $attachmentId <= 0 ) {
+			delete_post_thumbnail( $quizId );
+			return;
+		}
+
+		if ( 'attachment' !== get_post_type( $attachmentId ) ) {
+			return;
+		}
+
+		set_post_thumbnail( $quizId, $attachmentId );
 	}
 }

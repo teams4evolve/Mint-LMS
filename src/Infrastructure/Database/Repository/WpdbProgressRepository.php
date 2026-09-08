@@ -19,22 +19,15 @@ final class WpdbProgressRepository implements ProgressRepositoryInterface {
 	}
 
 	public function findLessonCourseId( int $lessonId ): ?int {
-		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+		$post = get_post( $lessonId );
 
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$courseId = $this->wpdb->get_var(
-			$this->wpdb->prepare(
-				"SELECT course_id FROM {$table} WHERE id = %d",
-				$lessonId
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-
-		if ( null === $courseId ) {
+		if ( ! $post instanceof \WP_Post || \MintLMS\Infrastructure\PostType\PostTypes::LESSON !== $post->post_type ) {
 			return null;
 		}
 
-		return (int) $courseId;
+		$courseId = (int) get_post_meta( $lessonId, \MintLMS\Infrastructure\PostType\PostTypes::META_COURSE_ID, true );
+
+		return $courseId > 0 ? $courseId : null;
 	}
 
 	public function isUserEnrolled( int $userId, int $courseId ): bool {
@@ -177,18 +170,27 @@ final class WpdbProgressRepository implements ProgressRepositoryInterface {
 
 	public function getCompletedLessonIds( int $userId, int $courseId ): array {
 		$progressTable = Schema::validateTable( Schema::progressTable( $this->wpdb->prefix ), $this->wpdb->prefix );
-		$lessonsTable  = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+		$postsTable    = $this->wpdb->posts;
+		$postmetaTable = $this->wpdb->postmeta;
+		$lessonType    = \MintLMS\Infrastructure\PostType\PostTypes::LESSON;
+		$courseMeta    = \MintLMS\Infrastructure\PostType\PostTypes::META_COURSE_ID;
+		$sortMeta      = \MintLMS\Infrastructure\PostType\PostTypes::META_SORT_ORDER;
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $this->wpdb->get_col(
 			$this->wpdb->prepare(
 				"SELECT p.lesson_id
 				FROM {$progressTable} p
-				INNER JOIN {$lessonsTable} l ON l.id = p.lesson_id
-				WHERE p.user_id = %d AND p.course_id = %d AND l.course_id = %d
-				ORDER BY l.sort_order ASC, l.id ASC",
+				INNER JOIN {$postsTable} l ON l.ID = p.lesson_id AND l.post_type = %s AND l.post_status = 'publish'
+				INNER JOIN {$postmetaTable} cm ON cm.post_id = l.ID AND cm.meta_key = %s AND cm.meta_value = %s
+				LEFT JOIN {$postmetaTable} sm ON sm.post_id = l.ID AND sm.meta_key = %s
+				WHERE p.user_id = %d AND p.course_id = %d
+				ORDER BY CAST(COALESCE(sm.meta_value, '0') AS UNSIGNED) ASC, l.ID ASC",
+				$lessonType,
+				$courseMeta,
+				(string) $courseId,
+				$sortMeta,
 				$userId,
-				$courseId,
 				$courseId
 			)
 		);
@@ -202,18 +204,25 @@ final class WpdbProgressRepository implements ProgressRepositoryInterface {
 	}
 
 	public function countLessonsInCourse( int $courseId ): int {
-		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$count = $this->wpdb->get_var(
-			$this->wpdb->prepare(
-				"SELECT COUNT(*) FROM {$table} WHERE course_id = %d",
-				$courseId
+		$query = new \WP_Query(
+			array(
+				'post_type'              => \MintLMS\Infrastructure\PostType\PostTypes::LESSON,
+				'post_status'            => 'publish',
+				'posts_per_page'         => 1,
+				'fields'                 => 'ids',
+				'no_found_rows'          => false,
+				'update_post_meta_cache' => false,
+				'update_post_term_cache' => false,
+				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
+					array(
+						'key'   => \MintLMS\Infrastructure\PostType\PostTypes::META_COURSE_ID,
+						'value' => $courseId,
+					),
+				),
 			)
 		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
-		return (int) $count;
+		return (int) $query->found_posts;
 	}
 
 	public function onLessonDeleted( int $lessonId, \DateTimeImmutable $updatedAt ): void {
@@ -332,24 +341,7 @@ final class WpdbProgressRepository implements ProgressRepositoryInterface {
 	}
 
 	private function countCompletedLessons( int $userId, int $courseId ): int {
-		$progressTable = Schema::validateTable( Schema::progressTable( $this->wpdb->prefix ), $this->wpdb->prefix );
-		$lessonsTable  = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
-
-		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$count = $this->wpdb->get_var(
-			$this->wpdb->prepare(
-				"SELECT COUNT(*)
-				FROM {$progressTable} p
-				INNER JOIN {$lessonsTable} l ON l.id = p.lesson_id
-				WHERE p.user_id = %d AND p.course_id = %d AND l.course_id = %d",
-				$userId,
-				$courseId,
-				$courseId
-			)
-		);
-		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
-
-		return (int) $count;
+		return count( $this->getCompletedLessonIds( $userId, $courseId ) );
 	}
 
 	private function findLastCompletedLessonId( int $userId, int $courseId ): ?int {

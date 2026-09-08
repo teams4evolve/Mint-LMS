@@ -107,6 +107,18 @@ final class EnrollmentServiceTest extends TestCase
         $this->service->enroll(5, 1, 5);
     }
 
+    public function test_self_enroll_throws_for_paid_course(): void
+    {
+        $course = $this->sampleCourse(EnrollmentType::Paid, CourseStatus::Published);
+
+        $this->courseRepository->method('findById')->with(1)->willReturn($course);
+
+        $this->expectException(ForbiddenException::class);
+        $this->expectExceptionMessage('This course requires purchase.');
+
+        $this->service->enroll(5, 1, 5);
+    }
+
     public function test_manual_enroll_requires_enroll_students_capability(): void
     {
         $course = $this->sampleCourse(EnrollmentType::Manual, CourseStatus::Published);

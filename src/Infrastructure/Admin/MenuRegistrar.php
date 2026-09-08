@@ -5,6 +5,8 @@ namespace MintLMS\Infrastructure\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Infrastructure\PostType\PostTypes;
+
 final class MenuRegistrar {
 
 	public function register(): void {
@@ -38,6 +40,32 @@ final class MenuRegistrar {
 			'edit_mintlms_courses',
 			'mint-lms-courses',
 			array( $this, 'renderCourses' )
+		);
+
+		add_submenu_page(
+			'mint-lms',
+			__( 'Lessons', 'mint-lms' ),
+			__( 'Lessons', 'mint-lms' ),
+			'edit_mintlms_courses',
+			'mint-lms-lessons',
+			array( $this, 'renderLessons' )
+		);
+
+		add_submenu_page(
+			'mint-lms',
+			__( 'Quizzes', 'mint-lms' ),
+			__( 'Quizzes', 'mint-lms' ),
+			'edit_mintlms_courses',
+			'mint-lms-quizzes',
+			array( $this, 'renderQuizzes' )
+		);
+
+		add_submenu_page(
+			'mint-lms',
+			__( 'Questions', 'mint-lms' ),
+			__( 'Questions', 'mint-lms' ),
+			'edit_mintlms_courses',
+			'edit.php?post_type=' . PostTypes::QUESTION
 		);
 
 		add_submenu_page(
@@ -87,6 +115,22 @@ final class MenuRegistrar {
 		}
 
 		include MINTLMS_PATH . 'views/admin/courses/list.php';
+	}
+
+	public function renderLessons(): void {
+		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access lessons.', 'mint-lms' ) );
+		}
+
+		include MINTLMS_PATH . 'views/admin/lessons/list.php';
+	}
+
+	public function renderQuizzes(): void {
+		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access quizzes.', 'mint-lms' ) );
+		}
+
+		include MINTLMS_PATH . 'views/admin/quizzes/list.php';
 	}
 
 	public function renderCourseStudents(): void {

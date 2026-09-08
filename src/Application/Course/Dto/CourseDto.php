@@ -23,10 +23,15 @@ final readonly class CourseDto {
 		public int $lessonCount = 0,
 		public int $studentCount = 0,
 		public ?int $completionRate = null,
+		public string $authorName = '',
+		public string $category = '',
+		public bool $emailOnPublish = true,
+		public bool $studentComplete = true,
+		public bool $certificate = false,
 	) {
 	}
 
-	public static function fromCourse( Course $course, ?array $stats = null ): self {
+	public static function fromCourse( Course $course, ?array $stats = null, string $authorName = '', string $category = '' ): self {
 		$lessonCount    = 0;
 		$studentCount   = 0;
 		$completionRate = null;
@@ -53,6 +58,11 @@ final readonly class CourseDto {
 			$lessonCount,
 			$studentCount,
 			$completionRate,
+			$authorName,
+			$category,
+			$course->settings->emailOnPublish,
+			$course->settings->studentComplete,
+			$course->settings->certificate,
 		);
 	}
 
@@ -69,11 +79,17 @@ final readonly class CourseDto {
 			'status'          => $this->status,
 			'enrollmentType'  => $this->enrollmentType,
 			'authorId'        => $this->authorId,
+			'authorName'      => $this->authorName,
+			'instructor'      => $this->authorName,
+			'category'        => $this->category,
 			'createdAt'       => $this->createdAt,
 			'updatedAt'       => $this->updatedAt,
 			'lessonCount'     => $this->lessonCount,
 			'studentCount'    => $this->studentCount,
 			'completionRate'  => $this->completionRate,
+			'emailOnPublish'  => $this->emailOnPublish,
+			'studentComplete' => $this->studentComplete,
+			'certificate'     => $this->certificate,
 		);
 	}
 }

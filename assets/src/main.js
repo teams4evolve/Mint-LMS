@@ -2,6 +2,7 @@ import Alpine from 'alpinejs';
 import Sortable from 'sortablejs';
 import { courseBuilder, courseEdit } from './builder.js';
 import { coursesList } from './courses-list.js';
+import { lessonsList, quizzesList } from './content-list.js';
 import { mintGuidedCourse } from './guided-course.js';
 import './students-admin.js';
 
@@ -80,11 +81,28 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('courseBuilder', courseBuilder);
   Alpine.data('courseEdit', courseEdit);
   Alpine.data('coursesList', coursesList);
+  Alpine.data('lessonsList', lessonsList);
+  Alpine.data('quizzesList', quizzesList);
 
   Alpine.data('mintGuidedCourse', () => {
     const config = window.mintLmsGuided || {};
     return mintGuidedCourse(config);
   });
+
+  Alpine.data('mintWelcomeDashboard', (steps = []) => ({
+    steps: Array.isArray(steps) ? steps : [],
+    activeStep: 'courses',
+    selectStep(key) {
+      this.activeStep = key;
+    },
+    isActive(key) {
+      return this.activeStep === key;
+    },
+    stepDesc() {
+      const step = this.steps.find((s) => s.key === this.activeStep);
+      return step ? step.desc : '';
+    },
+  }));
 });
 
 window.Alpine = Alpine;

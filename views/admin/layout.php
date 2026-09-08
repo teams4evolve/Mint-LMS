@@ -9,6 +9,7 @@ $showHeader    = $showHeader ?? true;
 $pageLabel     = $pageLabel ?? '';
 $headerActions = $headerActions ?? '';
 $newCourseUrl  = $newCourseUrl ?? admin_url( 'admin.php?page=mint-lms-guided-course' );
+$maxWidthClass = $maxWidthClass ?? 'mint-max-w-content';
 $content       = $content ?? '';
 $renderer      = new MintLMS\Infrastructure\Admin\ViewRenderer();
 ?>
@@ -19,7 +20,7 @@ $renderer      = new MintLMS\Infrastructure\Admin\ViewRenderer();
 			include MINTLMS_PATH . 'views/admin/partials/admin-header.php';
 			?>
 		<?php endif; ?>
-		<main class="mint-page">
+		<main class="mint-mx-auto mint-px-10 <?php echo esc_attr( $maxWidthClass ); ?>">
 			<?php echo $content; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>
 		</main>
 		<?php echo $renderer->component( 'toast' ); // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>

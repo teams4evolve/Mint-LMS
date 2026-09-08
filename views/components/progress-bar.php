@@ -14,21 +14,17 @@ $percent = min( 100, (int) round( ( $value / $max ) * 100 ) );
 ?>
 <div class="mint-w-full" <?php echo $attrs; // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped ?>>
 	<?php if ( '' !== $label ) : ?>
-		<div class="mint-flex mint-justify-between mint-mb-1">
-			<span class="mint-text-sm mint-font-medium mint-text-neutral-700"><?php echo esc_html( $label ); ?></span>
-			<span class="mint-text-sm mint-text-neutral-500"><?php echo esc_html( (string) $percent ); ?>%</span>
+		<div class="mint-mb-1 mint-flex mint-justify-between">
+			<span class="mint-text-sm mint-font-medium mint-text-ink-2"><?php echo esc_html( $label ); ?></span>
+			<span class="mint-text-sm mint-text-ink-3"><?php echo esc_html( (string) $percent ); ?>%</span>
 		</div>
 	<?php endif; ?>
-	<div
-		class="mint-w-full mint-h-2 mint-bg-neutral-200 mint-rounded-full mint-overflow-hidden"
-		role="progressbar"
+	<progress
+		class="mint-progress-bar mint-h-[9px] mint-w-full mint-appearance-none mint-overflow-hidden mint-rounded-full mint-bg-bg-track [&::-webkit-progress-bar]:mint-rounded-full [&::-webkit-progress-bar]:mint-bg-bg-track [&::-webkit-progress-value]:mint-rounded-full [&::-webkit-progress-value]:mint-bg-accent [&::-moz-progress-bar]:mint-rounded-full [&::-moz-progress-bar]:mint-bg-accent"
+		value="<?php echo esc_attr( (string) $percent ); ?>"
+		max="100"
 		aria-valuenow="<?php echo esc_attr( (string) $value ); ?>"
 		aria-valuemin="0"
 		aria-valuemax="<?php echo esc_attr( (string) $max ); ?>"
-	>
-		<div
-			class="mint-h-full mint-bg-accent mint-rounded-full mint-transition-all mint-duration-300"
-			style="width: <?php echo esc_attr( (string) $percent ); ?>%"
-		></div>
-	</div>
+	></progress>
 </div>

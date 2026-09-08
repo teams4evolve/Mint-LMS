@@ -41,6 +41,18 @@ final class Schema {
 		return $prefix . 'mintlms_quiz_attempts';
 	}
 
+	public static function questionDataTable( string $prefix ): string {
+		return $prefix . 'mintlms_question_data';
+	}
+
+	public static function idMapTable( string $prefix ): string {
+		return $prefix . 'mintlms_id_map';
+	}
+
+	public static function quizQuestionsLegacyTable( string $prefix ): string {
+		return $prefix . 'mintlms_quiz_questions_legacy';
+	}
+
 	/**
 	 * Validate a table name against the plugin schema whitelist.
 	 */
@@ -53,19 +65,25 @@ final class Schema {
 	}
 
 	/**
+	 * Active schema tables (content CPTs live in wp_posts; these are relational/runtime).
+	 *
 	 * @return list<string>
 	 */
 	public static function allTables( string $prefix ): array {
 		return array(
-			self::coursesTable( $prefix ),
 			self::sectionsTable( $prefix ),
-			self::lessonsTable( $prefix ),
 			self::enrollmentsTable( $prefix ),
 			self::progressTable( $prefix ),
 			self::progressSummaryTable( $prefix ),
-			self::quizzesTable( $prefix ),
 			self::quizQuestionsTable( $prefix ),
 			self::quizAttemptsTable( $prefix ),
+			self::questionDataTable( $prefix ),
+			self::idMapTable( $prefix ),
+			// Legacy content tables kept during/after migration for uninstall cleanup.
+			self::coursesTable( $prefix ),
+			self::lessonsTable( $prefix ),
+			self::quizzesTable( $prefix ),
+			self::quizQuestionsLegacyTable( $prefix ),
 		);
 	}
 }
