@@ -49,11 +49,13 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 		return $this->mapPostToLesson( $query->posts[0] );
 	}
 
-	public function findBySectionId( int $sectionId ): array {
+	public function findBySectionId( int $sectionId, bool $publishedOnly = false ): array {
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::LESSON,
-				'post_status'            => 'any',
+				'post_status'            => $publishedOnly
+					? 'publish'
+					: array( 'publish', 'draft', 'private', PostTypes::STATUS_ARCHIVED ),
 				'posts_per_page'         => -1,
 				'orderby'                => 'meta_value_num',
 				'meta_key'               => PostTypes::META_SORT_ORDER, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key
@@ -91,7 +93,6 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 			'post_title'        => $lesson->title,
 			'post_name'         => $lesson->slug,
 			'post_content'      => $lesson->content,
-			'post_status'       => 'publish',
 			'post_type'         => PostTypes::LESSON,
 			'post_date'         => get_date_from_gmt( $createdGmt ),
 			'post_date_gmt'     => $createdGmt,
@@ -100,10 +101,13 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 		);
 
 		if ( 0 === $lesson->id ) {
-			$postId = wp_insert_post( $postarr, true );
+			// New lessons stay draft until explicitly made Live (same as courses).
+			$postarr['post_status'] = 'draft';
+			$postId                 = wp_insert_post( $postarr, true );
 		} else {
 			$postarr['ID'] = $lesson->id;
-			$postId        = wp_update_post( $postarr, true );
+			// Preserve draft/live/hidden on updates — never force publish on save.
+			$postId = wp_update_post( $postarr, true );
 		}
 
 		if ( is_wp_error( $postId ) ) {

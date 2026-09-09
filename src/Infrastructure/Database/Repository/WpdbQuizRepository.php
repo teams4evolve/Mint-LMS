@@ -39,7 +39,8 @@ final class WpdbQuizRepository implements QuizRepositoryInterface {
 		return $this->mapRowToQuiz( $row );
 	}
 
-	public function findByLessonId( int $lessonId ): ?Quiz {
+	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz {
+		unset( $publishedOnly );
 		$table = Schema::validateTable( Schema::quizzesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
@@ -60,7 +61,8 @@ final class WpdbQuizRepository implements QuizRepositoryInterface {
 		return $this->mapRowToQuiz( $row );
 	}
 
-	public function findQuestionsByQuizId( int $quizId ): array {
+	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array {
+		unset( $publishedOnly );
 		$table = Schema::validateTable( Schema::quizQuestionsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter

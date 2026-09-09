@@ -139,7 +139,7 @@ final class CreatorDashboardService {
 				: sprintf( '%d lessons', $lessonCount );
 		}
 
-		$parts[] = 'published' === $status ? 'published' : 'draft';
+		$parts[] = 'published' === $status ? 'Live' : 'Not Live';
 
 		return implode( ' · ', $parts );
 	}

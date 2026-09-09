@@ -6,201 +6,287 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
 use MintLMS\Application\Student\Dto\StudentCourseOverviewDto;
-use MintLMS\Infrastructure\Ui\MintUi;
 
 /** @var StudentCourseOverviewDto $overview */
 $overview      = $overview;
 $playerUrl     = $playerUrl ?? home_url( '/' );
-$dashboardUrl  = $dashboardUrl ?? home_url( '/' );
 $enrollUrl     = $enrollUrl ?? '';
 $enrollMessage = $enrollMessage ?? '';
-$featuredUrl   = $featuredUrl ?? null;
 $purchaseUrl   = $purchaseUrl ?? '';
 $productPrice  = $productPrice ?? '';
+$featuredUrl   = is_string( $featuredUrl ?? null ) ? $featuredUrl : '';
+$categoryName  = is_string( $categoryName ?? null ) ? trim( $categoryName ) : '';
 
 $startLessonId = $overview->lastLessonId ?? $overview->firstLessonId;
 $continueUrl   = $startLessonId
-	? add_query_arg( array( 'mint_course' => (string) $overview->courseId, 'mint_lesson' => (string) $startLessonId ), $playerUrl )
+	? add_query_arg(
+		array(
+			'mint_course' => (string) $overview->courseId,
+			'mint_lesson' => (string) $startLessonId,
+		),
+		$playerUrl
+	)
 	: $playerUrl;
 
-$pct          = null !== $overview->progressPct ? (int) round( $overview->progressPct ) : 0;
-$totalLessons = 0;
-$doneLessons  = 0;
-foreach ( $overview->structure->sections as $section ) {
-	$totalLessons += count( $section->lessons );
-}
-if ( $totalLessons > 0 && null !== $overview->progressPct ) {
-	$doneLessons = (int) round( $overview->progressPct / 100 * $totalLessons );
+$pct     = null !== $overview->progressPct ? (int) round( $overview->progressPct ) : 0;
+$outline = is_array( $overview->contentOutline ) ? $overview->contentOutline : array();
+
+$lessonPlayerUrls = array();
+foreach ( $outline as $section ) {
+	foreach ( $section['lessons'] as $lesson ) {
+		$lessonPlayerUrls[ (int) $lesson['id'] ] = add_query_arg(
+			array(
+				'mint_course' => (string) $overview->courseId,
+				'mint_lesson' => (string) $lesson['id'],
+			),
+			$playerUrl
+		);
+	}
 }
 
-$huePalette         = array(
-	array( 'bg' => 'mint-bg-hue-1', 'text' => 'mint-text-hue-1i' ),
-);
-$courseHue          = $huePalette[0];
-$initial            = MintUi::courseInitial( $overview->title );
-$completedLessonIds = $overview->completedLessonIds;
-$currentLessonId    = $overview->isEnrolled
-	? ( $overview->lastLessonId ?? $overview->firstLessonId )
-	: null;
-
-$pageTitle = $overview->title;
-include MINTLMS_PATH . 'views/student/partials/student-header.php';
+$showCta = $overview->isEnrolled || $overview->canEnroll || ( 'paid' === $overview->enrollmentType && '' !== $purchaseUrl ) || ! $overview->isLoggedIn;
 ?>
 
 <?php if ( '' !== $enrollMessage ) : ?>
-	<div class="mint-max-w-content mint-mx-auto mint-px-4 sm:mint-px-6 mint-mb-4">
+	<div class="mint-s3-wrap mint-mb-4" style="padding-bottom: 0">
 		<div class="mint-rounded-lg mint-border mint-border-success/20 mint-bg-success-wash mint-px-4 mint-py-3 mint-text-sm mint-font-medium mint-text-success" role="status"><?php echo esc_html( $enrollMessage ); ?></div>
 	</div>
 <?php endif; ?>
 <?php if ( isset( $_GET['mint_enroll_error'] ) ) : // phpcs:ignore WordPress.Security.NonceVerification.Recommended ?>
-	<div class="mint-max-w-content mint-mx-auto mint-px-4 sm:mint-px-6 mint-mb-4">
+	<div class="mint-s3-wrap mint-mb-4" style="padding-bottom: 0">
 		<div class="mint-rounded-lg mint-border mint-border-danger/20 mint-bg-danger-wash mint-px-4 mint-py-3 mint-text-sm mint-font-medium mint-text-danger" role="alert"><?php esc_html_e( 'Unable to enroll. This course may require purchase or manual enrollment.', 'mint-lms' ); ?></div>
 	</div>
 <?php endif; ?>
 
-<div class="mint-max-w-content mint-mx-auto mint-px-4 sm:mint-px-6 mint-pb-10">
-	<div class="mint-grid mint-grid-cols-1 lg:mint-grid-cols-[1fr_280px] mint-gap-8 lg:mint-gap-10">
+<div
+	class="mint-s3-wrap"
+	x-data="mintCourseOverview({})"
+>
+	<?php /* S3 hero card — max-width 620px, padding 32/36/40, centered */ ?>
+	<article class="mint-s3-hero">
+		<h1 class="mint-m-0 mint-text-[32px] mint-font-semibold mint-leading-[38px] mint-tracking-[-0.03em] mint-text-ink">
+			<?php echo esc_html( $overview->title ); ?>
+		</h1>
 
-		<div class="mint-min-w-0">
-
-			<div class="mint-mb-3 mint-text-over mint-font-semibold mint-uppercase mint-tracking-widest mint-text-accent">
-				<?php echo esc_html( strtoupper( $overview->enrollmentType ) ); ?>
+		<?php if ( '' !== $featuredUrl ) : ?>
+			<div class="mint-s3-hero__media">
+				<img
+					src="<?php echo esc_url( $featuredUrl ); ?>"
+					alt="<?php echo esc_attr( $overview->title ); ?>"
+				/>
 			</div>
-
-			<h1 class="mint-text-h1 mint-font-semibold mint-text-ink mint-tracking-tight">
-				<?php echo esc_html( $overview->title ); ?>
-			</h1>
-
-			<?php if ( '' !== $overview->description ) : ?>
-				<div class="mint-mt-4 mint-text-prose mint-text-ink-2 [&_p]:mint-mb-4 [&_p:last-child]:mint-mb-0">
-					<?php echo wp_kses_post( wpautop( $overview->description ) ); ?>
+		<?php else : ?>
+			<div class="mint-s3-hero__countdown">
+				<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.18em] mint-text-cta-ink"><?php esc_html_e( 'Going live in', 'mint-lms' ); ?></div>
+				<div class="mint-mt-2 mint-text-[44px] mint-font-bold mint-leading-none mint-tracking-[0.02em] mint-text-cta-ink mint-tabular-nums">00 : 00 : 00 : 00</div>
+				<div class="mint-mt-1.5 mint-flex mint-justify-center mint-gap-11">
+					<div class="mint-text-xs mint-text-cta-ink"><?php esc_html_e( 'days', 'mint-lms' ); ?></div>
+					<div class="mint-text-xs mint-text-cta-ink"><?php esc_html_e( 'hours', 'mint-lms' ); ?></div>
+					<div class="mint-text-xs mint-text-cta-ink"><?php esc_html_e( 'minutes', 'mint-lms' ); ?></div>
+					<div class="mint-text-xs mint-text-cta-ink"><?php esc_html_e( 'seconds', 'mint-lms' ); ?></div>
 				</div>
-			<?php endif; ?>
-
-			<?php if ( $overview->isEnrolled && null !== $overview->progressPct ) : ?>
-				<div class="mint-mt-6 mint-flex mint-items-center mint-gap-4">
-					<progress
-						class="mint-block mint-h-2 mint-min-w-0 mint-flex-1 mint-appearance-none mint-overflow-hidden mint-rounded-full mint-bg-bg-track [&::-moz-progress-bar]:mint-rounded-full [&::-moz-progress-bar]:mint-bg-accent [&::-webkit-progress-bar]:mint-rounded-full [&::-webkit-progress-bar]:mint-bg-bg-track [&::-webkit-progress-value]:mint-rounded-full [&::-webkit-progress-value]:mint-bg-accent"
-						value="<?php echo esc_attr( (string) absint( $pct ) ); ?>"
-						max="100"
-						aria-label="<?php esc_attr_e( 'Course progress', 'mint-lms' ); ?>"
-					></progress>
-					<span class="mint-shrink-0 mint-text-sm mint-font-medium mint-tabular-nums mint-text-ink-2">
-						<?php
-						echo esc_html(
-							sprintf(
-								/* translators: 1: progress percentage, 2: completed lessons, 3: total lessons */
-								__( '%1$d%% · %2$d of %3$d', 'mint-lms' ),
-								absint( $pct ),
-								absint( $doneLessons ),
-								absint( $totalLessons )
-							)
-						);
-						?>
-					</span>
+				<div class="mint-mt-3.5 mint-text-[13px] mint-text-cta-ink">
+					<?php esc_html_e( 'Not redirected after countdown?', 'mint-lms' ); ?>
+					<a href="<?php echo esc_url( $continueUrl ); ?>" class="mint-text-cta-ink mint-underline"><?php esc_html_e( 'Click here', 'mint-lms' ); ?></a>
 				</div>
-			<?php endif; ?>
+			</div>
+		<?php endif; ?>
 
-			<div class="mint-mt-6 mint-flex mint-flex-wrap mint-gap-3">
-				<?php if ( $overview->isEnrolled ) : ?>
-					<a href="<?php echo esc_url( $continueUrl ); ?>" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-5 mint-text-sm mint-font-medium mint-rounded-md mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover mint-transition-colors mint-duration-hover mint-no-underline">
-						<?php echo null !== $overview->progressPct && $overview->progressPct > 0
-							? esc_html__( 'Continue course', 'mint-lms' )
-							: esc_html__( 'Start course', 'mint-lms' ); ?>
-					</a>
-				<?php elseif ( $overview->canEnroll ) : ?>
-					<a href="<?php echo esc_url( $enrollUrl ); ?>" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-5 mint-text-sm mint-font-medium mint-rounded-md mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover mint-transition-colors mint-duration-hover mint-no-underline">
-						<?php esc_html_e( 'Enroll for free', 'mint-lms' ); ?>
-					</a>
-				<?php elseif ( 'paid' === $overview->enrollmentType && '' !== $purchaseUrl ) : ?>
-					<a href="<?php echo esc_url( $purchaseUrl ); ?>" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-5 mint-text-sm mint-font-medium mint-rounded-md mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover mint-transition-colors mint-duration-hover mint-no-underline">
-						<?php
-						echo '' !== $productPrice
-							? esc_html(
-								sprintf(
-									/* translators: %s: formatted product price */
-									__( 'Buy course — %s', 'mint-lms' ),
-									function_exists( 'wc_price' )
-										? wp_strip_all_tags( wc_price( (float) $productPrice ) )
-										: $productPrice
-								)
-							)
-							: esc_html__( 'Buy course', 'mint-lms' );
-						?>
-					</a>
-				<?php elseif ( 'paid' === $overview->enrollmentType ) : ?>
-					<p class="mint-text-sm mint-text-ink-3"><?php esc_html_e( 'This course requires purchase. The product is not available yet.', 'mint-lms' ); ?></p>
-				<?php elseif ( ! $overview->isLoggedIn ) : ?>
-					<a href="<?php echo esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ); ?>" class="mint-inline-flex mint-items-center mint-justify-center mint-h-control-md mint-px-5 mint-text-sm mint-font-medium mint-rounded-md mint-bg-accent mint-text-neutral-50 hover:mint-bg-accent-hover mint-transition-colors mint-duration-hover mint-no-underline">
-						<?php esc_html_e( 'Log in to enroll', 'mint-lms' ); ?>
-					</a>
-				<?php else : ?>
-					<p class="mint-text-sm mint-text-ink-3"><?php esc_html_e( 'This course requires manual enrollment.', 'mint-lms' ); ?></p>
+		<?php if ( '' !== $overview->authorName || '' !== $categoryName ) : ?>
+			<div class="mint-mt-[18px] mint-text-sm mint-text-[#5C5C77]">
+				<?php if ( '' !== $overview->authorName ) : ?>
+					<?php esc_html_e( 'Written by', 'mint-lms' ); ?>
+					<span class="mint-font-medium mint-text-cta-ink mint-underline"><?php echo esc_html( $overview->authorName ); ?></span>
+				<?php endif; ?>
+				<?php if ( '' !== $categoryName ) : ?>
+					<?php if ( '' !== $overview->authorName ) : ?>
+						<?php echo esc_html( ' ' . __( 'in', 'mint-lms' ) . ' ' ); ?>
+					<?php endif; ?>
+					<span class="mint-font-medium mint-text-cta-ink mint-underline"><?php echo esc_html( $categoryName ); ?></span>
 				<?php endif; ?>
 			</div>
+		<?php endif; ?>
 
-			<section class="mint-mt-10">
-				<?php foreach ( $overview->structure->sections as $sIdx => $section ) :
-					$sectionLessonCount = count( $section->lessons );
+		<?php if ( '' !== $overview->description ) : ?>
+			<div class="mint-course-overview__description mint-mt-4 mint-max-w-full mint-text-[15px] mint-leading-6 mint-text-[#33334A] [&_p]:mint-mb-3 [&_p:last-child]:mint-mb-0">
+				<?php echo wp_kses_post( wpautop( $overview->description ) ); ?>
+			</div>
+		<?php endif; ?>
+
+		<div class="mint-mt-5 mint-flex mint-flex-wrap mint-items-center mint-gap-3.5 mint-rounded-[10px] mint-bg-[#F1FFF9] mint-px-4 mint-py-3">
+			<div class="mint-h-2 mint-min-w-[120px] mint-flex-1 mint-overflow-hidden mint-rounded-full mint-bg-[#DFF7EB]">
+				<div class="mint-h-full mint-rounded-full mint-bg-cta-ink" style="width: <?php echo esc_attr( (string) absint( $pct ) ); ?>%"></div>
+			</div>
+			<div class="mint-whitespace-nowrap mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.04em] mint-text-cta-ink">
+				<?php
+				printf(
+					/* translators: %d: progress percentage */
+					esc_html__( '%d%% COMPLETE', 'mint-lms' ),
+					absint( $pct )
+				);
+				?>
+			</div>
+			<?php if ( is_string( $overview->lastActivityLabel ) && '' !== $overview->lastActivityLabel ) : ?>
+				<div class="mint-whitespace-nowrap mint-text-[13px] mint-text-[#5C5C77]">
+					<?php
+					printf(
+						/* translators: %s: last activity datetime */
+						esc_html__( 'Last activity on %s', 'mint-lms' ),
+						esc_html( $overview->lastActivityLabel )
+					);
 					?>
-					<div class="mint-mb-6 mint-overflow-hidden mint-rounded-xl mint-border mint-border-rule mint-bg-bg">
-						<div class="mint-flex mint-items-center mint-justify-between mint-gap-4 mint-border-b mint-border-rule mint-bg-bg-subtle mint-px-5 mint-py-4">
-							<h3 class="mint-text-h3 mint-font-semibold mint-text-ink"><?php echo esc_html( $section->title ); ?></h3>
-							<span class="mint-shrink-0 mint-text-xs mint-font-medium mint-text-ink-3"><?php
-							printf(
-								/* translators: %d: number of lessons in the section */
-								esc_html__( '%d lessons', 'mint-lms' ),
-								absint( $sectionLessonCount )
-							);
-							?></span>
-						</div>
-						<div class="mint-divide-y mint-divide-rule">
-							<?php foreach ( $section->lessons as $lIdx => $lesson ) :
-								$hasContent  = '' !== $lesson->content || null !== $lesson->videoUrl;
-								$accessible  = ( $overview->isEnrolled || $lesson->isPreview ) && ! $lesson->isDripLocked;
-								$isCompleted = in_array( $lesson->id, $completedLessonIds, true );
-								$isCurrent   = $accessible && null !== $currentLessonId && $lesson->id === $currentLessonId && ! $isCompleted;
-								$isLocked    = ! $accessible;
+				</div>
+			<?php endif; ?>
+		</div>
 
-								if ( $isCurrent ) {
-									$rowClass = 'mint-bg-accent-wash';
-								} elseif ( $isLocked ) {
-									$rowClass = 'mint-opacity-60';
-								} else {
-									$rowClass = 'hover:mint-bg-bg-hover';
-								}
+		<?php if ( $showCta ) : ?>
+			<div class="mint-mt-4 mint-flex mint-flex-wrap mint-gap-3">
+				<?php if ( $overview->isEnrolled ) : ?>
+					<a href="<?php echo esc_url( $continueUrl ); ?>" class="mint-inline-flex mint-h-[42px] mint-items-center mint-justify-center mint-rounded-lg mint-border-0 mint-bg-cta mint-px-[18px] mint-text-sm mint-font-bold mint-text-cta-ink mint-no-underline hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"><?php
+						echo null !== $overview->progressPct && $overview->progressPct > 0
+							? esc_html__( 'Continue lesson', 'mint-lms' )
+							: esc_html__( 'Start course', 'mint-lms' );
+					?></a>
+				<?php elseif ( $overview->canEnroll ) : ?>
+					<a href="<?php echo esc_url( $enrollUrl ); ?>" class="mint-inline-flex mint-h-[42px] mint-items-center mint-justify-center mint-rounded-lg mint-border-0 mint-bg-cta mint-px-[18px] mint-text-sm mint-font-bold mint-text-cta-ink mint-no-underline hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"><?php esc_html_e( 'Enroll for free', 'mint-lms' ); ?></a>
+				<?php elseif ( 'paid' === $overview->enrollmentType && '' !== $purchaseUrl ) : ?>
+					<a href="<?php echo esc_url( $purchaseUrl ); ?>" class="mint-inline-flex mint-h-[42px] mint-items-center mint-justify-center mint-rounded-lg mint-border-0 mint-bg-cta mint-px-[18px] mint-text-sm mint-font-bold mint-text-cta-ink mint-no-underline hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"><?php
+						echo '' !== $productPrice
+							? esc_html( sprintf( __( 'Buy course — %s', 'mint-lms' ), function_exists( 'wc_price' ) ? wp_strip_all_tags( wc_price( (float) $productPrice ) ) : $productPrice ) )
+							: esc_html__( 'Buy course', 'mint-lms' );
+					?></a>
+				<?php elseif ( ! $overview->isLoggedIn ) : ?>
+					<a href="<?php echo esc_url( wp_login_url( get_permalink() ?: home_url( '/' ) ) ); ?>" class="mint-inline-flex mint-h-[42px] mint-items-center mint-justify-center mint-rounded-lg mint-border-0 mint-bg-cta mint-px-[18px] mint-text-sm mint-font-bold mint-text-cta-ink mint-no-underline hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"><?php esc_html_e( 'Log in to enroll', 'mint-lms' ); ?></a>
+				<?php endif; ?>
+			</div>
+		<?php endif; ?>
+	</article>
+
+	<?php /* S3 course content — max-width 960px, padding 36/48/48 */ ?>
+	<section class="mint-s3-content">
+		<div>
+			<h2 class="mint-m-0 mint-text-xl mint-font-semibold mint-tracking-[-0.02em] mint-text-cta-ink"><?php esc_html_e( 'Course content', 'mint-lms' ); ?></h2>
+			<p class="mint-m-0 mint-mt-1 mint-text-sm mint-text-[#33334A]"><?php esc_html_e( "Here's how your course is put together — open a section to see its lessons, open a lesson to see its quiz.", 'mint-lms' ); ?></p>
+		</div>
+
+		<?php if ( array() === $outline ) : ?>
+			<div class="mint-mt-[18px] mint-rounded-xl mint-border mint-border-[#E4E1F0] mint-bg-[#FAFCFB] mint-px-5 mint-py-6 mint-text-center mint-text-sm mint-text-[#5C5C77]">
+				<?php esc_html_e( 'No sections yet. Add content in the course builder.', 'mint-lms' ); ?>
+			</div>
+		<?php else : ?>
+			<div class="mint-mt-[18px] mint-grid mint-gap-3">
+				<?php foreach ( $outline as $section ) :
+					$sectionId    = (int) ( $section['id'] ?? 0 );
+					$sectionKey   = 'sec-' . $sectionId;
+					$sectionTitle = (string) ( $section['title'] ?? '' );
+					$sectionMeta  = (string) ( $section['meta'] ?? '' );
+					$lessons      = is_array( $section['lessons'] ?? null ) ? $section['lessons'] : array();
+					?>
+					<div class="mint-s3-section">
+						<div class="mint-flex mint-items-center mint-gap-3.5 mint-bg-white mint-px-[18px] mint-py-4">
+							<div class="mint-shrink-0 mint-rounded-full mint-bg-[#E8FFF3] mint-px-2.5 mint-py-1 mint-text-[10px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-cta-ink"><?php esc_html_e( 'Section', 'mint-lms' ); ?></div>
+							<div class="mint-min-w-0 mint-flex-1">
+								<div class="mint-text-base mint-font-bold mint-text-[#17222B]"><?php echo esc_html( $sectionTitle ); ?></div>
+								<div class="mint-mt-0.5 mint-text-[13px] mint-text-[#5C5C77]"><?php echo esc_html( $sectionMeta ); ?></div>
+							</div>
+							<button
+								type="button"
+								class="mint-inline-flex mint-h-[34px] mint-shrink-0 mint-items-center mint-gap-1.5 mint-rounded-lg mint-border-0 mint-bg-cta mint-px-3.5 mint-text-[13px] mint-font-semibold mint-text-cta-ink hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"
+								@click.stop="toggle('<?php echo esc_js( $sectionKey ); ?>')"
+								:aria-expanded="isOpen('<?php echo esc_js( $sectionKey ); ?>') ? 'true' : 'false'"
+							>
+								<span x-text="isOpen('<?php echo esc_js( $sectionKey ); ?>') ? '<?php echo esc_js( __( 'Collapse', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Expand', 'mint-lms' ) ); ?>'"><?php esc_html_e( 'Expand', 'mint-lms' ); ?></span>
+								<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+									<path :d="isOpen('<?php echo esc_js( $sectionKey ); ?>') ? 'M5.5 12 10 7.5 14.5 12' : 'M5.5 8 10 12.5 14.5 8'" d="M5.5 8 10 12.5 14.5 8" />
+								</svg>
+							</button>
+						</div>
+
+						<div class="mint-s3-section__body" x-show="isOpen('<?php echo esc_js( $sectionKey ); ?>')" x-cloak>
+							<?php if ( array() === $lessons ) : ?>
+								<p class="mint-m-0 mint-px-2 mint-py-2 mint-text-sm mint-text-[#5C5C77]"><?php esc_html_e( 'No lessons in this section yet.', 'mint-lms' ); ?></p>
+							<?php endif; ?>
+							<?php foreach ( $lessons as $lesson ) :
+								$lessonId    = (int) ( $lesson['id'] ?? 0 );
+								$lessonKey   = $sectionKey . '-les-' . $lessonId;
+								$lessonTitle = (string) ( $lesson['title'] ?? '' );
+								$lessonMeta  = (string) ( $lesson['meta'] ?? '' );
+								$lessonUrl   = $lessonPlayerUrls[ $lessonId ] ?? $continueUrl;
+								$accessible  = ! empty( $lesson['accessible'] );
+								$quizzes     = is_array( $lesson['quizzes'] ?? null ) ? $lesson['quizzes'] : array();
 								?>
-								<div class="mint-flex mint-items-start mint-gap-3 mint-px-5 mint-py-4 mint-transition-colors mint-duration-hover <?php echo esc_attr( $rowClass ); ?>">
-									<?php if ( $isCompleted ) : ?>
-										<div class="mint-mt-0.5 mint-flex mint-h-8 mint-w-8 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-bg-success-wash mint-text-success">
-											<svg class="mint-h-4 mint-w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+								<div class="mint-s3-rail--lesson">
+									<div class="mint-s3-lesson">
+										<div class="mint-flex mint-items-center mint-gap-3 mint-px-4 mint-py-[13px]">
+											<div class="mint-shrink-0 mint-rounded-full mint-bg-[#E8FFF3] mint-px-2.5 mint-py-1 mint-text-[10px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-cta-ink"><?php esc_html_e( 'Lesson', 'mint-lms' ); ?></div>
+											<div class="mint-min-w-0 mint-flex-1">
+												<?php if ( $accessible ) : ?>
+													<a href="<?php echo esc_url( $lessonUrl ); ?>" class="mint-text-[15px] mint-font-semibold mint-text-[#17222B] mint-no-underline hover:mint-text-cta-ink"><?php echo esc_html( $lessonTitle ); ?></a>
+												<?php else : ?>
+													<span class="mint-text-[15px] mint-font-semibold mint-text-[#17222B]"><?php echo esc_html( $lessonTitle ); ?></span>
+												<?php endif; ?>
+												<div class="mint-mt-0.5 mint-text-[13px] mint-text-[#5C5C77]"><?php echo esc_html( $lessonMeta ); ?></div>
+											</div>
+											<?php if ( array() !== $quizzes ) : ?>
+												<button
+													type="button"
+													class="mint-inline-flex mint-h-8 mint-shrink-0 mint-items-center mint-gap-1 mint-rounded-lg mint-border-0 mint-bg-cta mint-px-3 mint-text-xs mint-font-semibold mint-text-cta-ink hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"
+													@click.stop="toggle('<?php echo esc_js( $lessonKey ); ?>')"
+													:aria-expanded="isOpen('<?php echo esc_js( $lessonKey ); ?>') ? 'true' : 'false'"
+												>
+													<span x-text="isOpen('<?php echo esc_js( $lessonKey ); ?>') ? '<?php echo esc_js( __( 'Collapse', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Expand', 'mint-lms' ) ); ?>'"><?php esc_html_e( 'Expand', 'mint-lms' ); ?></span>
+													<svg width="10" height="10" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+														<path :d="isOpen('<?php echo esc_js( $lessonKey ); ?>') ? 'M5.5 12 10 7.5 14.5 12' : 'M5.5 8 10 12.5 14.5 8'" d="M5.5 8 10 12.5 14.5 8" />
+													</svg>
+												</button>
+											<?php endif; ?>
 										</div>
-									<?php elseif ( $isCurrent ) : ?>
-										<div class="mint-mt-0.5 mint-flex mint-h-8 mint-w-8 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-bg-accent mint-text-neutral-50">
-											<svg class="mint-h-3.5 mint-w-3.5" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-										</div>
-									<?php elseif ( $isLocked ) : ?>
-										<div class="mint-mt-0.5 mint-flex mint-h-8 mint-w-8 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-bg-bg-subtle mint-text-ink-3">
-											<svg class="mint-h-3.5 mint-w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-										</div>
-									<?php else : ?>
-										<div class="mint-mt-0.5 mint-flex mint-h-8 mint-w-8 mint-shrink-0 mint-items-center mint-justify-center mint-rounded-full mint-bg-bg-subtle mint-text-ink-3">
-											<svg class="mint-h-3.5 mint-w-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="5 3 19 12 5 21 5 3"/></svg>
-										</div>
-									<?php endif; ?>
-									<div class="mint-min-w-0 mint-flex-1">
-										<?php if ( $accessible && $hasContent && $overview->isEnrolled ) : ?>
-											<a href="<?php echo esc_url( add_query_arg( array( 'mint_course' => (string) $overview->courseId, 'mint_lesson' => (string) $lesson->id ), $playerUrl ) ); ?>" class="mint-text-sm mint-font-medium mint-text-ink hover:mint-text-accent mint-no-underline mint-transition-colors mint-duration-hover"><?php echo esc_html( $lesson->title ); ?></a>
-										<?php elseif ( $accessible && $hasContent && $lesson->isPreview ) : ?>
-											<a href="<?php echo esc_url( add_query_arg( array( 'mint_course' => (string) $overview->courseId, 'mint_lesson' => (string) $lesson->id ), $playerUrl ) ); ?>" class="mint-text-sm mint-font-medium mint-text-accent hover:mint-text-accent-hover mint-no-underline mint-transition-colors mint-duration-hover"><?php echo esc_html( $lesson->title ); ?></a>
-										<?php else : ?>
-											<span class="mint-text-sm mint-font-medium mint-text-ink-2"><?php echo esc_html( $lesson->title ); ?></span>
-										<?php endif; ?>
-										<?php if ( $lesson->isPreview ) : ?>
-											<span class="mint-ml-2 mint-inline-flex mint-items-center mint-rounded-sm mint-bg-accent-wash mint-px-2 mint-py-0.5 mint-text-xs mint-font-medium mint-text-accent"><?php esc_html_e( 'Preview', 'mint-lms' ); ?></span>
-										<?php endif; ?>
-										<?php if ( $lesson->isDripLocked && is_string( $lesson->dripMessage ) && '' !== $lesson->dripMessage ) : ?>
-											<span class="mint-ml-2 mint-text-xs mint-text-ink-3"><?php echo esc_html( $lesson->dripMessage ); ?></span>
+
+										<?php if ( array() !== $quizzes ) : ?>
+											<div class="mint-s3-lesson__body" x-show="isOpen('<?php echo esc_js( $lessonKey ); ?>')" x-cloak>
+												<?php foreach ( $quizzes as $quiz ) :
+													$quizId    = (int) ( $quiz['id'] ?? 0 );
+													$quizKey   = $lessonKey . '-quiz-' . $quizId;
+													$quizTitle = (string) ( $quiz['title'] ?? '' );
+													$quizMeta  = (string) ( $quiz['meta'] ?? '' );
+													$questions = is_array( $quiz['questions'] ?? null ) ? $quiz['questions'] : array();
+													?>
+													<div class="mint-s3-rail--quiz">
+														<div class="mint-s3-quiz">
+															<div class="mint-flex mint-items-center mint-gap-2.5 mint-px-3.5 mint-py-[11px]">
+																<div class="mint-shrink-0 mint-rounded-full mint-bg-[#E8FFF3] mint-px-2 mint-py-0.5 mint-text-[10px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-cta-ink"><?php esc_html_e( 'Quiz', 'mint-lms' ); ?></div>
+																<div class="mint-min-w-0 mint-flex-1">
+																	<div class="mint-text-sm mint-font-semibold mint-text-[#17222B]"><?php echo esc_html( $quizTitle ); ?></div>
+																	<div class="mint-mt-0.5 mint-text-xs mint-text-[#5C5C77]"><?php echo esc_html( $quizMeta ); ?></div>
+																</div>
+																<?php if ( array() !== $questions ) : ?>
+																	<button
+																		type="button"
+																		class="mint-inline-flex mint-h-[30px] mint-shrink-0 mint-items-center mint-gap-1 mint-rounded-md mint-border-0 mint-bg-cta mint-px-2.5 mint-text-xs mint-font-semibold mint-text-cta-ink hover:mint-bg-cta-hover focus-visible:mint-outline-none focus-visible:mint-shadow-[0_0_0_3px_rgba(11,79,63,0.35)]"
+																		@click.stop="toggle('<?php echo esc_js( $quizKey ); ?>')"
+																		:aria-expanded="isOpen('<?php echo esc_js( $quizKey ); ?>') ? 'true' : 'false'"
+																	>
+																		<span x-text="isOpen('<?php echo esc_js( $quizKey ); ?>') ? '<?php echo esc_js( __( 'Collapse', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Expand', 'mint-lms' ) ); ?>'"><?php esc_html_e( 'Expand', 'mint-lms' ); ?></span>
+																		<svg width="9" height="9" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+																			<path :d="isOpen('<?php echo esc_js( $quizKey ); ?>') ? 'M5.5 12 10 7.5 14.5 12' : 'M5.5 8 10 12.5 14.5 8'" d="M5.5 8 10 12.5 14.5 8" />
+																		</svg>
+																	</button>
+																<?php endif; ?>
+															</div>
+															<?php if ( array() !== $questions ) : ?>
+																<div class="mint-s3-quiz__body" x-show="isOpen('<?php echo esc_js( $quizKey ); ?>')" x-cloak>
+																	<?php foreach ( $questions as $question ) : ?>
+																		<div class="mint-s3-question">
+																			<div class="mint-shrink-0 mint-rounded-full mint-bg-white mint-px-1.5 mint-py-0.5 mint-text-[9px] mint-font-bold mint-uppercase mint-tracking-[0.06em] mint-text-cta-ink">Q</div>
+																			<div class="mint-text-[13px] mint-text-[#17222B]"><?php echo esc_html( (string) ( $question['text'] ?? '' ) ); ?></div>
+																		</div>
+																	<?php endforeach; ?>
+																</div>
+															<?php endif; ?>
+														</div>
+													</div>
+												<?php endforeach; ?>
+											</div>
 										<?php endif; ?>
 									</div>
 								</div>
@@ -208,45 +294,7 @@ include MINTLMS_PATH . 'views/student/partials/student-header.php';
 						</div>
 					</div>
 				<?php endforeach; ?>
-			</section>
-		</div>
-
-		<aside class="mint-min-w-0">
-			<?php if ( is_string( $featuredUrl ) && '' !== $featuredUrl ) : ?>
-				<img src="<?php echo esc_url( $featuredUrl ); ?>" alt="" class="mint-mb-6 mint-w-full mint-rounded-xl mint-border mint-border-rule mint-object-cover mint-aspect-video" />
-			<?php else : ?>
-				<div class="mint-mb-6 mint-flex mint-aspect-video mint-w-full mint-items-center mint-justify-center mint-rounded-xl mint-border mint-border-rule <?php echo esc_attr( $courseHue['bg'] ); ?>">
-					<span class="mint-text-display mint-font-semibold mint-leading-none <?php echo esc_attr( $courseHue['text'] ); ?>"><?php echo esc_html( $initial ); ?></span>
-				</div>
-			<?php endif; ?>
-
-			<div class="mint-mb-4 mint-text-over mint-font-semibold mint-uppercase mint-tracking-widest mint-text-ink-3"><?php esc_html_e( 'THIS COURSE INCLUDES', 'mint-lms' ); ?></div>
-			<ul class="mint-space-y-3">
-				<li class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink-2">
-					<svg class="mint-h-[18px] mint-w-[18px] mint-shrink-0 mint-text-ink-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="3" width="20" height="14" rx="2" ry="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
-					<?php
-					printf(
-						/* translators: %d: total number of lessons in the course */
-						esc_html__( '%d lessons', 'mint-lms' ),
-						absint( $totalLessons )
-					);
-					?>
-				</li>
-				<li class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink-2">
-					<svg class="mint-h-[18px] mint-w-[18px] mint-shrink-0 mint-text-ink-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-					<?php
-					printf(
-						/* translators: %d: number of sections in the course */
-						esc_html__( '%d sections', 'mint-lms' ),
-						absint( count( $overview->structure->sections ) )
-					);
-					?>
-				</li>
-				<li class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink-2">
-					<svg class="mint-h-[18px] mint-w-[18px] mint-shrink-0 mint-text-ink-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-					<?php esc_html_e( 'Self-paced', 'mint-lms' ); ?>
-				</li>
-			</ul>
-		</aside>
-	</div>
+			</div>
+		<?php endif; ?>
+	</section>
 </div>

@@ -230,6 +230,11 @@ final class CourseService {
 
 		$result = $this->repository->list( $page, $perPage, $authorId, $status, $search );
 
+		$allTotal       = $this->repository->list( 1, 1, $authorId, null, null )['total'];
+		$publishedTotal = $this->repository->list( 1, 1, $authorId, CourseStatus::Published, null )['total'];
+		$draftTotal     = $this->repository->list( 1, 1, $authorId, CourseStatus::Draft, null )['total'];
+		$archivedTotal  = $this->repository->list( 1, 1, $authorId, CourseStatus::Archived, null )['total'];
+
 		$trashTotal = 0;
 		if ( CourseStatus::Trashed !== $status ) {
 			$trashResult = $this->repository->list( 1, 1, $authorId, CourseStatus::Trashed, null );
@@ -262,7 +267,17 @@ final class CourseService {
 			$result['courses']
 		);
 
-		return new CourseListDto( $courses, $result['total'], $page, $perPage, $trashTotal );
+		return new CourseListDto(
+			$courses,
+			$result['total'],
+			$page,
+			$perPage,
+			$trashTotal,
+			$allTotal,
+			$publishedTotal,
+			$draftTotal,
+			$archivedTotal,
+		);
 	}
 
 	public function publish( int $id, int $userId ): CourseDto {

@@ -1,15 +1,16 @@
 import { mintApi, getAdminConfig } from './api.js';
 
 /**
- * Shared Alpine data for A8 Lessons / A9 Quizzes admin lists.
- * @param {'lessons'|'quizzes'} type
+ * Shared Alpine data for A8 Lessons / A9 Quizzes / A10 Questions admin lists.
+ * @param {'lessons'|'quizzes'|'questions'} type
  */
 function contentList(type) {
   const config = getAdminConfig();
   const isQuizzes = type === 'quizzes';
+  const isQuestions = type === 'questions';
   const apiBase = `content/${type}`;
-  const noun = isQuizzes ? 'quizzes' : 'lessons';
-  const nounSingular = isQuizzes ? 'quiz' : 'lesson';
+  const noun = isQuestions ? 'questions' : isQuizzes ? 'quizzes' : 'lessons';
+  const nounSingular = isQuestions ? 'question' : isQuizzes ? 'quiz' : 'lesson';
 
   return {
     type,
@@ -23,9 +24,27 @@ function contentList(type) {
     total: 0,
     totalPages: 1,
     trashTotal: 0,
+    allTotal: 0,
+    publishedTotal: 0,
+    draftTotal: 0,
+    archivedTotal: 0,
     hoverRow: null,
 
     init() {
+      const params = new URLSearchParams(window.location.search);
+      const allowed = ['published', 'draft', 'archived', 'trashed'];
+      let status = params.get('status');
+      if (!allowed.includes(status)) {
+        try {
+          status = sessionStorage.getItem(`mint_lms_${type}_status`) || '';
+          sessionStorage.removeItem(`mint_lms_${type}_status`);
+        } catch {
+          status = '';
+        }
+      }
+      this.statusFilter = allowed.includes(status) ? status : 'all';
+      this.syncStatusToUrl();
+
       this.$nextTick(() => {
         const input = document.querySelector('#mint-lms-root .mint-search-input');
         if (!input) return;
@@ -41,12 +60,32 @@ function contentList(type) {
       this.loadItems(1);
     },
 
+    syncStatusToUrl() {
+      try {
+        const url = new URL(window.location.href);
+        if (this.statusFilter && this.statusFilter !== 'all') {
+          url.searchParams.set('status', this.statusFilter);
+        } else {
+          url.searchParams.delete('status');
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        // Ignore URL sync failures.
+      }
+    },
+
     filterTabs() {
       const tabs = [
-        { value: 'all', label: 'All' },
-        { value: 'published', label: 'Live' },
-        { value: 'draft', label: 'Drafts' },
-        { value: 'archived', label: 'Hidden' },
+        { value: 'all', label: `All (${this.allTotal})` },
+        {
+          value: 'published',
+          label: this.publishedTotal > 0 ? `Live (${this.publishedTotal})` : 'Live',
+        },
+        { value: 'draft', label: `Drafts (${this.draftTotal})` },
+        {
+          value: 'archived',
+          label: this.archivedTotal > 0 ? `Hidden (${this.archivedTotal})` : 'Hidden',
+        },
       ];
       if (this.trashTotal > 0) {
         tabs.push({ value: 'trashed', label: `Trash (${this.trashTotal})` });
@@ -56,6 +95,9 @@ function contentList(type) {
 
     summaryLine() {
       const n = this.total;
+      if (isQuestions) {
+        return n === 1 ? '1 question' : `${n} questions`;
+      }
       if (isQuizzes) {
         return n === 1 ? '1 quiz' : `${n} quizzes`;
       }
@@ -64,7 +106,21 @@ function contentList(type) {
 
     setFilter(status) {
       this.statusFilter = status;
+      this.syncStatusToUrl();
       this.loadItems(1);
+    },
+
+    statusLabel(status) {
+      const labels = { draft: 'Not Live', published: 'Live', archived: 'Hidden', trashed: 'Trash' };
+      return labels[status] || status;
+    },
+
+    itemMeta(item) {
+      if (!item) return '';
+      if (item.status === 'trashed') return 'In trash';
+      if (item.status === 'published') return 'Live';
+      if (item.status === 'archived') return 'Hidden';
+      return 'Not Live';
     },
 
     isEmpty() {
@@ -76,13 +132,20 @@ function contentList(type) {
     },
 
     editUrl(item) {
-      // Quizzes: always bounce through edit resolver so missing/trashed links are repaired.
-      if (isQuizzes && item.id) {
+      // Quizzes / questions: bounce through quiz resolver so links are repaired.
+      if ((isQuizzes || isQuestions) && (item.quizId || item.id)) {
         const editQuiz = config.urls.editQuiz || 'admin.php?page=mint-lms-edit-quiz';
-        return `${editQuiz}&quiz_id=${item.id}`;
+        const quizId = isQuestions ? item.quizId : item.id;
+        if (!quizId) {
+          return config.urls.questions || config.urls.quizzes;
+        }
+        const questionParam = isQuestions && item.id ? `&question_id=${item.id}` : '';
+        return `${editQuiz}&quiz_id=${quizId}${questionParam}`;
       }
       if (!item.courseId) {
-        return config.urls.lessons;
+        const lessonId = item.id || item.lessonId;
+        const lessonEdit = config.urls.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
+        return `${lessonEdit}&lesson_id=${lessonId}&from=lessons`;
       }
       return `${config.urls.builder}&course_id=${item.courseId}&lesson_id=${item.id || item.lessonId}&from=lessons`;
     },
@@ -111,6 +174,10 @@ function contentList(type) {
         this.total = data.total || 0;
         this.totalPages = Math.max(1, Math.ceil(this.total / this.perPage));
         this.trashTotal = Number(data.trashTotal) || 0;
+        this.allTotal = Number(data.allTotal) || 0;
+        this.publishedTotal = Number(data.publishedTotal) || 0;
+        this.draftTotal = Number(data.draftTotal) || 0;
+        this.archivedTotal = Number(data.archivedTotal) || 0;
       } catch (err) {
         this.error = err.message;
         window.MintLMS.toast.error(err.message);
@@ -164,4 +231,8 @@ function quizzesList() {
   return contentList('quizzes');
 }
 
-export { contentList, lessonsList, quizzesList };
+function questionsList() {
+  return contentList('questions');
+}
+
+export { contentList, lessonsList, quizzesList, questionsList };

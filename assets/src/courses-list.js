@@ -24,6 +24,10 @@ function coursesList() {
     total: 0,
     totalPages: 1,
     trashTotal: 0,
+    allTotal: 0,
+    publishedTotal: 0,
+    draftTotal: 0,
+    archivedTotal: 0,
     hoverRow: null,
 
     init() {
@@ -33,6 +37,19 @@ function coursesList() {
       if (urlSearch) {
         this.search = urlSearch;
       }
+
+      const allowed = ['published', 'draft', 'archived', 'trashed'];
+      let status = params.get('status');
+      if (!allowed.includes(status)) {
+        try {
+          status = sessionStorage.getItem('mint_lms_courses_status') || '';
+          sessionStorage.removeItem('mint_lms_courses_status');
+        } catch {
+          status = '';
+        }
+      }
+      this.statusFilter = allowed.includes(status) ? status : 'all';
+      this.syncStatusToUrl();
 
       this.$nextTick(() => {
         const input = document.querySelector('#mint-lms-root .mint-search-input');
@@ -56,6 +73,20 @@ function coursesList() {
       this.loadCourses(1);
     },
 
+    syncStatusToUrl() {
+      try {
+        const url = new URL(window.location.href);
+        if (this.statusFilter && this.statusFilter !== 'all') {
+          url.searchParams.set('status', this.statusFilter);
+        } else {
+          url.searchParams.delete('status');
+        }
+        window.history.replaceState({}, '', url.toString());
+      } catch {
+        // Ignore URL sync failures.
+      }
+    },
+
     initDashboard() {
       this.loading = false;
     },
@@ -72,13 +103,23 @@ function coursesList() {
       return `${config.urls.edit}&course_id=${courseId}`;
     },
 
-    viewUrl(courseId) {
-      const base = String(config.urls.playerPage || config.urls.catalogPage || '').replace(/\/+$/, '');
+    previewUrl(courseId) {
+      const base = String(config.urls.catalogPage || config.urls.playerPage || '').replace(/\/+$/, '');
       if (!base) {
         return this.builderUrl(courseId);
       }
-      const joiner = base.includes('?') ? '&' : '?';
-      return `${base}${joiner}course_id=${courseId}`;
+      try {
+        const url = new URL(base, window.location.origin);
+        url.searchParams.set('mintlms_course', String(courseId));
+        return url.toString();
+      } catch {
+        const joiner = base.includes('?') ? '&' : '?';
+        return `${base}${joiner}mintlms_course=${courseId}`;
+      }
+    },
+
+    viewUrl(courseId) {
+      return this.previewUrl(courseId);
     },
 
     statusLabel(status) {
@@ -88,10 +129,16 @@ function coursesList() {
 
     filterTabs() {
       const tabs = [
-        { value: 'all', label: 'All' },
-        { value: 'published', label: 'Live' },
-        { value: 'draft', label: 'Drafts' },
-        { value: 'archived', label: 'Hidden' },
+        { value: 'all', label: `All (${this.allTotal})` },
+        {
+          value: 'published',
+          label: this.publishedTotal > 0 ? `Live (${this.publishedTotal})` : 'Live',
+        },
+        { value: 'draft', label: `Drafts (${this.draftTotal})` },
+        {
+          value: 'archived',
+          label: this.archivedTotal > 0 ? `Hidden (${this.archivedTotal})` : 'Hidden',
+        },
       ];
       if (this.trashTotal > 0) {
         tabs.push({ value: 'trashed', label: `Trash (${this.trashTotal})` });
@@ -166,12 +213,12 @@ function coursesList() {
       const lessonLabel = lessons === 1 ? '1 lesson' : `${lessons} lessons`;
       if (course.status === 'published') {
         const when = this.formatShortDate(course.updatedAt);
-        return when ? `${lessonLabel} · published ${when}` : lessonLabel;
+        return when ? `${lessonLabel} · Live ${when}` : `${lessonLabel} · Live`;
       }
       if (course.status === 'archived') {
         return `${lessonLabel} · hidden from students`;
       }
-      return `${lessonLabel} · not published`;
+      return `${lessonLabel} · Not Live`;
     },
 
     summaryLine() {
@@ -226,6 +273,7 @@ function coursesList() {
 
     setFilter(status) {
       this.statusFilter = status;
+      this.syncStatusToUrl();
       this.loadCourses(1);
     },
 
@@ -257,6 +305,10 @@ function coursesList() {
         this.total = data.total || 0;
         this.totalPages = Math.max(1, Math.ceil(this.total / this.perPage));
         this.trashTotal = Number(data.trashTotal) || 0;
+        this.allTotal = Number(data.allTotal) || 0;
+        this.publishedTotal = Number(data.publishedTotal) || 0;
+        this.draftTotal = Number(data.draftTotal) || 0;
+        this.archivedTotal = Number(data.archivedTotal) || 0;
       } catch (err) {
         this.error = err.message;
         window.MintLMS.toast.error(err.message);
@@ -276,7 +328,7 @@ function coursesList() {
             enrollment_type: window.mintLmsAdmin?.defaultEnrollment || 'open',
           }),
         });
-        window.location.href = this.builderUrl(course.id);
+        window.location.href = this.settingsUrl(course.id);
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       } finally {

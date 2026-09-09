@@ -7,12 +7,12 @@ interface QuizRepositoryInterface {
 
 	public function findById( int $id ): ?Quiz;
 
-	public function findByLessonId( int $lessonId ): ?Quiz;
+	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz;
 
 	/**
 	 * @return list<QuizQuestion>
 	 */
-	public function findQuestionsByQuizId( int $quizId ): array;
+	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array;
 
 	public function findQuestionById( int $questionId ): ?QuizQuestion;
 

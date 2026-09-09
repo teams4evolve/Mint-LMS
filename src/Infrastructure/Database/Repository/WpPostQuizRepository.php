@@ -34,11 +34,13 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 		return $this->mapPostToQuiz( $post );
 	}
 
-	public function findByLessonId( int $lessonId ): ?Quiz {
+	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz {
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::QUIZ,
-				'post_status'            => 'any',
+				'post_status'            => $publishedOnly
+					? 'publish'
+					: array( 'publish', 'draft', 'private' ),
 				'posts_per_page'         => 1,
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => true,
@@ -63,10 +65,11 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 		return $this->mapPostToQuiz( $post );
 	}
 
-	public function findQuestionsByQuizId( int $quizId ): array {
+	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array {
 		$junction = Schema::validateTable( Schema::quizQuestionsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$data     = Schema::validateTable( Schema::questionDataTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$posts    = $this->wpdb->posts;
+		$statusSql = $publishedOnly ? "p.post_status = 'publish'" : "p.post_status != 'trash'";
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $this->wpdb->get_results(
@@ -74,7 +77,7 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 				"SELECT p.ID AS id, j.quiz_id, qd.question_type AS type, p.post_title, p.post_content,
 					qd.options_json, qd.correct_answer, j.sort_order
 				FROM {$junction} j
-				INNER JOIN {$posts} p ON p.ID = j.question_id AND p.post_type = %s AND p.post_status != 'trash'
+				INNER JOIN {$posts} p ON p.ID = j.question_id AND p.post_type = %s AND {$statusSql}
 				INNER JOIN {$data} qd ON qd.post_id = j.question_id
 				WHERE j.quiz_id = %d
 				ORDER BY j.sort_order ASC, j.question_id ASC",
@@ -126,13 +129,13 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 
 	public function saveQuiz( Quiz $quiz ): Quiz {
 		$postarr = array(
-			'post_type'   => PostTypes::QUIZ,
-			'post_status' => 'publish',
-			'post_title'  => $quiz->title,
+			'post_type'  => PostTypes::QUIZ,
+			'post_title' => $quiz->title,
 		);
 
 		if ( 0 === $quiz->id ) {
-			$postId = wp_insert_post( $postarr, true );
+			$postarr['post_status'] = 'draft';
+			$postId                 = wp_insert_post( $postarr, true );
 
 			if ( is_wp_error( $postId ) ) {
 				throw new \RuntimeException( 'Failed to insert quiz: ' . $postId->get_error_message() );
@@ -180,7 +183,7 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 			$postId = wp_insert_post(
 				array(
 					'post_type'    => PostTypes::QUESTION,
-					'post_status'  => 'publish',
+					'post_status'  => 'draft',
 					'post_title'   => $titleContent['title'],
 					'post_content' => $titleContent['content'],
 				),

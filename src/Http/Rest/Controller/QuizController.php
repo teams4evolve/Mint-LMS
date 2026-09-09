@@ -14,6 +14,7 @@ use MintLMS\Application\Quiz\Dto\CreateQuizDto;
 use MintLMS\Application\Quiz\Dto\SubmitQuizAttemptDto;
 use MintLMS\Application\Quiz\Dto\UpdateQuestionDto;
 use MintLMS\Application\Quiz\Dto\UpdateQuizDto;
+use MintLMS\Application\Quiz\QuestionAnswerCodec;
 use MintLMS\Application\Quiz\QuizService;
 use MintLMS\Domain\Quiz\QuizQuestion;
 use MintLMS\Http\Rest\Response\ApiResponse;
@@ -315,6 +316,23 @@ final class QuizController {
 
 			$quiz = $this->quizService->addQuestion( $id, $dto, $userId );
 
+			if ( $request->offsetExists( 'featured_image_id' ) ) {
+				$questions = $quiz->questions;
+				$last      = end( $questions );
+				if ( $last instanceof \MintLMS\Application\Quiz\Dto\QuizQuestionDto && $last->id > 0 ) {
+					$this->saveQuestionFeaturedImage( $last->id, (int) $request->get_param( 'featured_image_id' ) );
+					if ( $request->offsetExists( 'settings' ) && is_array( $request->get_param( 'settings' ) ) ) {
+						$this->saveQuestionSettings( $last->id, $request->get_param( 'settings' ) );
+					}
+				}
+			} elseif ( $request->offsetExists( 'settings' ) && is_array( $request->get_param( 'settings' ) ) ) {
+				$questions = $quiz->questions;
+				$last      = end( $questions );
+				if ( $last instanceof \MintLMS\Application\Quiz\Dto\QuizQuestionDto && $last->id > 0 ) {
+					$this->saveQuestionSettings( $last->id, $request->get_param( 'settings' ) );
+				}
+			}
+
 			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
@@ -331,16 +349,32 @@ final class QuizController {
 			$quizId     = (int) $request->get_param( 'id' );
 			$questionId = (int) $request->get_param( 'question_id' );
 
+			$correctAnswer = null;
+			if ( $request->offsetExists( 'correct_answer' ) ) {
+				$rawCorrect = $request->get_param( 'correct_answer' );
+				$correctAnswer = is_array( $rawCorrect )
+					? QuestionAnswerCodec::encodeMulti( array_map( 'strval', $rawCorrect ) )
+					: (string) $rawCorrect;
+			}
+
 			$dto = new UpdateQuestionDto(
 				$request->offsetExists( 'type' ) ? (string) $request->get_param( 'type' ) : null,
 				$request->offsetExists( 'prompt' ) ? (string) $request->get_param( 'prompt' ) : null,
 				$request->offsetExists( 'options' ) && is_array( $request->get_param( 'options' ) )
 					? array_values( array_map( 'strval', $request->get_param( 'options' ) ) )
 					: null,
-				$request->offsetExists( 'correct_answer' ) ? (string) $request->get_param( 'correct_answer' ) : null,
+				$correctAnswer,
 			);
 
 			$quiz = $this->quizService->updateQuestion( $quizId, $questionId, $dto, $userId );
+
+			if ( $request->offsetExists( 'featured_image_id' ) ) {
+				$this->saveQuestionFeaturedImage( $questionId, (int) $request->get_param( 'featured_image_id' ) );
+			}
+
+			if ( $request->offsetExists( 'settings' ) && is_array( $request->get_param( 'settings' ) ) ) {
+				$this->saveQuestionSettings( $questionId, $request->get_param( 'settings' ) );
+			}
 
 			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
@@ -372,12 +406,16 @@ final class QuizController {
 		try {
 			$userId = $this->authorization->getCurrentUserId();
 			$id     = (int) $request->get_param( 'id' );
-			$raw    = $request->get_param( 'answers' );
+			$raw     = $request->get_param( 'answers' );
 			$answers = array();
 
 			if ( is_array( $raw ) ) {
 				foreach ( $raw as $questionId => $answer ) {
-					$answers[ (int) $questionId ] = (string) $answer;
+					if ( is_array( $answer ) ) {
+						$answers[ (int) $questionId ] = QuestionAnswerCodec::encodeMulti( array_map( 'strval', $answer ) );
+					} else {
+						$answers[ (int) $questionId ] = (string) $answer;
+					}
 				}
 			}
 
@@ -467,7 +505,7 @@ final class QuizController {
 				'required'          => $requireAll,
 				'sanitize_callback' => 'sanitize_key',
 				'validate_callback' => static function ( mixed $value ): bool {
-					return in_array( (string) $value, array( QuizQuestion::TYPE_MCQ, QuizQuestion::TYPE_TRUE_FALSE ), true );
+					return in_array( (string) $value, QuizQuestion::types(), true );
 				},
 			),
 			'prompt'          => array(
@@ -480,9 +518,7 @@ final class QuizController {
 				'required' => false,
 			),
 			'correct_answer'  => array(
-				'type'              => 'string',
-				'required'          => $requireAll,
-				'sanitize_callback' => 'sanitize_text_field',
+				'required' => $requireAll,
 			),
 		);
 
@@ -503,12 +539,15 @@ final class QuizController {
 
 	private function questionDtoFromRequest( \WP_REST_Request $request ): CreateQuestionDto {
 		$options = $request->get_param( 'options' );
+		$type    = (string) $request->get_param( 'type' );
+		$opts    = is_array( $options ) ? array_values( array_map( 'strval', $options ) ) : array();
+		$correct = QuestionAnswerCodec::normalizeForType( $type, $request->get_param( 'correct_answer' ), $opts );
 
 		return new CreateQuestionDto(
-			(string) $request->get_param( 'type' ),
+			$type,
 			(string) $request->get_param( 'prompt' ),
-			is_array( $options ) ? array_values( array_map( 'strval', $options ) ) : array(),
-			(string) $request->get_param( 'correct_answer' ),
+			$opts,
+			$correct,
 		);
 	}
 
@@ -520,6 +559,7 @@ final class QuizController {
 		$data['settings']         = $this->readQuizSettings( $quiz->id );
 		$data['featuredImageId']  = null;
 		$data['featuredImageUrl'] = '';
+		$data['status']           = $this->mintPostStatus( (string) get_post_status( $quiz->id ) );
 
 		$thumbId = (int) get_post_thumbnail_id( $quiz->id );
 		if ( $thumbId > 0 ) {
@@ -528,7 +568,34 @@ final class QuizController {
 			$data['featuredImageUrl'] = is_string( $url ) ? $url : '';
 		}
 
+		if ( isset( $data['questions'] ) && is_array( $data['questions'] ) ) {
+			foreach ( $data['questions'] as $index => $question ) {
+				if ( ! is_array( $question ) || empty( $question['id'] ) ) {
+					continue;
+				}
+				$questionId = (int) $question['id'];
+				$qThumbId   = (int) get_post_thumbnail_id( $questionId );
+				$data['questions'][ $index ]['featuredImageId']  = $qThumbId > 0 ? $qThumbId : null;
+				$data['questions'][ $index ]['featuredImageUrl'] = '';
+				$data['questions'][ $index ]['status']           = $this->mintPostStatus( (string) get_post_status( $questionId ) );
+				if ( $qThumbId > 0 ) {
+					$qUrl = wp_get_attachment_image_url( $qThumbId, 'large' );
+					$data['questions'][ $index ]['featuredImageUrl'] = is_string( $qUrl ) ? $qUrl : '';
+				}
+				$data['questions'][ $index ]['settings'] = $this->readQuestionSettings( $questionId );
+			}
+		}
+
 		return $data;
+	}
+
+	private function mintPostStatus( string $wpStatus ): string {
+		return match ( $wpStatus ) {
+			'publish' => 'published',
+			'private', PostTypes::STATUS_ARCHIVED => 'archived',
+			'trash'   => 'trashed',
+			default   => 'draft',
+		};
 	}
 
 	/**
@@ -602,5 +669,159 @@ final class QuizController {
 		}
 
 		set_post_thumbnail( $quizId, $attachmentId );
+	}
+
+	private function saveQuestionFeaturedImage( int $questionId, int $attachmentId ): void {
+		if ( $questionId <= 0 ) {
+			return;
+		}
+
+		if ( $attachmentId <= 0 ) {
+			delete_post_thumbnail( $questionId );
+			return;
+		}
+
+		if ( 'attachment' !== get_post_type( $attachmentId ) ) {
+			return;
+		}
+
+		set_post_thumbnail( $questionId, $attachmentId );
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function defaultQuestionSettings(): array {
+		return array(
+			'freePreview'   => false,
+			'attachmentId'  => 0,
+			'attachmentName'=> '',
+			'attachmentUrl' => '',
+			'allowHtml'     => array(),
+			'submitMethod'  => 'Text Box',
+			'gradingMode'   => 'Not Graded, No Points Awarded',
+			'points'        => 1,
+			'extraTf'       => array(),
+			'displayTitle'  => '',
+		);
+	}
+
+	/**
+	 * @return array<string, mixed>
+	 */
+	private function readQuestionSettings( int $questionId ): array {
+		$raw = get_post_meta( $questionId, PostTypes::META_QUESTION_SETTINGS, true );
+		if ( ! is_array( $raw ) ) {
+			return $this->defaultQuestionSettings();
+		}
+
+		$settings = array_merge( $this->defaultQuestionSettings(), $raw );
+		$settings['freePreview']    = ! empty( $settings['freePreview'] );
+		$settings['attachmentId']   = absint( $settings['attachmentId'] ?? 0 );
+		$settings['attachmentName'] = sanitize_text_field( (string) ( $settings['attachmentName'] ?? '' ) );
+		$settings['attachmentUrl']  = esc_url_raw( (string) ( $settings['attachmentUrl'] ?? '' ) );
+		$settings['allowHtml']      = isset( $settings['allowHtml'] ) && is_array( $settings['allowHtml'] )
+			? array_map( static fn( $v ): bool => (bool) $v, array_values( $settings['allowHtml'] ) )
+			: array();
+		$settings['submitMethod']   = in_array( (string) ( $settings['submitMethod'] ?? '' ), array( 'Text Box', 'Upload' ), true )
+			? (string) $settings['submitMethod']
+			: 'Text Box';
+		$allowedGrading = array(
+			'-- Select --',
+			'Not Graded, No Points Awarded',
+			'Not Graded, Full Points Awarded',
+			'Graded, Full Points Awarded',
+		);
+		$settings['gradingMode'] = in_array( (string) ( $settings['gradingMode'] ?? '' ), $allowedGrading, true )
+			? (string) $settings['gradingMode']
+			: 'Not Graded, No Points Awarded';
+		$settings['points'] = max( 0, absint( $settings['points'] ?? 1 ) );
+		$settings['extraTf'] = $this->sanitizeExtraTfList( $settings['extraTf'] ?? array() );
+		$settings['displayTitle'] = sanitize_text_field( (string) ( $settings['displayTitle'] ?? '' ) );
+
+		return $settings;
+	}
+
+	/**
+	 * @param mixed $list
+	 * @return list<array<string, mixed>>
+	 */
+	private function sanitizeExtraTfList( mixed $list ): array {
+		if ( ! is_array( $list ) ) {
+			return array();
+		}
+
+		$clean = array();
+		foreach ( $list as $item ) {
+			if ( ! is_array( $item ) ) {
+				continue;
+			}
+			$answer = (string) ( $item['correctAnswer'] ?? '' );
+			if ( ! in_array( $answer, array( 'true', 'false', '' ), true ) ) {
+				$answer = '';
+			}
+			$clean[] = array(
+				'id'             => absint( $item['id'] ?? 0 ) ?: null,
+				'prompt'         => sanitize_textarea_field( (string) ( $item['prompt'] ?? '' ) ),
+				'correctAnswer'  => $answer,
+				'freePreview'    => ! empty( $item['freePreview'] ),
+				'attachmentId'   => absint( $item['attachmentId'] ?? 0 ),
+				'attachmentName' => sanitize_text_field( (string) ( $item['attachmentName'] ?? '' ) ),
+				'attachmentUrl'  => esc_url_raw( (string) ( $item['attachmentUrl'] ?? '' ) ),
+			);
+		}
+
+		return $clean;
+	}
+
+	/**
+	 * @param array<string, mixed> $settings
+	 */
+	private function saveQuestionSettings( int $questionId, array $settings ): void {
+		if ( $questionId <= 0 ) {
+			return;
+		}
+
+		$clean = $this->readQuestionSettings( $questionId );
+		if ( array_key_exists( 'freePreview', $settings ) ) {
+			$clean['freePreview'] = ! empty( $settings['freePreview'] );
+		}
+		if ( array_key_exists( 'attachmentId', $settings ) ) {
+			$clean['attachmentId'] = absint( $settings['attachmentId'] );
+		}
+		if ( array_key_exists( 'attachmentName', $settings ) ) {
+			$clean['attachmentName'] = sanitize_text_field( (string) $settings['attachmentName'] );
+		}
+		if ( array_key_exists( 'attachmentUrl', $settings ) ) {
+			$clean['attachmentUrl'] = esc_url_raw( (string) $settings['attachmentUrl'] );
+		}
+		if ( array_key_exists( 'allowHtml', $settings ) && is_array( $settings['allowHtml'] ) ) {
+			$clean['allowHtml'] = array_map( static fn( $v ): bool => (bool) $v, array_values( $settings['allowHtml'] ) );
+		}
+		if ( array_key_exists( 'submitMethod', $settings ) ) {
+			$method = (string) $settings['submitMethod'];
+			$clean['submitMethod'] = in_array( $method, array( 'Text Box', 'Upload' ), true ) ? $method : 'Text Box';
+		}
+		if ( array_key_exists( 'gradingMode', $settings ) ) {
+			$mode = (string) $settings['gradingMode'];
+			$allowed = array(
+				'-- Select --',
+				'Not Graded, No Points Awarded',
+				'Not Graded, Full Points Awarded',
+				'Graded, Full Points Awarded',
+			);
+			$clean['gradingMode'] = in_array( $mode, $allowed, true ) ? $mode : $clean['gradingMode'];
+		}
+		if ( array_key_exists( 'points', $settings ) ) {
+			$clean['points'] = max( 0, absint( $settings['points'] ) );
+		}
+		if ( array_key_exists( 'extraTf', $settings ) ) {
+			$clean['extraTf'] = $this->sanitizeExtraTfList( $settings['extraTf'] );
+		}
+		if ( array_key_exists( 'displayTitle', $settings ) ) {
+			$clean['displayTitle'] = sanitize_text_field( (string) $settings['displayTitle'] );
+		}
+
+		update_post_meta( $questionId, PostTypes::META_QUESTION_SETTINGS, $clean );
 	}
 }

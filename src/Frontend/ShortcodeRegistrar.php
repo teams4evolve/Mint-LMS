@@ -33,6 +33,197 @@ final class ShortcodeRegistrar {
 		add_shortcode( 'mint_lms_course', array( $this, 'renderCourseOverview' ) );
 		add_shortcode( 'mint_lms_player', array( $this, 'renderPlayer' ) );
 		add_shortcode( 'mint_lms_certificate', array( $this, 'renderCertificate' ) );
+		add_action( 'template_redirect', array( $this, 'interceptBuilderPreview' ), 5 );
+		add_action( 'template_redirect', array( $this, 'interceptCourseOverviewChrome' ), 6 );
+	}
+
+	/**
+	 * Course overview (?mintlms_course=) — keep theme "Courses" title visible,
+	 * but tighten Kadence hero spacing so the large empty gap under the header shrinks.
+	 */
+	public function interceptCourseOverviewChrome(): void {
+		$previewMode = isset( $_GET['mint_preview'] ) ? sanitize_key( (string) wp_unslash( $_GET['mint_preview'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( in_array( $previewMode, array( 'lesson', 'quiz', 'question' ), true ) ) {
+			return;
+		}
+
+		$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+
+		if ( $courseId <= 0 ) {
+			return;
+		}
+
+		add_filter(
+			'body_class',
+			static function ( array $classes ): array {
+				$classes[] = 'mint-lms-course-overview';
+
+				return $classes;
+			}
+		);
+
+		add_action(
+			'wp_head',
+			static function (): void {
+				echo '<style id="mint-lms-course-overview-chrome">
+					/* Keep page title visible; only compress oversized hero padding. */
+					body.mint-lms-course-overview .entry-hero,
+					body.mint-lms-course-overview .entry-hero-container-inner,
+					body.mint-lms-course-overview .hero-container,
+					body.mint-lms-course-overview .page-hero-section {
+						min-height: 0 !important;
+						padding-top: 18px !important;
+						padding-bottom: 10px !important;
+					}
+					body.mint-lms-course-overview .entry-hero .entry-header,
+					body.mint-lms-course-overview .entry-hero .page-title,
+					body.mint-lms-course-overview .entry-hero .entry-title,
+					body.mint-lms-course-overview .page-header .page-title {
+						margin-top: 0 !important;
+						margin-bottom: 0 !important;
+					}
+					body.mint-lms-course-overview .content-area,
+					body.mint-lms-course-overview .entry-content-wrap,
+					body.mint-lms-course-overview .entry.content-bg,
+					body.mint-lms-course-overview .content-wrap,
+					body.mint-lms-course-overview #primary,
+					body.mint-lms-course-overview .site-main,
+					body.mint-lms-course-overview .entry-content,
+					body.mint-lms-course-overview .wp-block-post-content {
+						padding-top: 8px !important;
+						margin-top: 0 !important;
+					}
+					body.mint-lms-course-overview #mint-lms-root.mint-lms-student .mint-s3-wrap {
+						padding-top: 12px;
+					}
+				</style>';
+			},
+			99
+		);
+	}
+
+	/**
+	 * Ensure builder Preview query args always win, even if the page shortcode path is odd.
+	 */
+	public function interceptBuilderPreview(): void {
+		$mode = isset( $_GET['mint_preview'] ) ? sanitize_key( (string) wp_unslash( $_GET['mint_preview'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! in_array( $mode, array( 'lesson', 'quiz', 'question' ), true ) ) {
+			return;
+		}
+
+		$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+		if ( $courseId <= 0 ) {
+			$courseId = $this->queryInt( 'mint_course' );
+		}
+		if ( $courseId <= 0 ) {
+			return;
+		}
+
+		$html = $this->renderBuilderPreview( $courseId );
+		if ( null === $html || '' === $html ) {
+			return;
+		}
+
+		// Lesson preview: show page heading as "Lessons" (like course overview shows "Courses").
+		// Quiz/question: hide theme title to avoid competing chrome.
+		add_filter( 'body_class', static function ( array $classes ) use ( $mode ): array {
+			$classes[] = 'mint-lms-builder-preview';
+			$classes[] = 'mint-lms-builder-preview--' . $mode;
+
+			return $classes;
+		} );
+
+		add_filter(
+			'document_title_parts',
+			static function ( array $parts ) use ( $mode ): array {
+				$parts['title'] = match ( $mode ) {
+					'quiz' => __( 'Quiz preview', 'mint-lms' ),
+					'question' => __( 'Question preview', 'mint-lms' ),
+					default => __( 'Lesson preview', 'mint-lms' ),
+				};
+
+				return $parts;
+			}
+		);
+
+		if ( 'lesson' === $mode ) {
+			add_filter(
+				'the_title',
+				static function ( $title, $postId = 0 ) {
+					if ( is_admin() ) {
+						return $title;
+					}
+
+					$queriedId = (int) get_queried_object_id();
+					if ( $queriedId > 0 && (int) $postId === $queriedId ) {
+						return __( 'Lessons', 'mint-lms' );
+					}
+
+					// Kadence hero sometimes calls the_title without a reliable post id in-loop.
+					if ( 0 === (int) $postId && in_the_loop() && is_main_query() ) {
+						return __( 'Lessons', 'mint-lms' );
+					}
+
+					return $title;
+				},
+				20,
+				2
+			);
+		}
+
+		// Replace after shortcodes/autop so theme catalog markup cannot leak through.
+		remove_filter( 'the_content', 'wpautop' );
+		add_filter(
+			'the_content',
+			static function () use ( $html ): string {
+				return $html;
+			},
+			999
+		);
+
+		add_action(
+			'wp_head',
+			static function () use ( $mode ): void {
+				if ( 'lesson' === $mode ) {
+					// Keep "Lessons" page title visible; only tighten hero spacing.
+					echo '<style id="mint-lms-builder-preview-chrome">
+						body.mint-lms-builder-preview--lesson .entry-hero,
+						body.mint-lms-builder-preview--lesson .entry-hero-container-inner,
+						body.mint-lms-builder-preview--lesson .hero-container {
+							min-height: 0 !important;
+							padding-top: 18px !important;
+							padding-bottom: 10px !important;
+						}
+						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3b-wrap {
+							padding-top: 12px;
+						}
+						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3-hero {
+							margin-bottom: 0;
+						}
+						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3b-media--empty {
+							display: flex;
+							align-items: center;
+							justify-content: center;
+							background: #e8fff3;
+						}
+					</style>';
+					return;
+				}
+
+				echo '<style id="mint-lms-builder-preview-chrome">
+					body.mint-lms-builder-preview .entry-title,
+					body.mint-lms-builder-preview .page-title,
+					body.mint-lms-builder-preview .wp-block-post-title,
+					body.mint-lms-builder-preview h1.entry-title,
+					body.mint-lms-builder-preview .page-header .page-title {
+						display: none !important;
+					}
+				</style>';
+			},
+			99
+		);
 	}
 
 	/**
@@ -126,6 +317,11 @@ final class ShortcodeRegistrar {
 		$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
 
 		if ( $courseId > 0 ) {
+			$builderPreview = $this->renderBuilderPreview( $courseId );
+			if ( null !== $builderPreview ) {
+				return $builderPreview;
+			}
+
 			return $this->renderCourseOverview(
 				array(
 					'id' => (string) $courseId,
@@ -148,6 +344,88 @@ final class ShortcodeRegistrar {
 	}
 
 	/**
+	 * Instructor Preview from course builder (S3B / S3C / S3D).
+	 */
+	private function renderBuilderPreview( int $courseId ): ?string {
+		$mode = isset( $_GET['mint_preview'] ) ? sanitize_key( (string) wp_unslash( $_GET['mint_preview'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		if ( ! in_array( $mode, array( 'lesson', 'quiz', 'question' ), true ) ) {
+			return null;
+		}
+
+		$userId   = get_current_user_id();
+		$lessonId = $this->queryInt( 'mint_lesson' );
+
+		try {
+			if ( 'lesson' === $mode ) {
+				if ( $lessonId <= 0 ) {
+					return $this->wrap( $this->errorMessage( __( 'Lesson is required for preview.', 'mint-lms' ) ) );
+				}
+
+				$preview = $this->studentExperience->getLessonBuilderPreview( $courseId, $lessonId, $userId );
+				$featuredId = isset( $preview['featuredImageId'] ) ? (int) $preview['featuredImageId'] : 0;
+				$settings   = $this->settings();
+				$nextId     = isset( $preview['nextLessonId'] ) ? (int) $preview['nextLessonId'] : 0;
+				$playerUrl  = $settings->getPlayerUrl();
+				$nextUrl    = $nextId > 0
+					? add_query_arg(
+						array(
+							'mint_course' => (string) $courseId,
+							'mint_lesson' => (string) $nextId,
+						),
+						$playerUrl
+					)
+					: '';
+
+				return $this->wrap(
+					$this->templateLoader->render(
+						'student/preview-lesson.php',
+						array(
+							'preview'     => $preview,
+							'featuredUrl' => $this->attachmentUrl( $featuredId > 0 ? $featuredId : null ) ?? '',
+							'courseUrl'   => $settings->getCourseUrl( $courseId ),
+							'nextUrl'     => $nextUrl,
+						)
+					)
+				);
+			}
+
+			if ( 'quiz' === $mode ) {
+				if ( $lessonId <= 0 ) {
+					return $this->wrap( $this->errorMessage( __( 'Lesson is required for quiz preview.', 'mint-lms' ) ) );
+				}
+
+				$preview = $this->studentExperience->getQuizBuilderPreview( $courseId, $lessonId, $userId );
+
+				return $this->wrap(
+					$this->templateLoader->render(
+						'student/preview-quiz.php',
+						array( 'preview' => $preview )
+					)
+				);
+			}
+
+			$questionId = $this->queryInt( 'mint_question' );
+			if ( $questionId <= 0 ) {
+				return $this->wrap( $this->errorMessage( __( 'Question is required for preview.', 'mint-lms' ) ) );
+			}
+
+			$preview = $this->studentExperience->getQuestionBuilderPreview( $courseId, $questionId, $lessonId, $userId );
+
+			return $this->wrap(
+				$this->templateLoader->render(
+					'student/preview-question.php',
+					array( 'preview' => $preview )
+				)
+			);
+		} catch ( NotFoundException $exception ) {
+			return $this->wrap( $this->errorMessage( __( 'Preview content not found.', 'mint-lms' ) ) );
+		} catch ( ForbiddenException $exception ) {
+			return $this->wrap( $this->errorMessage( __( 'You do not have permission to preview this content.', 'mint-lms' ) ) );
+		}
+	}
+
+	/**
 	 * @param array<string, string> $atts
 	 */
 	public function renderCourseOverview( array $atts = array() ): string {
@@ -165,6 +443,13 @@ final class ShortcodeRegistrar {
 
 		if ( $courseId <= 0 ) {
 			$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+		}
+
+		if ( $courseId > 0 ) {
+			$builderPreview = $this->renderBuilderPreview( $courseId );
+			if ( null !== $builderPreview ) {
+				return $builderPreview;
+			}
 		}
 
 		$userId = get_current_user_id();
@@ -237,6 +522,22 @@ final class ShortcodeRegistrar {
 
 		if ( $courseId <= 0 ) {
 			$courseId = $this->queryInt( 'mint_course' );
+		}
+
+		// Admin "View" / legacy links sometimes use course_id or mintlms_course.
+		if ( $courseId <= 0 ) {
+			$courseId = $this->queryInt( 'course_id' );
+		}
+
+		if ( $courseId <= 0 ) {
+			$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+		}
+
+		if ( $courseId > 0 ) {
+			$builderPreview = $this->renderBuilderPreview( $courseId );
+			if ( null !== $builderPreview ) {
+				return $builderPreview;
+			}
 		}
 
 		$lessonId = (int) $atts['lesson'];

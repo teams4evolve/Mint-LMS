@@ -61,6 +61,18 @@ final class QuizLinkResolver {
 			}
 		}
 
+		// Prefer linking to an existing host lesson. Do not invent a throwaway course
+		// when the quiz is already on a standalone (library) lesson.
+		if ( $lessonId > 0 && $courseId <= 0 ) {
+			update_post_meta( $quizId, PostTypes::META_LESSON_ID, $lessonId );
+			update_post_meta( $quizId, PostTypes::META_COURSE_ID, 0 );
+
+			return array(
+				'course_id' => 0,
+				'lesson_id' => $lessonId,
+			);
+		}
+
 		if ( $courseId <= 0 || $lessonId <= 0 ) {
 			$created  = $orphanFactory();
 			$courseId = (int) $created['course_id'];

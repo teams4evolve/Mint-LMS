@@ -34,7 +34,7 @@ if ( $dashboard->isEmpty ) {
 	$content = $renderer->render(
 		'admin/dashboard/_empty-content',
 		array(
-			'createUrl' => admin_url( 'admin.php?page=mint-lms-guided-course' ),
+			'createUrl' => \MintLMS\Infrastructure\Admin\CourseBuilderPage::newCourseUrl(),
 		)
 	);
 

@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
-$newCourseUrl  = $newCourseUrl ?? admin_url( 'admin.php?page=mint-lms-guided-course' );
+$newCourseUrl  = $newCourseUrl ?? \MintLMS\Infrastructure\Admin\CourseBuilderPage::newCourseUrl();
 $pageLabel     = $pageLabel ?? '';
 $headerActions = $headerActions ?? '';
 $maxWidthClass = $maxWidthClass ?? 'mint-max-w-content';

@@ -59,8 +59,11 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 		return $this->mapRowToLesson( $row );
 	}
 
-	public function findBySectionId( int $sectionId ): array {
+	public function findBySectionId( int $sectionId, bool $publishedOnly = false ): array {
 		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+
+		// Legacy table store has no draft flag — treat all rows as available.
+		unset( $publishedOnly );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
 		$rows = $this->wpdb->get_results(

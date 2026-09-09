@@ -29,6 +29,7 @@ final class PostTypes {
 	public const META_SORT_ORDER            = '_mint_sort_order';
 	public const META_PASS_PERCENT          = '_mint_pass_percent';
 	public const META_QUIZ_SETTINGS         = '_mint_quiz_settings';
+	public const META_QUESTION_SETTINGS     = '_mint_question_settings';
 	public const META_LEGACY_ID             = '_mint_legacy_id';
 
 	/**

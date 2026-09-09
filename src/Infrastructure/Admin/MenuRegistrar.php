@@ -5,8 +5,6 @@ namespace MintLMS\Infrastructure\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
-use MintLMS\Infrastructure\PostType\PostTypes;
-
 final class MenuRegistrar {
 
 	public function register(): void {
@@ -65,7 +63,8 @@ final class MenuRegistrar {
 			__( 'Questions', 'mint-lms' ),
 			__( 'Questions', 'mint-lms' ),
 			'edit_mintlms_courses',
-			'edit.php?post_type=' . PostTypes::QUESTION
+			'mint-lms-questions',
+			array( $this, 'renderQuestions' )
 		);
 
 		add_submenu_page(
@@ -131,6 +130,14 @@ final class MenuRegistrar {
 		}
 
 		include MINTLMS_PATH . 'views/admin/quizzes/list.php';
+	}
+
+	public function renderQuestions(): void {
+		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
+			wp_die( esc_html__( 'You do not have permission to access questions.', 'mint-lms' ) );
+		}
+
+		include MINTLMS_PATH . 'views/admin/questions/list.php';
 	}
 
 	public function renderCourseStudents(): void {

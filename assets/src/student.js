@@ -2,6 +2,30 @@ import Alpine from 'alpinejs';
 import { joinRestUrl } from './api.js';
 
 document.addEventListener('alpine:init', () => {
+  Alpine.data('mintCourseOverview', (config = {}) => ({
+    sections: Array.isArray(config.sections) ? config.sections : [],
+    lessonUrls: config.lessonUrls || {},
+    continueUrl: config.continueUrl || '#',
+    // Per-node expand state — section / lesson / quiz each toggle independently.
+    open: {},
+
+    isOpen(key) {
+      return !!this.open[key];
+    },
+
+    toggle(key) {
+      // Immutable update so Alpine always re-renders this one node only.
+      this.open = { ...this.open, [key]: !this.open[key] };
+    },
+
+    lessonUrl(lesson) {
+      if (!lesson?.accessible) {
+        return '#';
+      }
+      return this.lessonUrls[lesson.id] || this.continueUrl || '#';
+    },
+  }));
+
   Alpine.data('mintCoursePlayer', (config) => ({
     courseId: config.courseId,
     lessonId: config.lessonId,
@@ -79,6 +103,39 @@ document.addEventListener('alpine:init', () => {
     scorePercent: 0,
     error: '',
 
+    init() {
+      (this.questions || []).forEach((question) => {
+        if (question.type === 'mcq_multi' && !Array.isArray(this.answers[question.id])) {
+          this.answers[question.id] = [];
+        }
+      });
+    },
+
+    isMultiSelected(questionId, option) {
+      const selected = this.answers[questionId];
+      return Array.isArray(selected) && selected.includes(option);
+    },
+
+    toggleMultiAnswer(questionId, option, checked) {
+      const current = Array.isArray(this.answers[questionId]) ? [...this.answers[questionId]] : [];
+      const index = current.indexOf(option);
+      if (checked && index < 0) {
+        current.push(option);
+      } else if (!checked && index >= 0) {
+        current.splice(index, 1);
+      }
+      this.answers[questionId] = current;
+    },
+
+    buildSubmitAnswers() {
+      const payload = {};
+      Object.keys(this.answers).forEach((key) => {
+        const value = this.answers[key];
+        payload[key] = Array.isArray(value) ? [...value].sort() : value;
+      });
+      return payload;
+    },
+
     async submitQuiz() {
       if (this.submitting || this.hasPassed) return;
 
@@ -94,7 +151,7 @@ document.addEventListener('alpine:init', () => {
               'Content-Type': 'application/json',
               'X-WP-Nonce': mintLmsStudent.nonce,
             },
-            body: JSON.stringify({ answers: this.answers }),
+            body: JSON.stringify({ answers: this.buildSubmitAnswers() }),
           }
         );
 
@@ -125,6 +182,7 @@ document.addEventListener('alpine:init', () => {
       this.submitted = false;
       this.answers = {};
       this.error = '';
+      this.init();
     },
   }));
 });

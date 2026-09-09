@@ -28,6 +28,7 @@ final readonly class StudentPlayerContextDto {
 		public bool $quizRequired = false,
 		public bool $hasPassedQuiz = true,
 		public bool $canMarkComplete = true,
+		public bool $isReviewMode = false,
 	) {
 	}
 
@@ -51,6 +52,7 @@ final readonly class StudentPlayerContextDto {
 			'quizRequired'            => $this->quizRequired,
 			'hasPassedQuiz'           => $this->hasPassedQuiz,
 			'canMarkComplete'         => $this->canMarkComplete,
+			'isReviewMode'            => $this->isReviewMode,
 		);
 	}
 }

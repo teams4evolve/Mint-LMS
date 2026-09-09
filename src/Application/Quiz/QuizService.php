@@ -39,53 +39,63 @@ final class QuizService {
 	) {
 	}
 
-	public function getByLessonId( int $lessonId, int $userId, bool $forStudent = false ): ?QuizDto {
+	public function getByLessonId( int $lessonId, int $userId, bool $forStudent = false, bool $editorReview = false ): ?QuizDto {
 		$lesson = $this->findLessonOrFail( $lessonId );
-		$course = $this->findCourseOrFail( $lesson->courseId );
 
 		if ( $forStudent ) {
-			$this->assertStudentQuizAccess( $userId, $lesson->courseId, $lesson->isPreview, $lesson->id );
-		} elseif ( ! $this->authorization->canViewCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
+			if ( $lesson->courseId <= 0 ) {
+				throw new NotFoundException( 'Quiz not found.' );
+			}
+			$course = $this->findCourseOrFail( $lesson->courseId );
+			if ( $editorReview || $this->canEditorReviewCourse( $userId, $course->authorId ) ) {
+				$editorReview = true;
+			} else {
+				$this->assertStudentQuizAccess( $userId, $lesson->courseId, $lesson->isPreview, $lesson->id );
+			}
+		} else {
+			$this->assertCanManageLessonContent( $userId, $lesson );
 		}
 
-		$quiz = $this->quizRepository->findByLessonId( $lessonId );
+		$publishedOnly = $forStudent && ! $editorReview;
+		$quiz          = $this->quizRepository->findByLessonId( $lessonId, $publishedOnly );
 
 		if ( null === $quiz ) {
 			return null;
 		}
 
-		$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
+		$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id, $publishedOnly );
 
 		return QuizDto::fromQuiz( $quiz, $questions, ! $forStudent );
 	}
 
 	public function get( int $quizId, int $userId, bool $forStudent = false ): QuizDto {
-		$quiz = $this->findQuizOrFail( $quizId );
+		$quiz         = $this->findQuizOrFail( $quizId );
+		$editorReview = false;
 
 		if ( $forStudent ) {
-			$lesson = $this->findLessonOrFail( $quiz->lessonId );
-			$this->assertStudentQuizAccess( $userId, $quiz->courseId, $lesson->isPreview, $lesson->id );
-		} else {
-			$course = $this->findCourseOrFail( $quiz->courseId );
-
-			if ( ! $this->authorization->canViewCourse( $userId, $course->authorId ) ) {
-				throw new ForbiddenException();
+			if ( $quiz->courseId <= 0 ) {
+				throw new NotFoundException( 'Quiz not found.' );
 			}
+			$lesson       = $this->findLessonOrFail( $quiz->lessonId );
+			$course       = $this->findCourseOrFail( $quiz->courseId );
+			$editorReview = $this->canEditorReviewCourse( $userId, $course->authorId );
+			if ( ! $editorReview ) {
+				$this->assertStudentQuizAccess( $userId, $quiz->courseId, $lesson->isPreview, $lesson->id );
+			}
+		} else {
+			$lesson = $this->findLessonOrFail( $quiz->lessonId );
+			$this->assertCanManageLessonContent( $userId, $lesson );
 		}
 
-		$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
+		$publishedOnly = $forStudent && ! $editorReview;
+		$questions     = $this->quizRepository->findQuestionsByQuizId( $quiz->id, $publishedOnly );
 
 		return QuizDto::fromQuiz( $quiz, $questions, ! $forStudent );
 	}
 
 	public function create( int $lessonId, CreateQuizDto $dto, int $userId ): QuizDto {
 		$lesson = $this->findLessonOrFail( $lessonId );
-		$course = $this->findCourseOrFail( $lesson->courseId );
-
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		if ( null !== $this->quizRepository->findByLessonId( $lessonId ) ) {
 			throw new ValidationException(
@@ -124,11 +134,8 @@ final class QuizService {
 
 	public function update( int $quizId, UpdateQuizDto $dto, int $userId ): QuizDto {
 		$quiz   = $this->findQuizOrFail( $quizId );
-		$course = $this->findCourseOrFail( $quiz->courseId );
-
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$lesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$title       = null !== $dto->title ? trim( $dto->title ) : $quiz->title;
 		$passPercent = null !== $dto->passPercent ? $this->normalizePassPercent( $dto->passPercent ) : $quiz->passPercent;
@@ -153,22 +160,16 @@ final class QuizService {
 
 	public function delete( int $quizId, int $userId ): void {
 		$quiz   = $this->findQuizOrFail( $quizId );
-		$course = $this->findCourseOrFail( $quiz->courseId );
-
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$lesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$this->quizRepository->deleteQuiz( $quizId );
 	}
 
 	public function addQuestion( int $quizId, CreateQuestionDto $dto, int $userId ): QuizDto {
 		$quiz   = $this->findQuizOrFail( $quizId );
-		$course = $this->findCourseOrFail( $quiz->courseId );
-
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$lesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$this->createQuestion( $quizId, $dto );
 
@@ -177,21 +178,26 @@ final class QuizService {
 
 	public function updateQuestion( int $quizId, int $questionId, UpdateQuestionDto $dto, int $userId ): QuizDto {
 		$quiz     = $this->findQuizOrFail( $quizId );
-		$course   = $this->findCourseOrFail( $quiz->courseId );
+		$lesson   = $this->findLessonOrFail( $quiz->lessonId );
 		$question = $this->findQuestionOrFail( $questionId );
 
 		if ( $question->quizId !== $quizId ) {
 			throw new NotFoundException( 'Question not found.' );
 		}
 
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$type          = null !== $dto->type ? $dto->type : $question->type;
 		$prompt        = null !== $dto->prompt ? trim( $dto->prompt ) : $question->prompt;
 		$options       = null !== $dto->options ? $dto->options : $question->options;
 		$correctAnswer = null !== $dto->correctAnswer ? $dto->correctAnswer : $question->correctAnswer;
+
+		if ( QuizQuestion::TYPE_ESSAY === $type ) {
+			$options       = array();
+			$correctAnswer = '';
+		} else {
+			$correctAnswer = QuestionAnswerCodec::normalizeForType( $type, $correctAnswer, $options );
+		}
 
 		$this->assertValidQuestion( $type, $prompt, $options, $correctAnswer );
 
@@ -212,16 +218,14 @@ final class QuizService {
 
 	public function deleteQuestion( int $quizId, int $questionId, int $userId ): QuizDto {
 		$quiz     = $this->findQuizOrFail( $quizId );
-		$course   = $this->findCourseOrFail( $quiz->courseId );
+		$lesson   = $this->findLessonOrFail( $quiz->lessonId );
 		$question = $this->findQuestionOrFail( $questionId );
 
 		if ( $question->quizId !== $quizId ) {
 			throw new NotFoundException( 'Question not found.' );
 		}
 
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$this->quizRepository->deleteQuestion( $questionId );
 
@@ -234,14 +238,16 @@ final class QuizService {
 		}
 
 		$quiz      = $this->findQuizOrFail( $quizId );
+		$course    = $this->findCourseOrFail( $quiz->courseId );
 		$questions = $this->quizRepository->findQuestionsByQuizId( $quizId );
 		$lesson    = $this->findLessonOrFail( $quiz->lessonId );
+		$isEditor  = $this->canEditorReviewCourse( $userId, $course->authorId );
 
-		if ( ! $lesson->isPreview && ! $this->progressRepository->isUserEnrolled( $userId, $quiz->courseId ) ) {
+		if ( ! $isEditor && ! $lesson->isPreview && ! $this->progressRepository->isUserEnrolled( $userId, $quiz->courseId ) ) {
 			throw new ForbiddenException( 'You must be enrolled to submit this quiz.' );
 		}
 
-		if ( null !== $this->lessonAccessService ) {
+		if ( ! $isEditor && null !== $this->lessonAccessService ) {
 			$this->lessonAccessService->assertCanAccessLesson( $userId, $lesson->id );
 		}
 
@@ -272,11 +278,8 @@ final class QuizService {
 	 */
 	public function getAttempts( int $quizId, int $userId ): array {
 		$quiz   = $this->findQuizOrFail( $quizId );
-		$course = $this->findCourseOrFail( $quiz->courseId );
-
-		if ( ! $this->authorization->canViewCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$lesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $lesson );
 
 		$attempts = $this->quizRepository->findAttemptsByQuizId( $quizId );
 		$dtos     = array();
@@ -325,6 +328,25 @@ final class QuizService {
 		return $this->hasPassed( $userId, $quiz->id );
 	}
 
+
+	public function syncCourseIdForLesson( int $lessonId, int $courseId ): void {
+		$quiz = $this->quizRepository->findByLessonId( $lessonId );
+		if ( null === $quiz ) {
+			return;
+		}
+
+		$this->quizRepository->saveQuiz(
+			new Quiz(
+				$quiz->id,
+				$quiz->lessonId,
+				$courseId,
+				$quiz->title,
+				$quiz->passPercent,
+				$quiz->sortOrder,
+			)
+		);
+	}
+
 	public function onLessonDeleted( int $lessonId ): void {
 		$this->quizRepository->deleteByLessonId( $lessonId );
 	}
@@ -338,39 +360,70 @@ final class QuizService {
 			return 0.0;
 		}
 
+		$gradable = array_values(
+			array_filter(
+				$questions,
+				static fn( QuizQuestion $question ): bool => $question->isAutoGradable()
+			)
+		);
+
+		// Essay-only quizzes have no auto-gradable items; treat as complete for progression.
+		if ( array() === $gradable ) {
+			return 100.0;
+		}
+
 		$correct = 0;
 
-		foreach ( $questions as $question ) {
+		foreach ( $gradable as $question ) {
 			$submitted = $answers[ $question->id ] ?? '';
+
+			if ( is_array( $submitted ) ) {
+				$submitted = QuestionAnswerCodec::encodeMulti( array_map( 'strval', $submitted ) );
+			}
 
 			if ( $this->isAnswerCorrect( $question, (string) $submitted ) ) {
 				++$correct;
 			}
 		}
 
-		return round( ( $correct / count( $questions ) ) * 100, 2 );
+		return round( ( $correct / count( $gradable ) ) * 100, 2 );
 	}
 
 	public function isAnswerCorrect( QuizQuestion $question, string $submitted ): bool {
+		if ( QuizQuestion::TYPE_ESSAY === $question->type ) {
+			return false;
+		}
+
 		if ( QuizQuestion::TYPE_TRUE_FALSE === $question->type ) {
 			return strtolower( trim( $submitted ) ) === strtolower( trim( $question->correctAnswer ) );
+		}
+
+		if ( QuizQuestion::TYPE_MCQ_MULTI === $question->type ) {
+			$expected = QuestionAnswerCodec::decodeMulti( $question->correctAnswer );
+			$actual   = QuestionAnswerCodec::decodeMulti( $submitted );
+
+			return $expected === $actual && array() !== $expected;
 		}
 
 		return trim( $submitted ) === trim( $question->correctAnswer );
 	}
 
 	private function createQuestion( int $quizId, CreateQuestionDto $dto ): QuizQuestion {
-		$prompt = trim( $dto->prompt );
-		$this->assertValidQuestion( $dto->type, $prompt, $dto->options, $dto->correctAnswer );
+		$prompt  = trim( $dto->prompt );
+		$type    = $dto->type;
+		$options = QuizQuestion::TYPE_ESSAY === $type ? array() : $dto->options;
+		$correct = QuestionAnswerCodec::normalizeForType( $type, $dto->correctAnswer, $options );
+
+		$this->assertValidQuestion( $type, $prompt, $options, $correct );
 
 		return $this->quizRepository->saveQuestion(
 			new QuizQuestion(
 				0,
 				$quizId,
-				$dto->type,
+				$type,
 				$prompt,
-				$dto->options,
-				$dto->correctAnswer,
+				$options,
+				$correct,
 				$this->quizRepository->nextQuestionSortOrder( $quizId ),
 			)
 		);
@@ -385,7 +438,15 @@ final class QuizService {
 		$options = isset( $data['options'] ) && is_array( $data['options'] )
 			? array_values( array_map( 'strval', $data['options'] ) )
 			: array();
-		$correctAnswer = (string) ( $data['correct_answer'] ?? $data['correctAnswer'] ?? '' );
+		$correctAnswer = QuestionAnswerCodec::normalizeForType(
+			$type,
+			$data['correct_answer'] ?? $data['correctAnswer'] ?? '',
+			$options
+		);
+
+		if ( QuizQuestion::TYPE_ESSAY === $type ) {
+			$options = array();
+		}
 
 		$this->assertValidQuestion( $type, $prompt, $options, $correctAnswer );
 
@@ -410,8 +471,12 @@ final class QuizService {
 			throw new ValidationException( 'Validation failed.', array( 'prompt' => 'Prompt is required.' ) );
 		}
 
-		if ( ! in_array( $type, array( QuizQuestion::TYPE_MCQ, QuizQuestion::TYPE_TRUE_FALSE ), true ) ) {
+		if ( ! in_array( $type, QuizQuestion::types(), true ) ) {
 			throw new ValidationException( 'Validation failed.', array( 'type' => 'Invalid question type.' ) );
+		}
+
+		if ( QuizQuestion::TYPE_ESSAY === $type ) {
+			return;
 		}
 
 		if ( QuizQuestion::TYPE_TRUE_FALSE === $type ) {
@@ -429,10 +494,10 @@ final class QuizService {
 
 		$optionCount = count( $options );
 
-		if ( $optionCount < 2 || $optionCount > 4 ) {
+		if ( $optionCount < 2 || $optionCount > 6 ) {
 			throw new ValidationException(
 				'Validation failed.',
-				array( 'options' => 'MCQ must have between 2 and 4 options.' )
+				array( 'options' => 'MCQ must have between 2 and 6 options.' )
 			);
 		}
 
@@ -443,6 +508,28 @@ final class QuizService {
 					array( 'options' => 'Options cannot be empty.' )
 				);
 			}
+		}
+
+		if ( QuizQuestion::TYPE_MCQ_MULTI === $type ) {
+			$answers = QuestionAnswerCodec::decodeMulti( $correctAnswer );
+
+			if ( count( $answers ) < 1 ) {
+				throw new ValidationException(
+					'Validation failed.',
+					array( 'correct_answer' => 'Select at least one correct answer.' )
+				);
+			}
+
+			foreach ( $answers as $answer ) {
+				if ( ! in_array( $answer, $options, true ) ) {
+					throw new ValidationException(
+						'Validation failed.',
+						array( 'correct_answer' => 'Each correct answer must match one of the options.' )
+					);
+				}
+			}
+
+			return;
 		}
 
 		if ( ! in_array( $correctAnswer, $options, true ) ) {
@@ -487,6 +574,21 @@ final class QuizService {
 		return $lesson;
 	}
 
+	private function assertCanManageLessonContent( int $userId, \MintLMS\Domain\Lesson\Lesson $lesson ): void {
+		if ( $lesson->courseId > 0 ) {
+			$course = $this->findCourseOrFail( $lesson->courseId );
+			if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+				throw new ForbiddenException();
+			}
+
+			return;
+		}
+
+		if ( ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException();
+		}
+	}
+
 	private function findCourseOrFail( int $id ): \MintLMS\Domain\Course\Course {
 		$course = $this->courseRepository->findById( $id );
 
@@ -509,5 +611,9 @@ final class QuizService {
 		if ( null !== $this->lessonAccessService ) {
 			$this->lessonAccessService->assertCanAccessLesson( $userId, $lessonId );
 		}
+	}
+
+	private function canEditorReviewCourse( int $userId, int $authorId ): bool {
+		return $userId > 0 && $this->authorization->canEditCourse( $userId, $authorId );
 	}
 }

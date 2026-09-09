@@ -1,5 +1,9 @@
 @import '../css/mint.css';
 
+#mint-lms-root.mint-lms-student {
+  overflow: visible;
+}
+
 #mint-lms-root.mint-lms-student .mint-aspect-video iframe,
 #mint-lms-root.mint-lms-student .mint-aspect-video video {
   width: 100%;
@@ -8,4 +12,416 @@
 
 #mint-lms-root.mint-lms-student .mint-aspect-video iframe {
   aspect-ratio: 16 / 9;
+}
+
+#mint-lms-root.mint-lms-student .mint-course-overview__description,
+#mint-lms-root.mint-lms-student .mint-course-overview__description p {
+  max-width: 100%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* S3 course overview layout sizes (exact design caps)
+ * Break out of narrow theme content column so hero (620) vs content (960)
+ * width difference is visible — matching the design file canvas.
+ */
+#mint-lms-root.mint-lms-student .mint-s3-wrap {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 0 max(16px, calc((100vw - 960px) / 2)) 56px;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-hero {
+  width: 100%;
+  max-width: 620px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 32px 36px 40px;
+  border: 1px solid #e4e1f0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #e8fff3;
+  box-shadow: 0 8px 28px rgba(28, 20, 80, 0.07);
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-hero__media {
+  margin-top: 22px;
+  width: 100%;
+  max-width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  position: relative;
+  background: #dcefe4;
+  box-shadow: 0 10px 30px rgba(95, 231, 166, 0.4);
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-hero__media img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-hero__countdown {
+  margin-top: 22px;
+  width: 100%;
+  border-radius: 16px;
+  padding: 40px 28px;
+  text-align: center;
+  background: linear-gradient(135deg, #98fbcb, #5fe7a6);
+  box-shadow: 0 10px 30px rgba(95, 231, 166, 0.4);
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-content {
+  margin-top: 24px;
+  width: 100%;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  padding: 36px 48px 48px;
+  border: 1px solid #e4e1f0;
+  border-radius: 18px;
+  overflow: hidden;
+  background: #e8fff3;
+  box-shadow: 0 8px 28px rgba(28, 20, 80, 0.07);
+  box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  #mint-lms-root.mint-lms-student .mint-s3-hero {
+    padding: 28px 20px 32px;
+  }
+
+  #mint-lms-root.mint-lms-student .mint-s3-content {
+    padding: 28px 20px 36px;
+  }
+}
+
+/* S3B lesson preview — same content width as course overview lower box (960px) */
+#mint-lms-root.mint-lms-student .mint-s3b-wrap {
+  width: 100vw;
+  max-width: 100vw;
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+  padding: 24px max(16px, calc((100vw - 960px) / 2)) 56px;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-title {
+  margin: 0;
+  font-size: 30px;
+  line-height: 36px;
+  font-weight: 600;
+  letter-spacing: -0.03em;
+  color: #0f0e1a;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-media-frame {
+  margin: 16px auto 0;
+  max-width: 648px;
+  padding: 18px;
+  border-radius: 22px;
+  /* Soft pale mint wash — matches reference (not bright cyan/green) */
+  background: #e8fff3;
+  box-shadow: none;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-media {
+  margin-top: 0;
+  width: 100%;
+  max-width: none;
+  aspect-ratio: 16 / 9;
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #e8fff3;
+  box-sizing: border-box;
+  position: relative;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-media img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100% !important;
+  height: 100% !important;
+  max-width: none !important;
+  object-fit: cover !important;
+  object-position: center center !important;
+  border-radius: 16px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-media__placeholder {
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  font-size: 12px;
+  color: #0b4f3f;
+  background: #ffffff;
+  border: 1px solid #e4e1f0;
+  border-radius: 6px;
+  padding: 5px 10px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-author {
+  margin-top: 8px;
+  max-width: 648px;
+  margin-left: auto;
+  margin-right: auto;
+  font-size: 13px;
+  color: #5c5c77;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-author .mint-underline {
+  color: #0b4f3f;
+  text-decoration: underline;
+  font-weight: 500;
+}
+
+/* Same width as course overview content card */
+#mint-lms-root.mint-lms-student .mint-s3b-progress,
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card,
+#mint-lms-root.mint-lms-student .mint-s3b-nav {
+  width: 100%;
+  max-width: 960px;
+  margin-left: auto;
+  margin-right: auto;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-progress {
+  margin-top: 24px;
+  border-radius: 12px 12px 0 0;
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  background: #e8fff3;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-progress__crumb {
+  font-size: 13px;
+  font-weight: 700;
+  color: #33334a;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-progress__pct {
+  margin-top: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #0b4f3f;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-progress__badge {
+  flex: none;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #0b4f3f;
+  background: #98fb98;
+  border-radius: 999px;
+  padding: 6px 12px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card {
+  border-radius: 0 0 12px 12px;
+  overflow: hidden;
+  background: #ffffff;
+  border: 1px solid #e4e1f0;
+  border-top: 0;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card__head {
+  padding: 14px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-badge {
+  flex: none;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #0b4f3f;
+  background: #e8fff3;
+  border-radius: 999px;
+  padding: 4px 9px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-badge--sm {
+  padding: 3px 8px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card__name {
+  font-size: 16px;
+  font-weight: 700;
+  color: #17222b;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card__meta {
+  margin-top: 2px;
+  font-size: 13px;
+  color: #5c5c77;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-expand {
+  flex: none;
+  height: 34px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: none;
+  background: #98fb98;
+  color: #0b4f3f;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: inherit;
+  outline: none;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-expand:hover {
+  background: #7fe87f;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-expand--sm {
+  height: 30px;
+  padding: 0 11px;
+  border-radius: 7px;
+  font-size: 12px;
+  gap: 5px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-lesson-card__body {
+  padding: 6px 14px 12px;
+  display: grid;
+  gap: 8px;
+  background: #f6fbf8;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav {
+  margin-top: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav__back {
+  font-size: 14px;
+  color: #5c5c77;
+  text-decoration: none;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav__back:hover {
+  color: #0b4f3f;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav__next {
+  height: 42px;
+  padding: 0 18px;
+  border-radius: 8px;
+  border: none;
+  background: #98fb98;
+  color: #0b4f3f;
+  font-size: 14px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav__next:hover {
+  background: #7fe87f;
+  color: #0b4f3f;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3b-nav__next--disabled {
+  background: #e8fff3;
+  color: rgba(11, 79, 63, 0.45);
+  cursor: default;
+}
+
+/* S3 course content tree — explicit solid rails (preflight is off) */
+#mint-lms-root.mint-lms-student .mint-s3-section {
+  border: 1.5px solid #e4e1f0;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-section__body {
+  display: grid;
+  gap: 10px;
+  padding: 8px 16px 14px;
+  background: #fafcfb;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-rail--lesson {
+  margin-left: 20px;
+  border-left: 2px solid #c9f3dd;
+  padding-left: 16px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-lesson {
+  border: 1.5px solid #dcefe4;
+  border-radius: 10px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-lesson__body {
+  display: grid;
+  gap: 8px;
+  padding: 6px 14px 12px;
+  background: #f6fbf8;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-rail--quiz {
+  margin-left: 18px;
+  border-left: 2px solid #d6e8dc;
+  padding-left: 14px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-quiz {
+  border: 1.5px solid #e4e1f0;
+  border-radius: 9px;
+  overflow: hidden;
+  background: #ffffff;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-quiz__body {
+  display: grid;
+  gap: 6px;
+  padding: 4px 12px 10px;
+}
+
+#mint-lms-root.mint-lms-student .mint-s3-question {
+  margin-left: 16px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 10px;
+  border-radius: 7px;
+  background: #f1fff9;
 }

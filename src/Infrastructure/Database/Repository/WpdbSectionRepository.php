@@ -165,13 +165,13 @@ final class WpdbSectionRepository implements SectionRepositoryInterface {
 		return (int) $max + 1;
 	}
 
-	public function loadStructureRows( int $courseId ): array {
+	public function loadStructureRows( int $courseId, bool $publishedOnly = false ): array {
 		$sections  = $this->findByCourseId( $courseId );
 		$structure = array();
 
 		foreach ( $sections as $section ) {
 			$sectionLessons = null !== $this->lessons
-				? $this->lessons->findBySectionId( $section->id )
+				? $this->lessons->findBySectionId( $section->id, $publishedOnly )
 				: array();
 
 			if ( array() === $sectionLessons ) {

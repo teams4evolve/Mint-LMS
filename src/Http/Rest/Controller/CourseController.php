@@ -17,6 +17,7 @@ use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
 use MintLMS\Http\Rest\Response\ApiResponse;
 use MintLMS\Infrastructure\Http\RestContentSanitizer;
+use MintLMS\Infrastructure\PostType\PostTypes;
 use MintLMS\Infrastructure\Setup\PageSettings;
 use MintLMS\Infrastructure\WooCommerce\WooCommerceIntegration;
 
@@ -425,6 +426,15 @@ final class CourseController {
 				}
 
 				$structure['sections'][ $sectionIndex ]['lessons'][ $lessonIndex ]['featuredImageUrl'] = $url;
+
+				$lessonId = isset( $lesson['id'] ) ? (int) $lesson['id'] : 0;
+				$wpStatus = $lessonId > 0 ? (string) get_post_status( $lessonId ) : 'draft';
+				$structure['sections'][ $sectionIndex ]['lessons'][ $lessonIndex ]['status'] = match ( $wpStatus ) {
+					'publish' => 'published',
+					'private', PostTypes::STATUS_ARCHIVED => 'archived',
+					'trash' => 'trashed',
+					default => 'draft',
+				};
 			}
 		}
 

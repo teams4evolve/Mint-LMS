@@ -7,6 +7,27 @@ use MintLMS\Application\Course\Dto\CourseStructureDto;
 
 final readonly class StudentCourseOverviewDto {
 
+	/**
+	 * @param list<int> $completedLessonIds
+	 * @param list<array{
+	 *   id: int,
+	 *   title: string,
+	 *   meta: string,
+	 *   lessons: list<array{
+	 *     id: int,
+	 *     title: string,
+	 *     meta: string,
+	 *     accessible: bool,
+	 *     playerUrl: string,
+	 *     quizzes: list<array{
+	 *       id: int,
+	 *       title: string,
+	 *       meta: string,
+	 *       questions: list<array{id: int, text: string}>
+	 *     }>
+	 *   }>
+	 * }> $contentOutline
+	 */
 	public function __construct(
 		public int $courseId,
 		public string $title,
@@ -20,9 +41,13 @@ final readonly class StudentCourseOverviewDto {
 		public ?float $progressPct,
 		public ?int $lastLessonId,
 		public ?int $firstLessonId,
-		/** @var list<int> */
 		public array $completedLessonIds,
 		public CourseStructureDto $structure,
+		public string $status = 'draft',
+		public string $authorName = '',
+		public ?string $lastActivityLabel = null,
+		public bool $isEditorPreview = false,
+		public array $contentOutline = array(),
 	) {
 	}
 
@@ -45,6 +70,11 @@ final readonly class StudentCourseOverviewDto {
 			'firstLessonId'      => $this->firstLessonId,
 			'completedLessonIds' => $this->completedLessonIds,
 			'structure'          => $this->structure->toArray(),
+			'status'             => $this->status,
+			'authorName'         => $this->authorName,
+			'lastActivityLabel'  => $this->lastActivityLabel,
+			'isEditorPreview'    => $this->isEditorPreview,
+			'contentOutline'     => $this->contentOutline,
 		);
 	}
 }

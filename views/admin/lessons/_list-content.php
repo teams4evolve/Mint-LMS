@@ -108,6 +108,11 @@ $addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-lesson' );
 						<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 						<button type="button" class="mint-course-action mint-course-action--danger" @click="deleteItem(item)"><?php esc_html_e( 'Delete Permanently', 'mint-lms' ); ?></button>
 					</div>
+					<div
+						x-show="hoverRow !== item.id"
+						class="mint-mt-[3px] mint-truncate mint-text-[15px] mint-text-ink-2"
+						x-text="itemMeta(item)"
+					></div>
 				</div>
 				<div class="mint-truncate mint-whitespace-nowrap mint-text-base mint-text-ink-2" x-text="item.authorName"></div>
 				<div class="mint-truncate mint-whitespace-nowrap mint-text-[15px] mint-text-ink-2" x-text="item.date"></div>

@@ -25,11 +25,11 @@ final class AssetLoader {
 		$this->enqueueStyles( 'mint-lms-admin' );
 		$this->enqueueScripts( 'mint-lms-admin' );
 
-		if ( str_contains( $hookSuffix, 'mint-lms-builder' ) || str_contains( $hookSuffix, 'mint-lms-course-edit' ) ) {
+		if ( str_contains( $hookSuffix, 'mint-lms-builder' ) || str_contains( $hookSuffix, 'mint-lms-course-edit' ) || str_contains( $hookSuffix, 'mint-lms-lesson-edit' ) ) {
 			wp_enqueue_media();
 		}
 
-		if ( str_contains( $hookSuffix, 'mint-lms-builder' ) ) {
+		if ( str_contains( $hookSuffix, 'mint-lms-builder' ) || str_contains( $hookSuffix, 'mint-lms-lesson-edit' ) ) {
 			wp_enqueue_editor();
 		}
 
@@ -48,9 +48,12 @@ final class AssetLoader {
 					'courses'      => admin_url( 'admin.php?page=mint-lms-courses' ),
 					'lessons'      => admin_url( 'admin.php?page=mint-lms-lessons' ),
 					'quizzes'      => admin_url( 'admin.php?page=mint-lms-quizzes' ),
+					'questions'    => admin_url( 'admin.php?page=mint-lms-questions' ),
 					'builder'      => admin_url( 'admin.php?page=mint-lms-builder' ),
 					'editQuiz'     => admin_url( 'admin.php?page=mint-lms-edit-quiz' ),
 					'edit'         => admin_url( 'admin.php?page=mint-lms-course-edit' ),
+					'lessonEdit'   => admin_url( 'admin.php?page=mint-lms-lesson-edit' ),
+					'newCourse'    => CourseBuilderPage::newCourseUrl(),
 					'dashboard'    => admin_url( 'admin.php?page=mint-lms' ),
 					'playerPage'   => $pageSettings->getPlayerUrl(),
 					'catalogPage'  => $pageSettings->getCatalogUrl(),
@@ -146,7 +149,8 @@ final class AssetLoader {
 		$id = (string) $screen->id;
 
 		return str_contains( $id, 'mint-lms-builder' )
-			|| str_contains( $id, 'mint-lms-course-edit' );
+			|| str_contains( $id, 'mint-lms-course-edit' )
+			|| str_contains( $id, 'mint-lms-lesson-edit' );
 	}
 
 	private function enqueueStyles( string $handle ): void {
@@ -164,11 +168,14 @@ final class AssetLoader {
 	}
 
 	private function enqueueScripts( string $handle ): void {
+		$script = MINTLMS_PATH . 'assets/dist/main.js';
+		$version = is_readable( $script ) ? (string) filemtime( $script ) : MINTLMS_VERSION;
+
 		wp_enqueue_script(
 			$handle,
 			MINTLMS_URL . 'assets/dist/main.js',
 			array(),
-			MINTLMS_VERSION,
+			$version,
 			true
 		);
 	}

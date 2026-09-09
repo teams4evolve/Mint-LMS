@@ -2,7 +2,7 @@ import Alpine from 'alpinejs';
 import Sortable from 'sortablejs';
 import { courseBuilder, courseEdit } from './builder.js';
 import { coursesList } from './courses-list.js';
-import { lessonsList, quizzesList } from './content-list.js';
+import { lessonsList, quizzesList, questionsList } from './content-list.js';
 import { mintGuidedCourse } from './guided-course.js';
 import './students-admin.js';
 
@@ -83,6 +83,7 @@ document.addEventListener('alpine:init', () => {
   Alpine.data('coursesList', coursesList);
   Alpine.data('lessonsList', lessonsList);
   Alpine.data('quizzesList', quizzesList);
+  Alpine.data('questionsList', questionsList);
 
   Alpine.data('mintGuidedCourse', () => {
     const config = window.mintLmsGuided || {};

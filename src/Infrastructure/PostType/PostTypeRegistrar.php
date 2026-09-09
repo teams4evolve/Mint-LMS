@@ -5,14 +5,9 @@ namespace MintLMS\Infrastructure\PostType;
 
 defined( 'ABSPATH' ) || exit;
 
-use MintLMS\Domain\Course\Course;
-use MintLMS\Domain\Course\CourseStatus;
-use MintLMS\Domain\Course\EnrollmentType;
 use MintLMS\Domain\Lesson\Lesson;
 use MintLMS\Domain\Quiz\Quiz;
-use MintLMS\Domain\Section\Section;
-use MintLMS\Infrastructure\Database\Repository\WpdbSectionRepository;
-use MintLMS\Infrastructure\Database\Repository\WpPostCourseRepository;
+use MintLMS\Domain\Quiz\QuizQuestion;
 use MintLMS\Infrastructure\Database\Repository\WpPostLessonRepository;
 use MintLMS\Infrastructure\Database\Repository\WpPostQuizRepository;
 
@@ -27,11 +22,12 @@ final class PostTypeRegistrar {
 		add_action( 'load-post-new.php', array( $this, 'redirectContentCreateToBuilder' ) );
 		add_action( 'load-admin_page_mint-lms-new-lesson', array( $this, 'bootstrapNewLesson' ) );
 		add_action( 'load-admin_page_mint-lms-new-quiz', array( $this, 'bootstrapNewQuiz' ) );
+		add_action( 'load-admin_page_mint-lms-new-question', array( $this, 'bootstrapNewQuestion' ) );
 		add_action( 'load-admin_page_mint-lms-edit-quiz', array( $this, 'bootstrapEditQuiz' ) );
 	}
 
 	/**
-	 * Hidden admin entrypoints for Add New Lesson / Quiz (more reliable than post-new.php).
+	 * Hidden admin entrypoints for Add New Lesson / Quiz / Question (more reliable than post-new.php).
 	 */
 	public function registerStarterPages(): void {
 		add_submenu_page(
@@ -54,6 +50,15 @@ final class PostTypeRegistrar {
 
 		add_submenu_page(
 			'',
+			__( 'New Question', 'mint-lms' ),
+			__( 'New Question', 'mint-lms' ),
+			'edit_mintlms_courses',
+			'mint-lms-new-question',
+			'__return_null'
+		);
+
+		add_submenu_page(
+			'',
 			__( 'Edit Quiz', 'mint-lms' ),
 			__( 'Edit Quiz', 'mint-lms' ),
 			'edit_mintlms_courses',
@@ -70,18 +75,28 @@ final class PostTypeRegistrar {
 		$this->bootstrapStarter( 'quiz' );
 	}
 
+	public function bootstrapNewQuestion(): void {
+		$this->bootstrapStarter( 'question' );
+	}
+
 	/**
-	 * Quizzes list Edit → resolve course/lesson (repair meta / untrash) → builder.
+	 * Quizzes / Questions list Edit → resolve course/lesson (repair meta / untrash) → builder.
 	 */
 	public function bootstrapEditQuiz(): void {
 		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
 			wp_die( esc_html__( 'You do not have permission to edit content.', 'mint-lms' ) );
 		}
 
-		$quizId = isset( $_GET['quiz_id'] ) ? absint( $_GET['quiz_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect gate.
+		$quizId     = isset( $_GET['quiz_id'] ) ? absint( $_GET['quiz_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect gate.
+		$questionId = isset( $_GET['question_id'] ) ? absint( $_GET['question_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect gate.
+
+		if ( $quizId <= 0 && $questionId > 0 ) {
+			$quizId = ( new QuestionLinkResolver() )->findQuizId( $questionId );
+		}
 
 		if ( $quizId <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-quizzes' ) );
+			$fallback = $questionId > 0 ? 'mint-lms-questions' : 'mint-lms-quizzes';
+			wp_safe_redirect( admin_url( 'admin.php?page=' . $fallback ) );
 			exit;
 		}
 
@@ -99,19 +114,35 @@ final class PostTypeRegistrar {
 			exit;
 		}
 
-		wp_safe_redirect(
-			admin_url(
-				'admin.php?page=mint-lms-builder&course_id=' . $target['course_id']
-				. '&lesson_id=' . $target['lesson_id']
+		$from = $questionId > 0 ? 'questions' : 'quizzes';
+
+		if ( (int) $target['course_id'] <= 0 ) {
+			$url = 'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $target['lesson_id']
 				. '&quiz_id=' . $quizId
-				. '&from=quizzes&tab=quiz'
-			)
-		);
+				. '&tab=quiz&from=' . $from;
+			if ( $questionId > 0 ) {
+				$url .= '&question_id=' . $questionId;
+			}
+			wp_safe_redirect( admin_url( $url ) );
+			exit;
+		}
+
+		$url  = 'admin.php?page=mint-lms-builder&course_id=' . $target['course_id']
+			. '&lesson_id=' . $target['lesson_id']
+			. '&quiz_id=' . $quizId
+			. '&from=' . $from
+			. '&tab=quiz';
+
+		if ( $questionId > 0 ) {
+			$url .= '&question_id=' . $questionId;
+		}
+
+		wp_safe_redirect( admin_url( $url ) );
 		exit;
 	}
 
 	/**
-	 * @param 'lesson'|'quiz' $type
+	 * @param 'lesson'|'quiz'|'question' $type
 	 */
 	private function bootstrapStarter( string $type ): void {
 		if ( ! current_user_can( 'edit_mintlms_courses' ) ) {
@@ -123,20 +154,32 @@ final class PostTypeRegistrar {
 				$created = $this->createNewQuizStarter();
 				wp_safe_redirect(
 					admin_url(
-						'admin.php?page=mint-lms-builder&course_id=' . $created['course_id']
-						. '&lesson_id=' . $created['lesson_id']
+						'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
 						. '&quiz_id=' . $created['quiz_id']
-						. '&from=quizzes&tab=quiz'
+						. '&tab=quiz&from=quizzes'
 					)
 				);
 				exit;
 			}
 
-			// Add New Lesson → empty builder. User chooses Add section or Add lesson.
-			$created = $this->createEmptyCourseStarter();
+			if ( 'question' === $type ) {
+				$created = $this->createNewQuestionStarter();
+				wp_safe_redirect(
+					admin_url(
+						'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
+						. '&quiz_id=' . $created['quiz_id']
+						. '&question_id=' . $created['question_id']
+						. '&tab=quiz&from=questions'
+					)
+				);
+				exit;
+			}
+
+			// Add New Lesson → standalone library lesson (no auto course).
+			$created = $this->createNewLessonStarter();
 			wp_safe_redirect(
 				admin_url(
-					'admin.php?page=mint-lms-builder&course_id=' . $created['course_id']
+					'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
 					. '&from=lessons'
 				)
 			);
@@ -144,7 +187,11 @@ final class PostTypeRegistrar {
 		} catch ( \Throwable $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Surface create failure without white-screen.
 			error_log( 'Mint LMS new content starter failed: ' . $e->getMessage() );
-			$fallback = 'quiz' === $type ? 'mint-lms-quizzes' : 'mint-lms-lessons';
+			$fallback = match ( $type ) {
+				'quiz'     => 'mint-lms-quizzes',
+				'question' => 'mint-lms-questions',
+				default    => 'mint-lms-lessons',
+			};
 			wp_safe_redirect( admin_url( 'admin.php?page=' . $fallback ) );
 			exit;
 		}
@@ -225,7 +272,7 @@ final class PostTypeRegistrar {
 					),
 					'show_ui'      => true,
 					'show_in_menu' => false,
-					'supports'     => array( 'title', 'editor', 'author' ),
+					'supports'     => array( 'title', 'editor', 'author', 'thumbnail' ),
 				)
 			)
 		);
@@ -246,7 +293,7 @@ final class PostTypeRegistrar {
 	}
 
 	/**
-	 * Native WP CPT lists → Mint A8 / A9 screens.
+	 * Native WP CPT lists → Mint A8 / A9 / A10 screens.
 	 */
 	public function redirectLegacyCptLists(): void {
 		global $pagenow;
@@ -264,6 +311,11 @@ final class PostTypeRegistrar {
 
 		if ( PostTypes::QUIZ === $postType ) {
 			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-quizzes' ) );
+			exit;
+		}
+
+		if ( PostTypes::QUESTION === $postType ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-questions' ) );
 			exit;
 		}
 	}
@@ -306,16 +358,21 @@ final class PostTypeRegistrar {
 
 		if ( PostTypes::QUIZ === $post->post_type ) {
 			$this->redirectQuizPost( $postId );
+			return;
+		}
+
+		if ( PostTypes::QUESTION === $post->post_type ) {
+			$this->redirectQuestionPost( $postId );
 		}
 	}
 
 	/**
-	 * "Add New Lesson / Quiz" → starter content in the builder.
+	 * "Add New Lesson / Quiz / Question" → starter content in the builder.
 	 */
 	public function redirectContentCreateToBuilder(): void {
 		$postType = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( (string) $_GET['post_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended -- Read-only redirect gate.
 
-		if ( PostTypes::LESSON !== $postType && PostTypes::QUIZ !== $postType ) {
+		if ( ! in_array( $postType, array( PostTypes::LESSON, PostTypes::QUIZ, PostTypes::QUESTION ), true ) ) {
 			return;
 		}
 
@@ -328,27 +385,43 @@ final class PostTypeRegistrar {
 				$created = $this->createNewQuizStarter();
 				wp_safe_redirect(
 					admin_url(
-						'admin.php?page=mint-lms-builder&course_id=' . $created['course_id']
-						. '&lesson_id=' . $created['lesson_id']
+						'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
 						. '&quiz_id=' . $created['quiz_id']
-						. '&from=quizzes&tab=quiz'
+						. '&tab=quiz&from=quizzes'
 					)
 				);
 				exit;
 			}
 
-			$created = $this->createEmptyCourseStarter();
+			if ( PostTypes::QUESTION === $postType ) {
+				$created = $this->createNewQuestionStarter();
+				wp_safe_redirect(
+					admin_url(
+						'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
+						. '&quiz_id=' . $created['quiz_id']
+						. '&question_id=' . $created['question_id']
+						. '&tab=quiz&from=questions'
+					)
+				);
+				exit;
+			}
+
+			$created = $this->createNewLessonStarter();
 		} catch ( \Throwable $e ) {
 			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Surface create failure without white-screen.
 			error_log( 'Mint LMS new content starter failed: ' . $e->getMessage() );
-			$fallback = PostTypes::QUIZ === $postType ? 'mint-lms-quizzes' : 'mint-lms-lessons';
+			$fallback = match ( $postType ) {
+				PostTypes::QUIZ     => 'mint-lms-quizzes',
+				PostTypes::QUESTION => 'mint-lms-questions',
+				default             => 'mint-lms-lessons',
+			};
 			wp_safe_redirect( admin_url( 'admin.php?page=' . $fallback ) );
 			exit;
 		}
 
 		wp_safe_redirect(
 			admin_url(
-				'admin.php?page=mint-lms-builder&course_id=' . $created['course_id']
+				'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $created['lesson_id']
 				. '&from=lessons'
 			)
 		);
@@ -359,7 +432,9 @@ final class PostTypeRegistrar {
 		$courseId = (int) get_post_meta( $postId, PostTypes::META_COURSE_ID, true );
 
 		if ( $courseId <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-lessons' ) );
+			wp_safe_redirect(
+				admin_url( 'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $postId . '&from=lessons' )
+			);
 			exit;
 		}
 
@@ -385,12 +460,68 @@ final class PostTypeRegistrar {
 			exit;
 		}
 
+		if ( (int) $target['course_id'] <= 0 ) {
+			wp_safe_redirect(
+				admin_url(
+					'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $target['lesson_id']
+					. '&quiz_id=' . $postId
+					. '&tab=quiz&from=quizzes'
+				)
+			);
+			exit;
+		}
+
 		wp_safe_redirect(
 			admin_url(
 				'admin.php?page=mint-lms-builder&course_id=' . $target['course_id']
 				. '&lesson_id=' . $target['lesson_id']
 				. '&quiz_id=' . $postId
 				. '&from=quizzes&tab=quiz'
+			)
+		);
+		exit;
+	}
+
+	private function redirectQuestionPost( int $postId ): void {
+		$quizId = ( new QuestionLinkResolver() )->findQuizId( $postId );
+
+		if ( $quizId <= 0 ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-questions' ) );
+			exit;
+		}
+
+		try {
+			$target = $this->resolveQuizBuilderTarget( $quizId );
+		} catch ( \Throwable $e ) {
+			// phpcs:ignore WordPress.PHP.DevelopmentFunctions.error_log_error_log -- Surface resolve failure without white-screen.
+			error_log( 'Mint LMS question edit redirect failed: ' . $e->getMessage() );
+			$target = null;
+		}
+
+		if ( null === $target ) {
+			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-questions' ) );
+			exit;
+		}
+
+		if ( (int) $target['course_id'] <= 0 ) {
+			wp_safe_redirect(
+				admin_url(
+					'admin.php?page=mint-lms-lesson-edit&lesson_id=' . $target['lesson_id']
+					. '&quiz_id=' . $quizId
+					. '&question_id=' . $postId
+					. '&tab=quiz&from=questions'
+				)
+			);
+			exit;
+		}
+
+		wp_safe_redirect(
+			admin_url(
+				'admin.php?page=mint-lms-builder&course_id=' . $target['course_id']
+				. '&lesson_id=' . $target['lesson_id']
+				. '&quiz_id=' . $quizId
+				. '&question_id=' . $postId
+				. '&from=questions&tab=quiz'
 			)
 		);
 		exit;
@@ -409,75 +540,18 @@ final class PostTypeRegistrar {
 	}
 
 	/**
-	 * Empty course only — used by Add New Lesson (no auto section/lesson).
-	 *
-	 * @return array{course_id: int}
-	 */
-	private function createEmptyCourseStarter(): array {
-		$now    = new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) );
-		$userId = get_current_user_id();
-		if ( $userId <= 0 ) {
-			$userId = 1;
-		}
-
-		$courseRepo = new WpPostCourseRepository();
-		$course     = $courseRepo->save(
-			new Course(
-				0,
-				__( 'Untitled Course', 'mint-lms' ),
-				'untitled-course-' . wp_generate_password( 6, false, false ),
-				'',
-				null,
-				CourseStatus::Draft,
-				EnrollmentType::Open,
-				$userId,
-				$now,
-				$now,
-			)
-		);
-
-		return array(
-			'course_id' => $course->id,
-		);
-	}
-
-	/**
-	 * Course + section + lesson — used by quiz starter only.
+	 * Standalone library lesson (no course). Used by quiz/question starters as a host.
 	 *
 	 * @return array{course_id: int, lesson_id: int}
 	 */
 	private function createNewLessonStarter(): array {
-		global $wpdb;
+		$now = new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) );
 
-		if ( ! $wpdb instanceof \wpdb ) {
-			throw new \RuntimeException( 'Database unavailable.' );
-		}
-
-		$now    = new \DateTimeImmutable( 'now', new \DateTimeZone( 'UTC' ) );
-		$userId = get_current_user_id();
-		if ( $userId <= 0 ) {
-			$userId = 1;
-		}
-
-		$created     = $this->createEmptyCourseStarter();
-		$lessonRepo  = new WpPostLessonRepository();
-		$sectionRepo = new WpdbSectionRepository( $wpdb, $lessonRepo );
-
-		$section = $sectionRepo->save(
-			new Section(
-				0,
-				$created['course_id'],
-				__( 'New Section', 'mint-lms' ),
-				0,
-				$now,
-			)
-		);
-
-		$lesson = $lessonRepo->save(
+		$lesson = ( new WpPostLessonRepository() )->save(
 			new Lesson(
 				0,
-				$section->id,
-				$created['course_id'],
+				0,
+				0,
 				__( 'New Lesson', 'mint-lms' ),
 				'new-lesson-' . wp_generate_password( 4, false, false ),
 				'',
@@ -492,7 +566,7 @@ final class PostTypeRegistrar {
 		);
 
 		return array(
-			'course_id' => $created['course_id'],
+			'course_id' => 0,
 			'lesson_id' => $lesson->id,
 		);
 	}
@@ -525,6 +599,42 @@ final class PostTypeRegistrar {
 			'course_id' => $created['course_id'],
 			'lesson_id' => $created['lesson_id'],
 			'quiz_id'   => $quiz->id,
+		);
+	}
+
+	/**
+	 * @return array{course_id: int, lesson_id: int, quiz_id: int, question_id: int}
+	 */
+	private function createNewQuestionStarter(): array {
+		global $wpdb;
+
+		if ( ! $wpdb instanceof \wpdb ) {
+			throw new \RuntimeException( 'Database unavailable.' );
+		}
+
+		$created  = $this->createNewQuizStarter();
+		$quizRepo = new WpPostQuizRepository( $wpdb );
+
+		$question = $quizRepo->saveQuestion(
+			new QuizQuestion(
+				0,
+				$created['quiz_id'],
+				QuizQuestion::TYPE_MCQ,
+				__( 'New Question', 'mint-lms' ),
+				array(
+					__( 'Option A', 'mint-lms' ),
+					__( 'Option B', 'mint-lms' ),
+				),
+				'',
+				0,
+			)
+		);
+
+		return array(
+			'course_id'    => $created['course_id'],
+			'lesson_id'    => $created['lesson_id'],
+			'quiz_id'      => $created['quiz_id'],
+			'question_id'  => $question->id,
 		);
 	}
 

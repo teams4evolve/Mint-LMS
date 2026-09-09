@@ -6,15 +6,15 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
 /** @var MintLMS\Infrastructure\Admin\ViewRenderer $renderer */
-$addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-quiz' );
+$addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-question' );
 ?>
 <div
-	x-data="quizzesList()"
+	x-data="questionsList()"
 	x-init="init()"
 >
 	<div class="mint-flex mint-flex-wrap mint-items-end mint-justify-between mint-gap-6 mint-pb-8 mint-pt-14">
 		<div>
-			<h1 class="mint-m-0 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></h1>
+			<h1 class="mint-m-0 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink"><?php esc_html_e( 'Questions', 'mint-lms' ); ?></h1>
 			<p class="mint-m-0 mint-mt-3 mint-text-[19px] mint-leading-[30px] mint-text-ink-2" x-cloak x-show="!loading && !error" x-text="summaryLine()"></p>
 		</div>
 		<div class="mint-flex mint-flex-nowrap mint-items-center mint-gap-1 mint-overflow-x-auto" role="tablist">
@@ -55,7 +55,7 @@ $addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-quiz' );
 		echo $renderer->component( // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			'error-state',
 			array(
-				'title'        => esc_html__( 'Could not load quizzes', 'mint-lms' ),
+				'title'        => esc_html__( 'Could not load questions', 'mint-lms' ),
 				'messageAttrs' => 'x-text="error"',
 				'retry'        => $mintlms_retry_button, // phpcs:ignore WordPress.Security.EscapeOutput.OutputNotEscaped
 			)
@@ -120,23 +120,23 @@ $addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-quiz' );
 		</template>
 
 		<div class="mint-border-t mint-border-[#E0DDEB] mint-pb-16 mint-pt-[18px] mint-text-base mint-text-ink-2">
-			<?php esc_html_e( 'Showing all', 'mint-lms' ); ?> <span x-text="total"></span> <?php esc_html_e( 'quizzes', 'mint-lms' ); ?>
+			<?php esc_html_e( 'Showing all', 'mint-lms' ); ?> <span x-text="total"></span> <?php esc_html_e( 'questions', 'mint-lms' ); ?>
 		</div>
 
 		<template x-if="isEmpty()">
 			<div class="mint-px-6 mint-py-[72px] mint-text-center">
-				<div class="mint-text-[20px] mint-font-bold mint-leading-tight mint-text-ink"><?php esc_html_e( 'No quizzes yet', 'mint-lms' ); ?></div>
-				<div class="mint-mt-2.5 mint-text-[17px] mint-leading-snug mint-text-ink-2"><?php esc_html_e( 'Add a quiz from a lesson, or create one here.', 'mint-lms' ); ?></div>
+				<div class="mint-text-[20px] mint-font-bold mint-leading-tight mint-text-ink"><?php esc_html_e( 'No questions yet', 'mint-lms' ); ?></div>
+				<div class="mint-mt-2.5 mint-text-[17px] mint-leading-snug mint-text-ink-2"><?php esc_html_e( 'Add a question from a quiz, or create one here.', 'mint-lms' ); ?></div>
 				<a
 					href="<?php echo esc_url( $addNewUrl ); ?>"
 					class="mint-cta-lime mint-mt-6 mint-inline-flex mint-h-12 mint-items-center mint-justify-center mint-rounded-[10px] mint-border-0 mint-px-[22px] mint-text-base mint-font-bold mint-no-underline"
-				><?php esc_html_e( 'Add New Quiz', 'mint-lms' ); ?></a>
+				><?php esc_html_e( 'Add New Question', 'mint-lms' ); ?></a>
 			</div>
 		</template>
 
 		<template x-if="isEmptyTrash()">
 			<div class="mint-rounded-[10px] mint-bg-[#F6F4FD] mint-px-4 mint-py-[14px] mint-text-[15px] mint-text-ink-2">
-				<?php esc_html_e( 'No Quizzes found in trash', 'mint-lms' ); ?>
+				<?php esc_html_e( 'No Questions found in trash', 'mint-lms' ); ?>
 			</div>
 		</template>
 

@@ -9,11 +9,13 @@ use MintLMS\Application\Course\Dto\CourseStructureLessonDto;
 use MintLMS\Application\Course\Dto\CourseStructureSectionDto;
 use MintLMS\Application\Exception\ForbiddenException;
 use MintLMS\Application\Exception\NotFoundException;
+use MintLMS\Application\Quiz\QuestionAnswerCodec;
 use MintLMS\Application\Quiz\QuizService;
 use MintLMS\Application\Student\Dto\StudentCatalogCourseDto;
 use MintLMS\Application\Student\Dto\StudentCourseItemDto;
 use MintLMS\Application\Student\Dto\StudentCourseOverviewDto;
 use MintLMS\Application\Student\Dto\StudentPlayerContextDto;
+use MintLMS\Domain\Course\Course;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
@@ -22,6 +24,7 @@ use MintLMS\Domain\Enrollment\Enrollment;
 use MintLMS\Domain\Enrollment\EnrollmentRepositoryInterface;
 use MintLMS\Domain\Enrollment\EnrollmentStatus;
 use MintLMS\Domain\Progress\ProgressRepositoryInterface;
+use MintLMS\Domain\Quiz\QuizQuestion;
 use MintLMS\Domain\Section\SectionRepositoryInterface;
 use MintLMS\Domain\Shared\Clock;
 
@@ -130,12 +133,24 @@ final class StudentExperienceService {
 		$progressPct        = null;
 		$lastLessonId       = null;
 		$completedLessonIds = array();
+		$lastActivityLabel  = null;
 
 		if ( $isEnrolled ) {
 			$summary            = $this->progressRepository->getSummary( $userId, $courseId );
 			$progressPct        = null !== $summary ? $summary->pctComplete : 0.0;
 			$lastLessonId       = null !== $summary ? $summary->lastLessonId : null;
 			$completedLessonIds = $this->progressRepository->getCompletedLessonIds( $userId, $courseId );
+			if ( null !== $summary ) {
+				$lastActivityLabel = $summary->updatedAt->format( 'M j, Y g:i a' );
+			}
+		}
+
+		$authorName = '';
+		if ( function_exists( 'get_userdata' ) ) {
+			$author = get_userdata( $course->authorId );
+			if ( $author instanceof \WP_User ) {
+				$authorName = (string) $author->display_name;
+			}
 		}
 
 		return new StudentCourseOverviewDto(
@@ -153,7 +168,243 @@ final class StudentExperienceService {
 			$this->firstLessonId( $flat ),
 			$completedLessonIds,
 			$structure,
+			$course->status->value,
+			$authorName,
+			$lastActivityLabel,
+			$isEditorPreview,
+			$this->buildContentOutline( $structure, $userId, $isEditorPreview ),
 		);
+	}
+
+	/**
+	 * Builder S3B: lesson + nested quizzes/questions for instructor preview.
+	 *
+	 * @return array{title: string, meta: string, quizzes: list<array<string, mixed>>}
+	 */
+	public function getLessonBuilderPreview( int $courseId, int $lessonId, int $userId ): array {
+		$course    = $this->requireEditableCourse( $courseId, $userId );
+		$structure = $this->loadGatedStructure( $courseId, true, $userId, true );
+		$outline   = $this->buildContentOutline( $structure, $userId, true );
+		$flat      = $this->flattenLessons( $structure );
+
+		$authorName = '';
+		if ( function_exists( 'get_userdata' ) ) {
+			$author = get_userdata( $course->authorId );
+			if ( $author ) {
+				$authorName = (string) $author->display_name;
+			}
+		}
+
+		foreach ( $outline as $section ) {
+			foreach ( $section['lessons'] as $lesson ) {
+				if ( (int) $lesson['id'] !== $lessonId ) {
+					continue;
+				}
+
+				$featuredImageId = null;
+				$nextLessonId    = null;
+				foreach ( $flat as $index => $structureLesson ) {
+					if ( $structureLesson->id === $lessonId ) {
+						$featuredImageId = $structureLesson->featuredImageId;
+						if ( isset( $flat[ $index + 1 ] ) ) {
+							$nextLessonId = $flat[ $index + 1 ]->id;
+						}
+						break;
+					}
+				}
+
+				$progressPct = 0.0;
+				if ( $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId ) ) {
+					$summary     = $this->progressRepository->getSummary( $userId, $courseId );
+					$progressPct = null !== $summary ? (float) $summary->pctComplete : 0.0;
+				}
+
+				return array(
+					'title'           => (string) $lesson['title'],
+					'meta'            => (string) $lesson['meta'],
+					'quizzes'         => $lesson['quizzes'],
+					'courseTitle'     => $course->title,
+					'sectionTitle'    => (string) ( $section['title'] ?? '' ),
+					'featuredImageId' => $featuredImageId,
+					'authorName'      => $authorName,
+					'progressPct'     => $progressPct,
+					'nextLessonId'    => $nextLessonId,
+					'courseId'        => $courseId,
+					'lessonId'        => $lessonId,
+				);
+			}
+		}
+
+		throw new NotFoundException( 'Lesson not found.' );
+	}
+
+	/**
+	 * Builder S3C: quiz + questions for instructor preview.
+	 *
+	 * @return array{title: string, meta: string, questions: list<array{id: int, text: string}>, courseTitle: string}
+	 */
+	public function getQuizBuilderPreview( int $courseId, int $lessonId, int $userId ): array {
+		$course = $this->requireEditableCourse( $courseId, $userId );
+
+		if ( null === $this->quizService ) {
+			throw new NotFoundException( 'Quiz not found.' );
+		}
+
+		$quiz = $this->quizService->getByLessonId( $lessonId, $userId, false );
+
+		$questions = array();
+		if ( null !== $quiz ) {
+			foreach ( $quiz->questions as $question ) {
+				$text = trim( wp_strip_all_tags( $question->prompt ) );
+				$questions[] = array(
+					'id'   => $question->id,
+					'text' => '' !== $text ? $text : __( 'Untitled question', 'mint-lms' ),
+				);
+			}
+		}
+
+		$count = count( $questions );
+
+		return array(
+			'title'       => null !== $quiz && '' !== trim( $quiz->title ) ? $quiz->title : __( 'Quiz', 'mint-lms' ),
+			'meta'        => 1 === $count
+				? __( '1 question', 'mint-lms' )
+				: sprintf(
+					/* translators: %d: question count */
+					__( '%d questions', 'mint-lms' ),
+					$count
+				),
+			'questions'   => $questions,
+			'courseTitle' => $course->title,
+		);
+	}
+
+	/**
+	 * Builder S3D: single question focus for instructor preview.
+	 *
+	 * @return array{
+	 *   title: string,
+	 *   meta: string,
+	 *   type: string,
+	 *   options: list<array{text: string, correct: bool}>,
+	 *   courseTitle: string
+	 * }
+	 */
+	public function getQuestionBuilderPreview( int $courseId, int $questionId, int $lessonId, int $userId ): array {
+		$course = $this->requireEditableCourse( $courseId, $userId );
+
+		if ( null === $this->quizService || $questionId <= 0 ) {
+			throw new NotFoundException( 'Question not found.' );
+		}
+
+		$found = null;
+		$index = 0;
+		$total = 0;
+
+		if ( $lessonId > 0 ) {
+			$quizDto = $this->quizService->getByLessonId( $lessonId, $userId, false );
+			if ( null !== $quizDto ) {
+				$total = count( $quizDto->questions );
+				foreach ( $quizDto->questions as $qi => $question ) {
+					if ( $question->id === $questionId ) {
+						$found = $question;
+						$index = $qi + 1;
+						break;
+					}
+				}
+			}
+		}
+
+		if ( null === $found ) {
+			$outline = $this->buildContentOutline(
+				$this->loadGatedStructure( $courseId, true, $userId, true ),
+				$userId,
+				true
+			);
+
+			foreach ( $outline as $section ) {
+				foreach ( $section['lessons'] as $lesson ) {
+					$quizDto = $this->quizService->getByLessonId( (int) $lesson['id'], $userId, false );
+					if ( null === $quizDto ) {
+						continue;
+					}
+					$total = count( $quizDto->questions );
+					foreach ( $quizDto->questions as $qi => $question ) {
+						if ( $question->id === $questionId ) {
+							$found = $question;
+							$index = $qi + 1;
+							break 3;
+						}
+					}
+				}
+			}
+		}
+
+		if ( null === $found ) {
+			throw new NotFoundException( 'Question not found.' );
+		}
+
+		$typeLabel = match ( $found->type ) {
+			QuizQuestion::TYPE_MCQ_MULTI => __( 'Multiple select', 'mint-lms' ),
+			QuizQuestion::TYPE_TRUE_FALSE => __( 'True / false', 'mint-lms' ),
+			QuizQuestion::TYPE_ESSAY => __( 'Essay', 'mint-lms' ),
+			default => __( 'Multiple choice', 'mint-lms' ),
+		};
+
+		$options = array();
+		if ( QuizQuestion::TYPE_ESSAY === $found->type ) {
+			$options = array();
+		} elseif ( QuizQuestion::TYPE_TRUE_FALSE === $found->type ) {
+			$correct = strtolower( (string) $found->correctAnswer );
+			foreach ( array( __( 'True', 'mint-lms' ), __( 'False', 'mint-lms' ) ) as $label ) {
+				$options[] = array(
+					'text'    => $label,
+					'correct' => strtolower( $label ) === $correct
+						|| ( '1' === $correct && 'true' === strtolower( $label ) )
+						|| ( '0' === $correct && 'false' === strtolower( $label ) ),
+				);
+			}
+		} else {
+			$corrects = QuizQuestion::TYPE_MCQ_MULTI === $found->type
+				? QuestionAnswerCodec::decodeMulti( (string) $found->correctAnswer )
+				: array( (string) $found->correctAnswer );
+			foreach ( $found->options as $option ) {
+				$options[] = array(
+					'text'    => $option,
+					'correct' => in_array( $option, $corrects, true ),
+				);
+			}
+		}
+
+		$title = trim( wp_strip_all_tags( $found->prompt ) );
+
+		return array(
+			'title'       => '' !== $title ? $title : __( 'Untitled question', 'mint-lms' ),
+			'meta'        => sprintf(
+				/* translators: 1: question type, 2: current index, 3: total questions */
+				__( '%1$s · %2$d of %3$d questions', 'mint-lms' ),
+				$typeLabel,
+				max( 1, $index ),
+				max( 1, $total )
+			),
+			'type'        => $found->type,
+			'options'     => $options,
+			'courseTitle' => $course->title,
+		);
+	}
+
+	private function requireEditableCourse( int $courseId, int $userId ): Course {
+		$course = $this->courseRepository->findById( $courseId );
+
+		if ( null === $course ) {
+			throw new NotFoundException( 'Course not found.' );
+		}
+
+		if ( ! $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId ) ) {
+			throw new ForbiddenException( 'You cannot preview this course.' );
+		}
+
+		return $course;
 	}
 
 	public function getPlayerContext( int $courseId, int $lessonId, int $userId ): StudentPlayerContextDto {
@@ -223,14 +474,22 @@ final class StudentExperienceService {
 		$hasPassedQuiz  = true;
 
 		if ( null !== $this->quizService && $userId > 0 ) {
-			$quizDto = $this->quizService->getByLessonId( $lessonId, $userId, true );
+			$quizDto = $this->quizService->getByLessonId( $lessonId, $userId, true, $isEditorPreview );
 
 			if ( null !== $quizDto && [] !== $quizDto->questions ) {
-				$quiz          = $quizDto;
-				$quizRequired  = true;
-				$hasPassedQuiz = $this->quizService->hasPassed( $userId, $quizDto->id );
+				$quiz = $quizDto;
+				if ( $isEditorPreview ) {
+					// Review mode: show quiz + questions, but don't block navigation.
+					$quizRequired  = false;
+					$hasPassedQuiz = true;
+				} else {
+					$quizRequired  = true;
+					$hasPassedQuiz = $this->quizService->hasPassed( $userId, $quizDto->id );
+				}
 			}
 		}
+
+		$reallyEnrolled = $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId );
 
 		return new StudentPlayerContextDto(
 			$course->id,
@@ -247,7 +506,8 @@ final class StudentExperienceService {
 			$quiz,
 			$quizRequired,
 			$hasPassedQuiz,
-			$course->settings->studentComplete,
+			$course->settings->studentComplete && $reallyEnrolled && ! $isEditorPreview,
+			$isEditorPreview,
 		);
 	}
 
@@ -438,8 +698,84 @@ final class StudentExperienceService {
 		);
 	}
 
+	/**
+	 * Nested Section → Lesson → Quiz → Question outline for the S3 course overview.
+	 *
+	 * @return list<array<string, mixed>>
+	 */
+	private function buildContentOutline( CourseStructureDto $structure, int $userId, bool $isEditorPreview ): array {
+		$outline = array();
+
+		foreach ( $structure->sections as $section ) {
+			$lessons = array();
+
+			foreach ( $section->lessons as $lesson ) {
+				$quizzes = array();
+
+				if ( null !== $this->quizService && $userId > 0 ) {
+					try {
+						$quizDto = $this->quizService->getByLessonId( $lesson->id, $userId, true, $isEditorPreview );
+					} catch ( ForbiddenException | NotFoundException $exception ) {
+						$quizDto = null;
+					}
+
+					if ( null !== $quizDto && array() !== $quizDto->questions ) {
+						$questionCount = count( $quizDto->questions );
+						$questions     = array();
+
+						foreach ( $quizDto->questions as $question ) {
+							$text = trim( strip_tags( $question->prompt ) );
+							if ( '' === $text ) {
+								$text = 'Untitled question';
+							}
+							$questions[] = array(
+								'id'   => $question->id,
+								'text' => $text,
+							);
+						}
+
+						$quizzes[] = array(
+							'id'        => $quizDto->id,
+							'title'     => '' !== trim( $quizDto->title ) ? $quizDto->title : 'Quiz',
+							'meta'      => 1 === $questionCount
+								? '1 question'
+								: $questionCount . ' questions',
+							'questions' => $questions,
+						);
+					}
+				}
+
+				$quizCount = count( $quizzes );
+				$metaParts = array();
+				if ( $quizCount > 0 ) {
+					$metaParts[] = 1 === $quizCount ? '1 quiz' : $quizCount . ' quizzes';
+				}
+
+				$accessible = $isEditorPreview || ! $lesson->isDripLocked;
+
+				$lessons[] = array(
+					'id'         => $lesson->id,
+					'title'      => $lesson->title,
+					'meta'       => array() === $metaParts ? 'No quiz yet' : implode( ' · ', $metaParts ),
+					'accessible' => $accessible,
+					'quizzes'    => $quizzes,
+				);
+			}
+
+			$lessonCount = count( $lessons );
+			$outline[]   = array(
+				'id'      => $section->id,
+				'title'   => $section->title,
+				'meta'    => 1 === $lessonCount ? '1 lesson' : $lessonCount . ' lessons',
+				'lessons' => $lessons,
+			);
+		}
+
+		return $outline;
+	}
+
 	private function canEditorPreviewCourse( int $userId, CourseStatus $status, int $authorId ): bool {
-		if ( CourseStatus::Published === $status || $userId <= 0 || null === $this->authorization ) {
+		if ( $userId <= 0 || null === $this->authorization || CourseStatus::Trashed === $status ) {
 			return false;
 		}
 

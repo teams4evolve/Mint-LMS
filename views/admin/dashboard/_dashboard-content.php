@@ -72,7 +72,7 @@ $hue_tile_classes = array(
 					: __( 'No students started yet', 'mint-lms' ),
 			),
 			array(
-				'label' => __( 'Published', 'mint-lms' ),
+				'label' => __( 'Live', 'mint-lms' ),
 				'value' => (string) $metrics->publishedCount,
 				'delta' => $metrics->draftCount > 0 ? sprintf( '%d drafts', $metrics->draftCount ) : '',
 				'sub'   => sprintf(

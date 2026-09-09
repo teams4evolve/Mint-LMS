@@ -75,6 +75,30 @@ if ( ! $quizRequired || null === $quiz || ! $isEnrolled ) {
 							</template>
 						</div>
 					</template>
+					<template x-if="question.type === 'mcq_multi'">
+						<div class="mint-flex mint-flex-col mint-gap-2">
+							<template x-for="(option, oIndex) in question.options" :key="oIndex">
+								<label class="mint-flex mint-cursor-pointer mint-items-center mint-gap-2 mint-text-sm mint-text-ink-2">
+									<input
+										type="checkbox"
+										class="mint-h-4 mint-w-4 mint-accent-accent"
+										:value="option"
+										:checked="isMultiSelected(question.id, option)"
+										@change="toggleMultiAnswer(question.id, option, $event.target.checked)"
+									/>
+									<span x-text="option"></span>
+								</label>
+							</template>
+						</div>
+					</template>
+					<template x-if="question.type === 'essay'">
+						<textarea
+							class="mint-w-full mint-min-h-[110px] mint-rounded-md mint-border mint-border-rule mint-bg-bg mint-px-3 mint-py-2 mint-text-sm mint-text-ink"
+							rows="4"
+							x-model="answers[question.id]"
+							placeholder="<?php echo esc_attr__( 'Write your answer…', 'mint-lms' ); ?>"
+						></textarea>
+					</template>
 				</div>
 			</template>
 			<div>

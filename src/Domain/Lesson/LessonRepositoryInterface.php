@@ -12,7 +12,7 @@ interface LessonRepositoryInterface {
 	/**
 	 * @return list<Lesson>
 	 */
-	public function findBySectionId( int $sectionId ): array;
+	public function findBySectionId( int $sectionId, bool $publishedOnly = false ): array;
 
 	public function save( Lesson $lesson ): Lesson;
 

@@ -207,6 +207,53 @@ final class QuizServiceTest extends TestCase
         $this->assertFalse($this->service->isAnswerCorrect($question, 'false'));
     }
 
+    public function test_mcq_multi_requires_exact_set_match(): void
+    {
+        $question = new QuizQuestion(
+            3,
+            5,
+            QuizQuestion::TYPE_MCQ_MULTI,
+            'Pick all that apply',
+            ['A', 'B', 'C'],
+            '["A","C"]',
+            0,
+        );
+
+        $this->assertTrue($this->service->isAnswerCorrect($question, '["C","A"]'));
+        $this->assertFalse($this->service->isAnswerCorrect($question, '["A"]'));
+        $this->assertFalse($this->service->isAnswerCorrect($question, 'A'));
+    }
+
+    public function test_grade_attempt_excludes_essay_from_denominator(): void
+    {
+        $questions = [
+            $this->mcqQuestion(1, 'A'),
+            new QuizQuestion(2, 5, QuizQuestion::TYPE_ESSAY, 'Explain', [], '', 1),
+        ];
+
+        $score = $this->service->gradeAttempt($questions, [
+            1 => 'A',
+            2 => 'Student essay text',
+        ]);
+
+        $this->assertSame(100.0, $score);
+    }
+
+    public function test_grade_attempt_essay_only_scores_100(): void
+    {
+        $questions = [
+            new QuizQuestion(1, 5, QuizQuestion::TYPE_ESSAY, 'Explain A', [], '', 0),
+            new QuizQuestion(2, 5, QuizQuestion::TYPE_ESSAY, 'Explain B', [], '', 1),
+        ];
+
+        $score = $this->service->gradeAttempt($questions, [
+            1 => 'Answer A',
+            2 => 'Answer B',
+        ]);
+
+        $this->assertSame(100.0, $score);
+    }
+
     private function mcqQuestion(int $id, string $correct): QuizQuestion
     {
         return new QuizQuestion(

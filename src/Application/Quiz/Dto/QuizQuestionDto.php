@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace MintLMS\Application\Quiz\Dto;
 
-use MintLMS\Domain\Quiz\Quiz;
+use MintLMS\Application\Quiz\QuestionAnswerCodec;
 use MintLMS\Domain\Quiz\QuizQuestion;
 
 final readonly class QuizQuestionDto {
@@ -44,6 +44,10 @@ final readonly class QuizQuestionDto {
 
 		if ( null !== $this->correctAnswer ) {
 			$data['correctAnswer'] = $this->correctAnswer;
+
+			if ( QuizQuestion::TYPE_MCQ_MULTI === $this->type ) {
+				$data['correctAnswers'] = QuestionAnswerCodec::decodeMulti( $this->correctAnswer );
+			}
 		}
 
 		return $data;

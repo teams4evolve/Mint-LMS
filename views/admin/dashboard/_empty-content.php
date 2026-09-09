@@ -5,7 +5,7 @@ defined( 'ABSPATH' ) || exit;
 
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
-$createUrl  = $createUrl ?? admin_url( 'admin.php?page=mint-lms-guided-course' );
+$createUrl  = $createUrl ?? \MintLMS\Infrastructure\Admin\CourseBuilderPage::newCourseUrl();
 $exampleUrl = $exampleUrl ?? apply_filters( 'mint_lms_see_example_url', '' );
 ?>
 <div class="mint-dash-empty">

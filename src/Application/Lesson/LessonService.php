@@ -74,13 +74,127 @@ final class LessonService {
 		return LessonDto::fromLesson( $this->lessonRepository->save( $lesson ) );
 	}
 
-	public function update( int $id, UpdateLessonDto $dto, int $userId ): LessonDto {
-		$lesson = $this->findLessonOrFail( $id );
-		$course = $this->findCourseOrFail( $lesson->courseId );
+	/**
+	 * Library lesson — not attached to any course until the author adds it.
+	 */
+	public function createStandalone( CreateLessonDto $dto, int $userId ): LessonDto {
+		if ( ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException();
+		}
+
+		$title = trim( $dto->title );
+		if ( '' === $title ) {
+			$title = __( 'New Lesson', 'mint-lms' );
+		}
+
+		$slug = null !== $dto->slug ? $this->normalizeSlug( $dto->slug ) : $this->generateUniqueSlug( $title, 0 );
+		$this->assertValidSlug( $slug );
+
+		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, 0 ) ) {
+			$slug = $this->generateUniqueSlug( $title, 0 );
+		}
+
+		$now = $this->clock->now();
+
+		$lesson = new Lesson(
+			0,
+			0,
+			0,
+			$title,
+			$slug,
+			$dto->content,
+			$dto->videoUrl,
+			$dto->attachmentId,
+			$dto->isPreview,
+			null,
+			0,
+			$now,
+			$now,
+			null,
+		);
+
+		return LessonDto::fromLesson( $this->lessonRepository->save( $lesson ) );
+	}
+
+	/**
+	 * Attach a library lesson to a course section (creates a section when needed).
+	 */
+	public function attachToCourse( int $lessonId, int $courseId, ?int $sectionId, int $userId ): LessonDto {
+		$lesson = $this->findLessonOrFail( $lessonId );
+		$this->assertCanManageLesson( $userId, $lesson );
+
+		if ( $lesson->courseId > 0 ) {
+			throw new ValidationException(
+				'Validation failed.',
+				array( 'course_id' => 'This lesson is already attached to a course.' )
+			);
+		}
+
+		$course = $this->findCourseOrFail( $courseId );
 
 		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
 			throw new ForbiddenException();
 		}
+
+		if ( null !== $sectionId && $sectionId > 0 ) {
+			$section = $this->findSectionOrFail( $sectionId );
+			if ( $section->courseId !== $courseId ) {
+				throw new ValidationException(
+					'Validation failed.',
+					array( 'section_id' => 'Section does not belong to this course.' )
+				);
+			}
+		} else {
+			$sections = $this->sectionRepository->findByCourseId( $courseId );
+			if ( array() !== $sections ) {
+				$section = $sections[0];
+			} else {
+				$section = $this->sectionRepository->save(
+					new \MintLMS\Domain\Section\Section(
+						0,
+						$courseId,
+						__( 'New Section', 'mint-lms' ),
+						$this->sectionRepository->nextSortOrder( $courseId ),
+						$this->clock->now(),
+					)
+				);
+			}
+		}
+
+		$slug = $lesson->slug;
+		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId ) ) {
+			$slug = $this->generateUniqueSlug( $lesson->title, $courseId );
+		}
+
+		$updated = new Lesson(
+			$lesson->id,
+			$section->id,
+			$courseId,
+			$lesson->title,
+			$slug,
+			$lesson->content,
+			$lesson->videoUrl,
+			$lesson->attachmentId,
+			$lesson->isPreview,
+			$lesson->availableAfterDays,
+			$this->lessonRepository->nextSortOrder( $section->id ),
+			$lesson->createdAt,
+			$this->clock->now(),
+			$lesson->featuredImageId,
+		);
+
+		$saved = $this->lessonRepository->save( $updated );
+
+		if ( null !== $this->quizService ) {
+			$this->quizService->syncCourseIdForLesson( $saved->id, $courseId );
+		}
+
+		return LessonDto::fromLesson( $saved );
+	}
+
+	public function update( int $id, UpdateLessonDto $dto, int $userId ): LessonDto {
+		$lesson = $this->findLessonOrFail( $id );
+		$this->assertCanManageLesson( $userId, $lesson );
 
 		$title      = null !== $dto->title ? trim( $dto->title ) : $lesson->title;
 		$slug       = null !== $dto->slug ? $this->normalizeSlug( $dto->slug ) : $lesson->slug;
@@ -128,11 +242,7 @@ final class LessonService {
 
 	public function delete( int $id, int $userId ): void {
 		$lesson = $this->findLessonOrFail( $id );
-		$course = $this->findCourseOrFail( $lesson->courseId );
-
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$this->assertCanManageLesson( $userId, $lesson );
 
 		$this->progressLifecycle->onLessonDeleted( $lesson->id );
 
@@ -145,11 +255,7 @@ final class LessonService {
 
 	public function get( int $id, int $userId ): LessonDto {
 		$lesson = $this->findLessonOrFail( $id );
-		$course = $this->findCourseOrFail( $lesson->courseId );
-
-		if ( ! $this->authorization->canViewCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
-		}
+		$this->assertCanViewLesson( $userId, $lesson );
 
 		return LessonDto::fromLesson( $lesson );
 	}
@@ -224,6 +330,36 @@ final class LessonService {
 		}
 
 		return $course;
+	}
+
+	private function assertCanManageLesson( int $userId, Lesson $lesson ): void {
+		if ( $lesson->courseId > 0 ) {
+			$course = $this->findCourseOrFail( $lesson->courseId );
+			if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+				throw new ForbiddenException();
+			}
+
+			return;
+		}
+
+		if ( ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException();
+		}
+	}
+
+	private function assertCanViewLesson( int $userId, Lesson $lesson ): void {
+		if ( $lesson->courseId > 0 ) {
+			$course = $this->findCourseOrFail( $lesson->courseId );
+			if ( ! $this->authorization->canViewCourse( $userId, $course->authorId ) ) {
+				throw new ForbiddenException();
+			}
+
+			return;
+		}
+
+		if ( ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException();
+		}
 	}
 
 	private function generateUniqueSlug( string $title, int $courseId ): string {

@@ -42,6 +42,43 @@ final class LessonController {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/lessons',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'createStandalone' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => $this->createArgs(),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/lessons/(?P<id>\d+)/attach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'attach' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => array(
+						'course_id'  => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+						'section_id' => array(
+							'required'          => false,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/lessons/(?P<id>\d+)',
 			array(
 				array(
@@ -100,6 +137,53 @@ final class LessonController {
 			$lesson = $this->lessonService->create( $sectionId, $dto, $userId );
 
 			return ApiResponse::success( $lesson->toArray(), 201 );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function createStandalone( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+
+			$dto = new CreateLessonDto(
+				(string) ( $request->get_param( 'title' ) ?? '' ),
+				$this->nullableString( $request->get_param( 'slug' ) ),
+				(string) ( $request->get_param( 'content' ) ?? '' ),
+				$this->nullableString( $request->get_param( 'video_url' ) ),
+				$this->nullableInt( $request->get_param( 'attachment_id' ) ),
+				(bool) $request->get_param( 'is_preview' ),
+			);
+
+			$lesson = $this->lessonService->createStandalone( $dto, $userId );
+
+			return ApiResponse::success( $lesson->toArray(), 201 );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function attach( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId    = $this->authorization->getCurrentUserId();
+			$lessonId  = (int) $request->get_param( 'id' );
+			$courseId  = (int) $request->get_param( 'course_id' );
+			$sectionId = $request->offsetExists( 'section_id' ) ? (int) $request->get_param( 'section_id' ) : null;
+
+			$lesson = $this->lessonService->attachToCourse(
+				$lessonId,
+				$courseId,
+				( $sectionId && $sectionId > 0 ) ? $sectionId : null,
+				$userId
+			);
+
+			return ApiResponse::success( $lesson->toArray() );
 		} catch ( ValidationException $exception ) {
 			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
 		} catch ( NotFoundException $exception ) {

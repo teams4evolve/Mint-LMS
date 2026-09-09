@@ -31,6 +31,13 @@ $pct          = (int) round( $context->progressPct );
 		hasPassedQuiz: <?php echo $context->hasPassedQuiz ? 'true' : 'false'; ?>
 	})"
 >
+	<?php if ( ! empty( $context->isReviewMode ) ) : ?>
+		<div class="mint-border-b mint-border-rule mint-bg-accent-wash mint-px-4 sm:mint-px-6 mint-py-2.5">
+			<div class="mint-mx-auto mint-max-w-content mint-text-sm mint-font-medium mint-text-accent">
+				<?php esc_html_e( 'Preview mode — you are previewing this course as an instructor (including draft lessons, quizzes, and questions).', 'mint-lms' ); ?>
+			</div>
+		</div>
+	<?php endif; ?>
 	<div class="mint-border-b mint-border-rule mint-bg-bg mint-px-4 sm:mint-px-6 mint-py-4">
 		<div class="mint-mx-auto mint-flex mint-max-w-content mint-flex-col mint-gap-4 sm:mint-flex-row sm:mint-items-center sm:mint-justify-between">
 			<div class="mint-flex mint-min-w-0 mint-items-center mint-gap-2 mint-text-sm">

@@ -126,6 +126,8 @@ defined( 'ABSPATH' ) || exit;
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<a :href="viewUrl(course.id)" class="mint-course-action" target="_blank" rel="noopener noreferrer" @click.stop><?php esc_html_e( 'View', 'mint-lms' ); ?></a>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
+									<a :href="previewUrl(course.id)" class="mint-course-action" target="_blank" rel="noopener noreferrer" @click.stop><?php esc_html_e( 'Preview', 'mint-lms' ); ?></a>
+									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action" @click.stop="duplicateCourse(course.id)"><?php esc_html_e( 'Clone', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Builder', 'mint-lms' ); ?></a>

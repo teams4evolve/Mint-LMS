@@ -28,5 +28,5 @@ interface SectionRepositoryInterface {
 	 *
 	 * @return list<array{section: Section, lesson: ?\MintLMS\Domain\Lesson\Lesson}>
 	 */
-	public function loadStructureRows( int $courseId ): array;
+	public function loadStructureRows( int $courseId, bool $publishedOnly = false ): array;
 }

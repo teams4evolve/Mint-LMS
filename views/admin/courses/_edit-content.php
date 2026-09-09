@@ -16,6 +16,7 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 	x-data="courseEdit(<?php echo esc_attr( (string) $courseId ); ?>)"
 	x-init="init()"
 	@mint-save-course.window="save()"
+	@mint-publish-course.window="publish()"
 >
 	<div x-show="loading" x-cloak class="mint-pt-10">
 		<?php
@@ -50,7 +51,7 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 
 	<div x-show="!loading && !error" x-cloak>
 		<nav class="mint-flex mint-items-center mint-gap-3 mint-pb-2 mint-pt-12 mint-text-base mint-text-ink-2">
-			<a href="<?php echo esc_url( $coursesUrl ); ?>" class="mint-font-medium mint-text-ink-2 mint-no-underline hover:mint-text-ink"><?php esc_html_e( 'Courses', 'mint-lms' ); ?></a>
+			<a :href="coursesDashboardUrl()" @click="rememberCoursesTab(form.status)" class="mint-font-medium mint-text-ink-2 mint-no-underline hover:mint-text-ink"><?php esc_html_e( 'Courses', 'mint-lms' ); ?></a>
 			<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#33334A" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4.5 5.5 5.5L8 15.5"/></svg>
 			<span class="mint-truncate" x-text="form.title || '<?php echo esc_attr__( 'Untitled', 'mint-lms' ); ?>'"></span>
 		</nav>

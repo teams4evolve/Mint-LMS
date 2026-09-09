@@ -7,10 +7,11 @@ defined( 'ABSPATH' ) || exit;
 
 use MintLMS\Http\Rest\Response\ApiResponse;
 use MintLMS\Infrastructure\PostType\PostTypes;
+use MintLMS\Infrastructure\PostType\QuestionLinkResolver;
 use MintLMS\Infrastructure\PostType\QuizLinkResolver;
 
 /**
- * Admin list API for lesson / quiz CPT screens (A8 / A9).
+ * Admin list API for lesson / quiz / question CPT screens (A8 / A9 / A10).
  */
 final class ContentPostListController {
 
@@ -19,7 +20,7 @@ final class ContentPostListController {
 	public function registerRoutes(): void {
 		register_rest_route(
 			self::NAMESPACE,
-			'/content/(?P<type>lessons|quizzes)',
+			'/content/(?P<type>lessons|quizzes|questions)',
 			array(
 				'methods'             => \WP_REST_Server::READABLE,
 				'callback'            => array( $this, 'list' ),
@@ -30,7 +31,7 @@ final class ContentPostListController {
 
 		register_rest_route(
 			self::NAMESPACE,
-			'/content/(?P<type>lessons|quizzes)/(?P<id>\d+)/trash',
+			'/content/(?P<type>lessons|quizzes|questions)/(?P<id>\d+)/trash',
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'trash' ),
@@ -40,7 +41,7 @@ final class ContentPostListController {
 
 		register_rest_route(
 			self::NAMESPACE,
-			'/content/(?P<type>lessons|quizzes)/(?P<id>\d+)/restore',
+			'/content/(?P<type>lessons|quizzes|questions)/(?P<id>\d+)/restore',
 			array(
 				'methods'             => 'POST',
 				'callback'            => array( $this, 'restore' ),
@@ -50,7 +51,17 @@ final class ContentPostListController {
 
 		register_rest_route(
 			self::NAMESPACE,
-			'/content/(?P<type>lessons|quizzes)/(?P<id>\d+)',
+			'/content/(?P<type>lessons|quizzes|questions)/(?P<id>\d+)/publish',
+			array(
+				'methods'             => 'POST',
+				'callback'            => array( $this, 'publish' ),
+				'permission_callback' => array( $this, 'canManage' ),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/content/(?P<type>lessons|quizzes|questions)/(?P<id>\d+)',
 			array(
 				'methods'             => \WP_REST_Server::DELETABLE,
 				'callback'            => array( $this, 'delete' ),
@@ -101,25 +112,102 @@ final class ContentPostListController {
 			$items[] = $this->serialize( $post, $type );
 		}
 
-		$trashQuery = new \WP_Query(
-			array(
-				'post_type'              => $postType,
-				'post_status'            => 'trash',
-				'posts_per_page'         => 1,
-				'fields'                 => 'ids',
-				'no_found_rows'          => false,
-				'update_post_meta_cache' => false,
-				'update_post_term_cache' => false,
-			)
-		);
+		$counts = $this->statusTotals( $postType );
 
 		return ApiResponse::success(
 			array(
-				'items'      => $items,
-				'total'      => (int) $query->found_posts,
-				'trashTotal' => (int) $trashQuery->found_posts,
+				'items'          => $items,
+				'total'          => (int) $query->found_posts,
+				'trashTotal'     => $counts['trashTotal'],
+				'allTotal'       => $counts['allTotal'],
+				'publishedTotal' => $counts['publishedTotal'],
+				'draftTotal'     => $counts['draftTotal'],
+				'archivedTotal'  => $counts['archivedTotal'],
 			)
 		);
+	}
+
+	/**
+	 * @return array{allTotal: int, publishedTotal: int, draftTotal: int, archivedTotal: int, trashTotal: int}
+	 */
+	private function statusTotals( string $postType ): array {
+		$base = array(
+			'post_type'              => $postType,
+			'posts_per_page'         => 1,
+			'fields'                 => 'ids',
+			'no_found_rows'          => false,
+			'update_post_meta_cache' => false,
+			'update_post_term_cache' => false,
+		);
+
+		$all = new \WP_Query(
+			array_merge(
+				$base,
+				array( 'post_status' => $this->wpStatusesForFilter( 'all' ) )
+			)
+		);
+		$published = new \WP_Query(
+			array_merge(
+				$base,
+				array( 'post_status' => $this->wpStatusesForFilter( 'published' ) )
+			)
+		);
+		$draft = new \WP_Query(
+			array_merge(
+				$base,
+				array( 'post_status' => $this->wpStatusesForFilter( 'draft' ) )
+			)
+		);
+		$archived = new \WP_Query(
+			array_merge(
+				$base,
+				array( 'post_status' => $this->wpStatusesForFilter( 'archived' ) )
+			)
+		);
+		$trash = new \WP_Query(
+			array_merge(
+				$base,
+				array( 'post_status' => 'trash' )
+			)
+		);
+
+		return array(
+			'allTotal'       => (int) $all->found_posts,
+			'publishedTotal' => (int) $published->found_posts,
+			'draftTotal'     => (int) $draft->found_posts,
+			'archivedTotal'  => (int) $archived->found_posts,
+			'trashTotal'     => (int) $trash->found_posts,
+		);
+	}
+
+	/**
+	 * @param \WP_REST_Request $request
+	 */
+	public function publish( \WP_REST_Request $request ): \WP_REST_Response {
+		$post = $this->findOwnedPost( $request );
+		if ( $post instanceof \WP_REST_Response ) {
+			return $post;
+		}
+
+		if ( 'publish' !== $post->post_status ) {
+			$result = wp_update_post(
+				array(
+					'ID'          => $post->ID,
+					'post_status' => 'publish',
+				),
+				true
+			);
+			if ( is_wp_error( $result ) ) {
+				return ApiResponse::error( 'publish_failed', __( 'Could not make this live.', 'mint-lms' ), 500 );
+			}
+		}
+
+		$fresh = get_post( $post->ID );
+		if ( ! $fresh instanceof \WP_Post ) {
+			return ApiResponse::error( 'not_found', __( 'Not found.', 'mint-lms' ), 404 );
+		}
+
+		return ApiResponse::success( $this->serialize( $fresh, (string) $request['type'] ) );
 	}
 
 	/**
@@ -199,7 +287,11 @@ final class ContentPostListController {
 	}
 
 	private function postTypeFor( string $type ): string {
-		return 'quizzes' === $type ? PostTypes::QUIZ : PostTypes::LESSON;
+		return match ( $type ) {
+			'quizzes'   => PostTypes::QUIZ,
+			'questions' => PostTypes::QUESTION,
+			default     => PostTypes::LESSON,
+		};
 	}
 
 	/**
@@ -247,26 +339,44 @@ final class ContentPostListController {
 		$author = get_userdata( (int) $post->post_author );
 		$status = $this->mintStatus( $post->post_status );
 
+		$quizId = 0;
+
 		if ( 'quizzes' === $type ) {
-			$links     = ( new QuizLinkResolver() )->readForList( (int) $post->ID );
-			$courseId  = $links['courseId'];
-			$lessonId  = $links['lessonId'];
+			$links    = ( new QuizLinkResolver() )->readForList( (int) $post->ID );
+			$courseId = $links['courseId'];
+			$lessonId = $links['lessonId'];
+			$quizId   = (int) $post->ID;
+		} elseif ( 'questions' === $type ) {
+			$links    = ( new QuestionLinkResolver() )->readForList( (int) $post->ID );
+			$courseId = $links['courseId'];
+			$lessonId = $links['lessonId'];
+			$quizId   = $links['quizId'];
 		} else {
 			$courseId = (int) get_post_meta( $post->ID, PostTypes::META_COURSE_ID, true );
 			$lessonId = (int) $post->ID;
 		}
 
 		$modified = get_post_modified_time( 'c', true, $post );
+		if ( ! is_string( $modified ) || '' === $modified ) {
+			$created = get_post_time( 'c', true, $post );
+			$modified = is_string( $created ) && '' !== $created ? $created : '';
+		}
+
+		$title = $post->post_title;
+		if ( 'questions' === $type && '' === $title && is_string( $post->post_content ) && '' !== trim( $post->post_content ) ) {
+			$title = wp_trim_words( wp_strip_all_tags( $post->post_content ), 12, '…' );
+		}
 
 		return array(
 			'id'         => (int) $post->ID,
-			'title'      => $post->post_title !== '' ? $post->post_title : __( '(no title)', 'mint-lms' ),
+			'title'      => '' !== $title ? $title : __( '(no title)', 'mint-lms' ),
 			'authorName' => $author instanceof \WP_User ? $author->display_name : '—',
 			'status'     => $status,
 			'date'       => $this->formatListDate( $modified ),
 			'updatedAt'  => $modified,
 			'courseId'   => $courseId,
 			'lessonId'   => $lessonId,
+			'quizId'     => $quizId,
 		);
 	}
 
@@ -281,6 +391,10 @@ final class ContentPostListController {
 	}
 
 	private function formatListDate( string $iso ): string {
+		if ( '' === $iso ) {
+			return '—';
+		}
+
 		$ts = strtotime( $iso );
 		if ( false === $ts ) {
 			return '—';

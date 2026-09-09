@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
 $showHeader    = $showHeader ?? true;
 $pageLabel     = $pageLabel ?? '';
 $headerActions = $headerActions ?? '';
-$newCourseUrl  = $newCourseUrl ?? admin_url( 'admin.php?page=mint-lms-guided-course' );
+$newCourseUrl  = $newCourseUrl ?? \MintLMS\Infrastructure\Admin\CourseBuilderPage::newCourseUrl();
 $maxWidthClass = $maxWidthClass ?? 'mint-max-w-content';
 $content       = $content ?? '';
 $renderer      = new MintLMS\Infrastructure\Admin\ViewRenderer();

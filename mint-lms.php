@@ -20,7 +20,7 @@ if ( defined( 'MINTLMS_VERSION' ) ) {
 	return;
 }
 
-define( 'MINTLMS_VERSION', '1.0.12' );
+define( 'MINTLMS_VERSION', '1.0.74' );
 define( 'MINTLMS_FILE', __FILE__ );
 define( 'MINTLMS_PATH', plugin_dir_path( __FILE__ ) );
 define( 'MINTLMS_URL', plugin_dir_url( __FILE__ ) );
