@@ -118,16 +118,17 @@ final class LessonService {
 
 	/**
 	 * Attach a library lesson to a course section (creates a section when needed).
+	 * Also moves a lesson that is already on another course.
 	 */
 	public function attachToCourse( int $lessonId, int $courseId, ?int $sectionId, int $userId ): LessonDto {
 		$lesson = $this->findLessonOrFail( $lessonId );
 		$this->assertCanManageLesson( $userId, $lesson );
 
-		if ( $lesson->courseId > 0 ) {
-			throw new ValidationException(
-				'Validation failed.',
-				array( 'course_id' => 'This lesson is already attached to a course.' )
-			);
+		if ( $lesson->courseId > 0 && $lesson->courseId !== $courseId ) {
+			$previousCourse = $this->findCourseOrFail( $lesson->courseId );
+			if ( ! $this->authorization->canEditCourse( $userId, $previousCourse->authorId ) ) {
+				throw new ForbiddenException();
+			}
 		}
 
 		$course = $this->findCourseOrFail( $courseId );
@@ -161,9 +162,16 @@ final class LessonService {
 			}
 		}
 
+		if ( $lesson->courseId === $courseId && $lesson->sectionId === $section->id ) {
+			return LessonDto::fromLesson( $lesson );
+		}
+
 		$slug = $lesson->slug;
 		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId ) ) {
-			$slug = $this->generateUniqueSlug( $lesson->title, $courseId );
+			$existing = $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId );
+			if ( null === $existing || $existing->id !== $lesson->id ) {
+				$slug = $this->generateUniqueSlug( $lesson->title, $courseId );
+			}
 		}
 
 		$updated = new Lesson(
@@ -187,6 +195,51 @@ final class LessonService {
 
 		if ( null !== $this->quizService ) {
 			$this->quizService->syncCourseIdForLesson( $saved->id, $courseId );
+		}
+
+		return LessonDto::fromLesson( $saved );
+	}
+
+	/**
+	 * Detach a lesson from its course — returns it to the standalone library.
+	 */
+	public function detachFromCourse( int $lessonId, int $userId ): LessonDto {
+		$lesson = $this->findLessonOrFail( $lessonId );
+		$this->assertCanManageLesson( $userId, $lesson );
+
+		if ( $lesson->courseId <= 0 ) {
+			return LessonDto::fromLesson( $lesson );
+		}
+
+		$slug = $lesson->slug;
+		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, 0 ) ) {
+			$existing = $this->lessonRepository->findBySlugAndCourseId( $slug, 0 );
+			if ( null === $existing || $existing->id !== $lesson->id ) {
+				$slug = $this->generateUniqueSlug( $lesson->title, 0 );
+			}
+		}
+
+		$updated = new Lesson(
+			$lesson->id,
+			0,
+			0,
+			$lesson->title,
+			$slug,
+			$lesson->content,
+			$lesson->videoUrl,
+			$lesson->attachmentId,
+			$lesson->isPreview,
+			$lesson->availableAfterDays,
+			0,
+			$lesson->createdAt,
+			$this->clock->now(),
+			$lesson->featuredImageId,
+		);
+
+		$saved = $this->lessonRepository->save( $updated );
+
+		if ( null !== $this->quizService ) {
+			$this->quizService->syncCourseIdForLesson( $saved->id, 0 );
 		}
 
 		return LessonDto::fromLesson( $saved );

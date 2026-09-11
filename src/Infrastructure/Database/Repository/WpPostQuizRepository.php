@@ -551,11 +551,11 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 	private function upsertJunction( int $quizId, int $questionId, int $sortOrder ): void {
 		$junction = Schema::validateTable( Schema::quizQuestionsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
+		// Prefer reassigning by question_id so a question stays on exactly one quiz.
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
 		$existingId = $this->wpdb->get_var(
 			$this->wpdb->prepare(
-				"SELECT id FROM {$junction} WHERE quiz_id = %d AND question_id = %d",
-				$quizId,
+				"SELECT id FROM {$junction} WHERE question_id = %d ORDER BY id ASC LIMIT 1",
 				$questionId
 			)
 		);
@@ -565,11 +565,25 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 			// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
 			$this->wpdb->update(
 				$junction,
-				array( 'sort_order' => $sortOrder ),
+				array(
+					'quiz_id'    => $quizId,
+					'sort_order' => $sortOrder,
+				),
 				array( 'id' => (int) $existingId ),
-				array( '%d' ),
+				array( '%d', '%d' ),
 				array( '%d' )
 			);
+
+			// Drop any duplicate links for this question.
+			// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared
+			$this->wpdb->query(
+				$this->wpdb->prepare(
+					"DELETE FROM {$junction} WHERE question_id = %d AND id <> %d",
+					$questionId,
+					(int) $existingId
+				)
+			);
+			// phpcs:enable
 
 			return;
 		}

@@ -79,6 +79,18 @@ final class LessonController {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/lessons/(?P<id>\d+)/detach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'detach' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/lessons/(?P<id>\d+)',
 			array(
 				array(
@@ -193,6 +205,23 @@ final class LessonController {
 		}
 	}
 
+	public function detach( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId   = $this->authorization->getCurrentUserId();
+			$lessonId = (int) $request->get_param( 'id' );
+
+			$lesson = $this->lessonService->detachFromCourse( $lessonId, $userId );
+
+			return ApiResponse::success( $lesson->toArray() );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
 	public function get( \WP_REST_Request $request ): \WP_REST_Response {
 		try {
 			$userId = $this->authorization->getCurrentUserId();
@@ -213,6 +242,9 @@ final class LessonController {
 			$userId = $this->authorization->getCurrentUserId();
 			$id     = (int) $request->get_param( 'id' );
 
+			// offsetExists() uses isset() and misses JSON null — same as course clear.
+			[ $updateFeaturedImage, $featuredImageId ] = $this->featuredImageFromRequest( $request );
+
 			$dto = new UpdateLessonDto(
 				$request->offsetExists( 'title' ) ? (string) $request->get_param( 'title' ) : null,
 				$request->offsetExists( 'slug' ) ? $this->nullableString( $request->get_param( 'slug' ) ) : null,
@@ -222,25 +254,9 @@ final class LessonController {
 				$request->offsetExists( 'is_preview' ) ? (bool) $request->get_param( 'is_preview' ) : null,
 				$request->offsetExists( 'available_after_days' ) ? $this->nullableNonNegativeInt( $request->get_param( 'available_after_days' ) ) : null,
 				$request->offsetExists( 'available_after_days' ),
-				$request->offsetExists( 'featured_image_id' ) ? $this->nullableInt( $request->get_param( 'featured_image_id' ) ) : null,
-				$request->offsetExists( 'featured_image_id' ),
+				$featuredImageId,
+				$updateFeaturedImage,
 			);
-
-			// Treat 0 as cleared featured image.
-			if ( $dto->updateFeaturedImage && null !== $dto->featuredImageId && $dto->featuredImageId <= 0 ) {
-				$dto = new UpdateLessonDto(
-					$dto->title,
-					$dto->slug,
-					$dto->content,
-					$dto->videoUrl,
-					$dto->attachmentId,
-					$dto->isPreview,
-					$dto->availableAfterDays,
-					$dto->hasAvailableAfterDays,
-					null,
-					true,
-				);
-			}
 
 			$lesson = $this->lessonService->update( $id, $dto, $userId );
 
@@ -399,6 +415,35 @@ final class LessonController {
 				},
 			),
 		);
+	}
+
+	/**
+	 * Detect featured image clear vs omit. WP offsetExists() misses JSON null.
+	 *
+	 * @return array{0: bool, 1: ?int}
+	 */
+	private function featuredImageFromRequest( \WP_REST_Request $request ): array {
+		$json = $request->get_json_params();
+
+		if ( is_array( $json ) && array_key_exists( 'featured_image_id', $json ) ) {
+			return array( true, $this->nullablePositiveIntOrNull( $json['featured_image_id'] ) );
+		}
+
+		if ( $request->has_param( 'featured_image_id' ) ) {
+			return array( true, $this->nullablePositiveIntOrNull( $request->get_param( 'featured_image_id' ) ) );
+		}
+
+		return array( false, null );
+	}
+
+	private function nullablePositiveIntOrNull( mixed $value ): ?int {
+		if ( null === $value || '' === $value || false === $value ) {
+			return null;
+		}
+
+		$id = (int) $value;
+
+		return $id > 0 ? $id : null;
 	}
 
 	private function nullableString( mixed $value ): ?string {

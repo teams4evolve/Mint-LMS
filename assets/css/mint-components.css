@@ -673,22 +673,183 @@
   overflow-y: auto;
 }
 
+/* Course builder Contents tree — one clear hierarchy, no nested color boxes */
+#mint-lms-root .mint-course-tree {
+  margin: 0 10px 8px;
+  padding: 6px 4px;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#mint-lms-root .mint-course-tree__sections {
+  margin: 2px 0 0;
+  min-width: 0;
+}
+#mint-lms-root .mint-tree-branch {
+  min-width: 0;
+}
+#mint-lms-root .mint-tree-branch__children {
+  margin: 2px 0 4px 14px;
+  padding-left: 10px;
+  border-left: 1.5px solid #D9D6E8;
+  min-width: 0;
+  overflow: hidden;
+}
+#mint-lms-root .mint-tree-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 100%;
+  margin: 0 0 2px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mint-ink);
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+#mint-lms-root .mint-tree-item:hover {
+  background: #F4F3F8;
+}
+#mint-lms-root .mint-tree-item.is-active {
+  background: #E8F3FF;
+  box-shadow: inset 3px 0 0 #7EB8FF;
+}
+#mint-lms-root .mint-tree-item__icon {
+  width: 24px;
+  height: 24px;
+  border-radius: 7px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: #F0EDF8;
+  color: #5C5C77;
+}
+#mint-lms-root .mint-tree-item__icon--course {
+  background: #EAF2FF;
+  color: #2F5FBF;
+}
+#mint-lms-root .mint-tree-item__icon--section {
+  background: #F0EDF8;
+  color: #5C5C77;
+}
+#mint-lms-root .mint-tree-item__icon--lesson {
+  background: #E6F1FF;
+  color: #1A5AA8;
+}
+#mint-lms-root .mint-tree-item__icon--lesson.is-video {
+  background: #FDEFE4;
+  color: #9A4E12;
+}
+#mint-lms-root .mint-tree-item__icon--quiz {
+  background: #E8F7FF;
+  color: #1B6B8A;
+}
+#mint-lms-root .mint-tree-item__icon--question {
+  background: #EEF4FF;
+  color: #3D5A99;
+}
+#mint-lms-root .mint-tree-item.is-active .mint-tree-item__icon {
+  background: #FFFFFF;
+}
+#mint-lms-root .mint-tree-item__body {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+  flex: 1;
+  overflow: hidden;
+}
+#mint-lms-root .mint-tree-item__kind {
+  display: block;
+  font-size: 10px;
+  line-height: 1.2;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8A879E;
+}
+#mint-lms-root .mint-tree-item.is-active .mint-tree-item__kind {
+  color: #5C5C77;
+}
+#mint-lms-root .mint-tree-item__title {
+  display: block;
+  min-width: 0;
+  font-size: 14px;
+  line-height: 1.3;
+  font-weight: 600;
+  color: var(--mint-ink);
+  text-transform: none;
+}
+#mint-lms-root .mint-tree-item.is-active .mint-tree-item__title {
+  color: var(--mint-ink);
+}
+#mint-lms-root .mint-tree-branch__children--root {
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
+}
+#mint-lms-root .mint-tree--mint-blue .mint-tree-branch__children {
+  border-left-color: #C9DCF5;
+}
+#mint-lms-root .mint-tree--mint-blue .mint-tree-item:hover {
+  background: #F3F7FC;
+}
+#mint-lms-root .mint-tree--mint-blue .mint-tree-item.is-active {
+  background: #E8F3FF;
+  box-shadow: inset 3px 0 0 #7EB8FF;
+}
+#mint-lms-root .mint-course-tree .mint-tree-add-lesson {
+  margin: 4px 0 2px;
+  padding-left: 8px;
+  width: 100%;
+  box-sizing: border-box;
+}
+#mint-lms-root .mint-course-tree .mint-handle-section,
+#mint-lms-root .mint-course-tree .mint-handle-lesson {
+  flex-shrink: 0;
+}
+
+/* Legacy section styles kept for any remaining surfaces */
+#mint-lms-root .mint-section-group {
+  margin: 0 0 10px;
+  padding: 0;
+  background: transparent;
+  border: 0;
+}
+#mint-lms-root .mint-section-group__body {
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
 #mint-lms-root .mint-tree-section {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 9px 10px;
-  border-radius: var(--mint-r-md);
+  padding: 8px 8px;
+  border-radius: 10px;
   cursor: pointer;
   outline: none;
+  background: transparent;
   transition: background var(--mint-t-hover) ease-out;
 }
 #mint-lms-root .mint-tree-section:hover {
-  background: #F0EDFB;
+  background: #F4F3F8;
 }
 #mint-lms-root .mint-tree-section:focus-visible {
-  background: #F7F6FB;
+  background: #F4F3F8;
   box-shadow: var(--mint-focus-tight);
+}
+#mint-lms-root .mint-section-group.is-selected > .mint-tree-section {
+  background: #E8FFF3;
+  box-shadow: inset 3px 0 0 #98FBCB;
 }
 
 #mint-lms-root .mint-tree-lesson {
@@ -714,6 +875,305 @@
 #mint-lms-root .mint-tree-lesson.is-active .mint-tree-lesson__title {
   color: #0B4F3F;
   font-weight: 600;
+}
+#mint-lms-root .mint-tree-lesson__parent {
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--mint-ink);
+  margin-bottom: 4px;
+  text-decoration: none;
+  cursor: pointer;
+}
+#mint-lms-root .mint-tree-lesson__parent:hover {
+  color: #0B4F3F;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#mint-lms-root .mint-tree-lesson.is-active .mint-tree-lesson__parent {
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-tree-lesson__title--child {
+  display: block;
+  margin-left: 12px;
+  padding-left: 10px;
+  border-left: 2px solid #CDEDDD;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--mint-ink-2);
+  text-decoration: none;
+  cursor: pointer;
+}
+#mint-lms-root .mint-tree-lesson.is-active .mint-tree-lesson__title--child {
+  border-left-color: #98FBCB;
+  color: #0B4F3F;
+  font-weight: 600;
+}
+#mint-lms-root a.mint-tree-lesson__title--child:hover {
+  color: #0B4F3F;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+#mint-lms-root .mint-tree-lesson__title--grandchild {
+  display: block;
+  margin-left: 24px;
+  padding-left: 10px;
+  border-left: 2px solid #D9E8DF;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--mint-ink-2);
+  margin-top: 3px;
+}
+#mint-lms-root .mint-tree-lesson.is-active .mint-tree-lesson__title--grandchild {
+  border-left-color: #98FBCB;
+  color: #0B4F3F;
+  font-weight: 600;
+}
+#mint-lms-root .mint-hierarchy {
+  margin: 0 8px 10px;
+  padding: 12px 10px;
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-sizing: border-box;
+}
+#mint-lms-root .mint-hierarchy.is-active {
+  background: #E8FFF3;
+  box-shadow: inset 3px 0 0 #98FBCB;
+}
+#mint-lms-root .mint-hierarchy__head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  cursor: pointer;
+}
+#mint-lms-root .mint-hierarchy__row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  margin: 0;
+  padding: 6px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mint-ink);
+  text-align: left;
+  text-decoration: none;
+  font-family: inherit;
+  cursor: pointer;
+  box-sizing: border-box;
+}
+#mint-lms-root .mint-hierarchy__row:hover {
+  background: rgba(11, 79, 63, 0.06);
+}
+#mint-lms-root .mint-hierarchy__row.is-active,
+#mint-lms-root .mint-hierarchy__row.is-current {
+  background: #FFFFFF;
+  box-shadow: 0 0 0 1px rgba(152, 251, 203, 0.7);
+}
+#mint-lms-root .mint-hierarchy__row--course {
+  padding-left: 6px;
+  margin-bottom: 2px;
+}
+#mint-lms-root .mint-hierarchy__row--lesson {
+  margin-top: 4px;
+  padding-left: 8px;
+}
+#mint-lms-root .mint-hierarchy--with-course .mint-hierarchy__row--lesson {
+  margin-left: 14px;
+  padding-left: 10px;
+  width: calc(100% - 14px);
+  border-left: 2px solid #D7E7DE;
+}
+#mint-lms-root .mint-hierarchy__row--quiz {
+  margin-top: 4px;
+  margin-left: 14px;
+  padding-left: 10px;
+  width: calc(100% - 14px);
+  border-left: 2px solid #D7E7DE;
+}
+#mint-lms-root .mint-hierarchy--with-course .mint-hierarchy__row--quiz {
+  margin-left: 28px;
+  width: calc(100% - 28px);
+}
+#mint-lms-root .mint-hierarchy__row--quiz.mint-hierarchy__row--nested {
+  margin-left: 40px;
+  width: calc(100% - 40px);
+}
+#mint-lms-root .mint-hierarchy__row--question {
+  margin-top: 2px;
+  margin-left: 28px;
+  padding-left: 10px;
+  width: calc(100% - 28px);
+  border-left: 2px solid #D7E7DE;
+}
+#mint-lms-root .mint-hierarchy--with-course .mint-hierarchy__row--question {
+  margin-left: 42px;
+  width: calc(100% - 42px);
+}
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__row--lesson,
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__row--quiz,
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__row--question {
+  border-left-color: #98FBCB;
+}
+#mint-lms-root .mint-hierarchy__label {
+  display: block;
+  min-width: 0;
+  flex: 1;
+  font-size: 14px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--mint-ink);
+  text-transform: none;
+  letter-spacing: normal;
+}
+#mint-lms-root .mint-hierarchy__row--course .mint-hierarchy__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mint-ink);
+}
+#mint-lms-root .mint-hierarchy__row--quiz .mint-hierarchy__label,
+#mint-lms-root .mint-hierarchy__row--question .mint-hierarchy__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--mint-ink-2);
+}
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__label,
+#mint-lms-root .mint-hierarchy__row.is-active .mint-hierarchy__label,
+#mint-lms-root .mint-hierarchy__row.is-current .mint-hierarchy__label {
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-hierarchy__icon {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+#mint-lms-root .mint-hierarchy__icon--course {
+  background: #F1EEFF;
+  color: #5B4DB8;
+}
+#mint-lms-root .mint-hierarchy__icon--lesson {
+  background: #E6F1FF;
+  color: #1A5AA8;
+}
+#mint-lms-root .mint-hierarchy__icon--quiz {
+  background: #E8FFF3;
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-hierarchy__icon--question {
+  background: #FFF4E5;
+  color: #9A5B12;
+}
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__row.is-active .mint-hierarchy__icon,
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__row.is-current .mint-hierarchy__icon {
+  background: #FFFFFF;
+}
+#mint-lms-root .mint-hierarchy__questions {
+  display: grid;
+  gap: 2px;
+  margin: 2px 0 0;
+}
+#mint-lms-root .mint-hierarchy__questions--nested .mint-hierarchy__row--question {
+  margin-left: 54px;
+  width: calc(100% - 54px);
+}
+#mint-lms-root .mint-hierarchy__nest {
+  margin-top: 4px;
+}
+/* Contents lesson title (still used in course tree head) */
+#mint-lms-root .mint-hierarchy__lesson {
+  display: block;
+  font-size: 15px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--mint-ink);
+  text-decoration: none;
+  text-transform: none;
+}
+#mint-lms-root .mint-hierarchy.is-active .mint-hierarchy__lesson {
+  color: #0B4F3F;
+}
+#mint-lms-root a.mint-hierarchy__lesson:hover {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+/* Legacy nested helpers kept for safety during transition */
+#mint-lms-root .mint-tree-quiz-questions {
+  margin: 2px 0 6px 42px;
+  display: grid;
+  gap: 2px;
+}
+#mint-lms-root .mint-tree-quiz-question {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-left: 2px solid #D9E8DF;
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 12px;
+  line-height: 1.35;
+  font-weight: 500;
+  color: var(--mint-ink-2);
+}
+#mint-lms-root .mint-tree-quiz-question:hover {
+  background: #F3FBF7;
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-tree-quiz-question__label {
+  display: block;
+  min-width: 0;
+}
+#mint-lms-root .mint-tree-lesson-quizzes {
+  margin: 2px 0 6px 42px;
+  display: grid;
+  gap: 2px;
+}
+#mint-lms-root .mint-tree-lesson-quiz {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  margin: 0;
+  padding: 7px 10px;
+  border: 0;
+  border-left: 2px solid #CDEDDD;
+  border-radius: 0 8px 8px 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.35;
+  font-weight: 600;
+  color: var(--mint-ink-2);
+}
+#mint-lms-root .mint-tree-lesson-quiz:hover {
+  background: #F3FBF7;
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-tree-lesson-quiz__label {
+  display: block;
+  min-width: 0;
+}
+#mint-lms-root .mint-tree-lesson--quiz-hierarchy {
+  align-items: flex-start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+#mint-lms-root .mint-tree-lesson--quiz-hierarchy .mint-tree-lesson__icon {
+  margin-top: 1px;
 }
 
 #mint-lms-root .mint-tree-lesson__icon {
@@ -871,7 +1331,7 @@
 }
 #mint-lms-root .mint-handle-section:active,
 #mint-lms-root .mint-handle-lesson:active { cursor: grabbing; }
-#mint-lms-root .mint-lessons-sortable { display: flex; flex-direction: column; gap: 2px; }
+#mint-lms-root .mint-lessons-sortable { display: flex; flex-direction: column; gap: 4px; }
 #mint-lms-root .mint-settings-section + .mint-settings-section { margin-top: 0; }
 #mint-lms-root .mint-quiz-panel {
   border: 1px solid var(--mint-tint-line);
@@ -2775,6 +3235,11 @@ body.folded.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
 }
 #mint-lms-root .mint-player-header__trail { display: flex; align-items: center; gap: 8px; min-width: 0; flex: 1; }
 #mint-lms-root .mint-breadcrumb__link { font-size: 15px; font-weight: 500; color: var(--mint-ink-2); text-decoration: none; white-space: nowrap; }
+#mint-lms-root .mint-breadcrumb__link:hover {
+  color: var(--mint-ink);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 #mint-lms-root .mint-breadcrumb__current { font-size: 15px; font-weight: 600; color: var(--mint-ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #mint-lms-root .mint-player-progress { display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
 #mint-lms-root .mint-player-progress__label { font-size: 14px; font-weight: 500; color: var(--mint-ink-2); }
@@ -3410,4 +3875,253 @@ body.folded.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
 #mint-lms-root .mint-settings-form .button-primary:hover {
   background: var(--mint-accent-hover);
   border-color: var(--mint-accent-hover);
+}
+
+/* Association cards (Add / Change / Remove) — Mint CTA polish */
+#mint-lms-root .mint-assoc-card {
+  position: relative;
+  border: 1px solid rgba(15, 14, 26, 0.12);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 1px 0 rgba(15, 14, 26, 0.03);
+  padding: 14px 14px 14px 16px;
+  font-family: var(--mint-font);
+}
+#mint-lms-root .mint-assoc-card::before {
+  content: "";
+  position: absolute;
+  top: 12px;
+  bottom: 12px;
+  left: 0;
+  width: 3px;
+  border-radius: 0 3px 3px 0;
+  background: #98FB98;
+}
+#mint-lms-root .mint-assoc-card__title {
+  margin: 0 0 4px;
+  font-family: var(--mint-font);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--mint-ink);
+}
+#mint-lms-root .mint-assoc-card__copy {
+  margin: 0 0 12px;
+  font-family: var(--mint-font);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--mint-ink-2);
+}
+#mint-lms-root .mint-assoc-card__label {
+  display: block;
+  margin-bottom: 6px;
+  font-family: var(--mint-font);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #8A879E;
+}
+#mint-lms-root .mint-assoc-card__badge {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 8px;
+  padding: 0;
+  border-radius: 0;
+  background: transparent;
+  color: #8A879E;
+  font-family: var(--mint-font);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+#mint-lms-root .mint-assoc-card__current {
+  margin-bottom: 12px;
+  font-family: var(--mint-font);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--mint-ink);
+}
+#mint-lms-root .mint-assoc-card__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+#mint-lms-root .mint-assoc-card__actions .mint-builder-btn-secondary,
+#mint-lms-root .mint-assoc-card__actions .mint-builder-btn-publish,
+#mint-lms-root .mint-assoc-card__actions .mint-lesson-choose-file {
+  flex: 1 1 0;
+  min-width: 0;
+  justify-content: center;
+}
+#mint-lms-root .mint-assoc-card__remove {
+  flex: 1 1 0;
+  min-width: 0;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  border: 1px solid rgba(15, 14, 26, 0.14);
+  background: #FFFFFF;
+  color: #0F0E1A;
+  font-family: var(--mint-font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 120ms ease-out, border-color 120ms ease-out, color 120ms ease-out;
+}
+#mint-lms-root .mint-assoc-card__remove:hover:not(:disabled),
+#mint-lms-root .mint-assoc-card__remove:focus-visible:not(:disabled) {
+  background: #FDF5F5;
+  border-color: rgba(194, 43, 43, 0.35);
+  color: #C22B2B;
+}
+#mint-lms-root .mint-assoc-card__remove:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+#mint-lms-root .mint-assoc-card__cancel {
+  flex: 0 0 auto;
+  height: 34px;
+  padding: 0 12px;
+  border: 0;
+  background: transparent;
+  color: var(--mint-ink-2);
+  font-family: var(--mint-font);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+#mint-lms-root .mint-assoc-card__cancel:hover {
+  color: var(--mint-ink);
+}
+
+#mint-lms-root .mint-builder-tree__footer {
+  overflow: visible;
+  position: relative;
+  z-index: 20;
+}
+#mint-lms-root .mint-assoc-card {
+  overflow: visible;
+}
+
+/* Custom Mint select for association UI */
+#mint-lms-root .mint-assoc-select {
+  position: relative;
+  z-index: 30;
+  margin-bottom: 12px;
+  font-family: var(--mint-font);
+}
+#mint-lms-root .mint-assoc-select__trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  height: 42px;
+  padding: 0 12px 0 14px;
+  border: 1px solid #CBC8DD;
+  border-radius: 10px;
+  background: #FFFFFF;
+  color: var(--mint-ink);
+  font-family: var(--mint-font);
+  font-size: 15px;
+  font-weight: 500;
+  line-height: 1.3;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 120ms ease-out, box-shadow 120ms ease-out, background 120ms ease-out;
+}
+#mint-lms-root .mint-assoc-select__trigger:hover {
+  border-color: rgba(15, 14, 26, 0.28);
+  background: #FAFAF8;
+}
+#mint-lms-root .mint-assoc-select.is-open .mint-assoc-select__trigger,
+#mint-lms-root .mint-assoc-select__trigger:focus-visible {
+  outline: none;
+  border-color: #98FB98;
+  box-shadow: 0 0 0 3px rgba(152, 251, 152, 0.35);
+}
+#mint-lms-root .mint-assoc-select__value {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+#mint-lms-root .mint-assoc-select__value.is-placeholder {
+  color: var(--mint-ink-3);
+  font-weight: 500;
+}
+#mint-lms-root .mint-assoc-select__chevron {
+  flex: 0 0 auto;
+  color: #5C5C77;
+  transition: transform 120ms ease-out;
+}
+#mint-lms-root .mint-assoc-select.is-open .mint-assoc-select__chevron {
+  transform: rotate(180deg);
+}
+#mint-lms-root .mint-assoc-select__menu {
+  position: absolute;
+  z-index: 40;
+  bottom: calc(100% + 6px);
+  top: auto;
+  left: 0;
+  right: 0;
+  max-height: 220px;
+  overflow-y: auto;
+  padding: 6px;
+  border: 1px solid rgba(15, 14, 26, 0.12);
+  border-radius: 12px;
+  background: #FFFFFF;
+  box-shadow: 0 -8px 28px rgba(15, 14, 26, 0.1);
+}
+#mint-lms-root .mint-assoc-select__option {
+  display: block;
+  width: 100%;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--mint-ink);
+  font-family: var(--mint-font);
+  font-size: 14px;
+  font-weight: 500;
+  text-align: left;
+  cursor: pointer;
+  transition: background 100ms ease-out, color 100ms ease-out;
+}
+#mint-lms-root .mint-assoc-select__option:hover {
+  background: #E8FBE8;
+  color: var(--mint-ink);
+}
+#mint-lms-root .mint-assoc-select__option.is-active {
+  background: #98FB98;
+  color: #0B4F3F;
+  font-weight: 600;
+}
+#mint-lms-root .mint-assoc-select__option.is-active:hover {
+  background: #7FE87F;
+  color: #0B4F3F;
+}
+#mint-lms-root .mint-assoc-card .mint-builder-btn-publish {
+  display: inline-flex;
+  align-items: center;
+  width: 100%;
+  justify-content: center;
+}
+#mint-lms-root .mint-assoc-card__actions .mint-lesson-choose-file {
+  display: inline-flex;
+  align-items: center;
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+#mint-lms-root .mint-assoc-card__actions .mint-lesson-choose-file:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none !important;
 }

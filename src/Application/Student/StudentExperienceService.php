@@ -203,9 +203,11 @@ final class StudentExperienceService {
 
 				$featuredImageId = null;
 				$nextLessonId    = null;
+				$lessonContent   = '';
 				foreach ( $flat as $index => $structureLesson ) {
 					if ( $structureLesson->id === $lessonId ) {
 						$featuredImageId = $structureLesson->featuredImageId;
+						$lessonContent   = (string) ( $structureLesson->content ?? '' );
 						if ( isset( $flat[ $index + 1 ] ) ) {
 							$nextLessonId = $flat[ $index + 1 ]->id;
 						}
@@ -223,6 +225,7 @@ final class StudentExperienceService {
 					'title'           => (string) $lesson['title'],
 					'meta'            => (string) $lesson['meta'],
 					'quizzes'         => $lesson['quizzes'],
+					'content'         => $lessonContent,
 					'courseTitle'     => $course->title,
 					'sectionTitle'    => (string) ( $section['title'] ?? '' ),
 					'featuredImageId' => $featuredImageId,

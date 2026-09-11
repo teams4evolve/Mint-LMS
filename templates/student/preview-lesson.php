@@ -12,6 +12,7 @@ defined( 'ABSPATH' ) || exit;
  *   title: string,
  *   meta: string,
  *   quizzes: list<array<string, mixed>>,
+ *   content?: string,
  *   courseTitle: string,
  *   sectionTitle?: string,
  *   featuredImageId?: ?int,
@@ -24,6 +25,7 @@ $quizzes     = is_array( $preview['quizzes'] ?? null ) ? $preview['quizzes'] : a
 $courseTitle = trim( (string) ( $preview['courseTitle'] ?? '' ) );
 $lessonTitle = trim( (string) ( $preview['title'] ?? '' ) );
 $authorName  = trim( (string) ( $preview['authorName'] ?? '' ) );
+$lessonBody  = trim( (string) ( $preview['content'] ?? '' ) );
 $featuredUrl = is_string( $featuredUrl ?? null ) ? $featuredUrl : '';
 $courseUrl   = is_string( $courseUrl ?? null ) ? $courseUrl : '';
 $nextUrl     = is_string( $nextUrl ?? null ) ? $nextUrl : '';
@@ -52,16 +54,18 @@ $displayLesson = '' !== $lessonTitle ? $lessonTitle : __( 'Untitled lesson', 'mi
 					alt="<?php echo esc_attr( $displayLesson ); ?>"
 				/>
 			</div>
-		<?php else : ?>
-			<div class="mint-s3-hero__media mint-s3b-media--empty">
-				<div class="mint-s3b-media__placeholder"><?php esc_html_e( 'lesson media', 'mint-lms' ); ?></div>
-			</div>
 		<?php endif; ?>
 
 		<?php if ( '' !== $authorName ) : ?>
 			<div class="mint-mt-[18px] mint-text-sm mint-text-[#5C5C77]">
 				<?php esc_html_e( 'Written by', 'mint-lms' ); ?>
 				<span class="mint-font-medium mint-text-cta-ink mint-underline"><?php echo esc_html( $authorName ); ?></span>
+			</div>
+		<?php endif; ?>
+
+		<?php if ( '' !== $lessonBody ) : ?>
+			<div class="mint-course-overview__description mint-mt-4 mint-max-w-full mint-text-[15px] mint-leading-6 mint-text-[#33334A] [&_p]:mint-mb-3 [&_p:last-child]:mint-mb-0">
+				<?php echo wp_kses_post( wpautop( $lessonBody ) ); ?>
 			</div>
 		<?php endif; ?>
 	</article>

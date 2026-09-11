@@ -158,6 +158,168 @@ final class QuizService {
 		return $this->get( $quizId, $userId );
 	}
 
+	/**
+	 * Move a quiz onto an existing lesson (first attach or change).
+	 * Removes only disposable empty host lessons created for Add New Quiz.
+	 */
+	public function attachToLesson( int $quizId, int $targetLessonId, int $userId ): QuizDto {
+		$quiz          = $this->findQuizOrFail( $quizId );
+		$currentLesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $currentLesson );
+
+		if ( $quiz->lessonId === $targetLessonId ) {
+			return $this->get( $quizId, $userId );
+		}
+
+		$target = $this->findLessonOrFail( $targetLessonId );
+		$this->assertCanManageLessonContent( $userId, $target );
+
+		$existing = $this->quizRepository->findByLessonId( $targetLessonId );
+		if ( null !== $existing && $existing->id !== $quizId ) {
+			throw new ValidationException(
+				'This lesson already has a quiz.',
+				array( 'lesson_id' => 'This lesson already has a quiz.' )
+			);
+		}
+
+		$previousLessonId = $quiz->lessonId;
+
+		$this->quizRepository->saveQuiz(
+			new Quiz(
+				$quiz->id,
+				$targetLessonId,
+				$target->courseId,
+				$quiz->title,
+				$quiz->passPercent,
+				$quiz->sortOrder,
+			)
+		);
+
+		if ( $previousLessonId > 0 && $previousLessonId !== $targetLessonId && $this->isDisposableHostLesson( $currentLesson ) ) {
+			$this->lessonRepository->delete( $previousLessonId );
+		}
+
+		return $this->get( $quizId, $userId );
+	}
+
+	/**
+	 * Detach quiz from its lesson — places it on a fresh standalone host lesson.
+	 */
+	public function detachFromLesson( int $quizId, int $userId ): QuizDto {
+		$quiz          = $this->findQuizOrFail( $quizId );
+		$currentLesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $currentLesson );
+
+		if ( $currentLesson->courseId <= 0 && $this->isDisposableHostLesson( $currentLesson ) ) {
+			return $this->get( $quizId, $userId );
+		}
+
+		$host = $this->createStandaloneHostLesson();
+
+		$this->quizRepository->saveQuiz(
+			new Quiz(
+				$quiz->id,
+				$host->id,
+				0,
+				$quiz->title,
+				$quiz->passPercent,
+				$quiz->sortOrder,
+			)
+		);
+
+		return $this->get( $quizId, $userId );
+	}
+
+	/**
+	 * Move a question onto an existing quiz (first attach or change).
+	 */
+	public function attachQuestionToQuiz( int $questionId, int $targetQuizId, int $userId ): QuizDto {
+		$question      = $this->findQuestionOrFail( $questionId );
+		$current       = $this->findQuizOrFail( $question->quizId );
+		$currentLesson = $this->findLessonOrFail( $current->lessonId );
+		$this->assertCanManageLessonContent( $userId, $currentLesson );
+
+		if ( $question->quizId === $targetQuizId ) {
+			return $this->get( $targetQuizId, $userId );
+		}
+
+		$target       = $this->findQuizOrFail( $targetQuizId );
+		$targetLesson = $this->findLessonOrFail( $target->lessonId );
+		$this->assertCanManageLessonContent( $userId, $targetLesson );
+
+		$previousQuizId   = $question->quizId;
+		$previousLessonId = $current->lessonId;
+		$sortOrder        = $this->quizRepository->nextQuestionSortOrder( $targetQuizId );
+
+		$this->quizRepository->saveQuestion(
+			new QuizQuestion(
+				$question->id,
+				$targetQuizId,
+				$question->type,
+				$question->prompt,
+				$question->options,
+				$question->correctAnswer,
+				$sortOrder,
+			)
+		);
+
+		$remaining = $this->quizRepository->findQuestionsByQuizId( $previousQuizId );
+		if ( array() === $remaining && $this->isDisposableHostLesson( $currentLesson ) ) {
+			$this->quizRepository->deleteQuiz( $previousQuizId );
+			if ( $previousLessonId > 0 ) {
+				$this->lessonRepository->delete( $previousLessonId );
+			}
+		}
+
+		return $this->get( $targetQuizId, $userId );
+	}
+
+	/**
+	 * Detach question from its quiz — places it on a fresh standalone host quiz.
+	 */
+	public function detachQuestionFromQuiz( int $questionId, int $userId ): QuizDto {
+		$question      = $this->findQuestionOrFail( $questionId );
+		$current       = $this->findQuizOrFail( $question->quizId );
+		$currentLesson = $this->findLessonOrFail( $current->lessonId );
+		$this->assertCanManageLessonContent( $userId, $currentLesson );
+
+		if ( $currentLesson->courseId <= 0 && $this->isDisposableHostLesson( $currentLesson ) ) {
+			$others = array_filter(
+				$this->quizRepository->findQuestionsByQuizId( $current->id ),
+				static fn( QuizQuestion $q ): bool => $q->id !== $questionId
+			);
+			if ( array() === $others ) {
+				return $this->get( $current->id, $userId );
+			}
+		}
+
+		$hostLesson = $this->createStandaloneHostLesson();
+		$hostQuiz   = $this->quizRepository->saveQuiz(
+			new Quiz(
+				0,
+				$hostLesson->id,
+				0,
+				__( 'New Quiz', 'mint-lms' ),
+				80,
+				0,
+			)
+		);
+
+		$this->quizRepository->saveQuestion(
+			new QuizQuestion(
+				$question->id,
+				$hostQuiz->id,
+				$question->type,
+				$question->prompt,
+				$question->options,
+				$question->correctAnswer,
+				0,
+			)
+		);
+
+		return $this->get( $hostQuiz->id, $userId );
+	}
+
 	public function delete( int $quizId, int $userId ): void {
 		$quiz   = $this->findQuizOrFail( $quizId );
 		$lesson = $this->findLessonOrFail( $quiz->lessonId );
@@ -542,6 +704,53 @@ final class QuizService {
 
 	private function normalizePassPercent( int $passPercent ): int {
 		return max( 0, min( 100, $passPercent ) );
+	}
+
+	private function createStandaloneHostLesson(): \MintLMS\Domain\Lesson\Lesson {
+		$now  = $this->clock->now();
+		$slug = 'new-lesson-' . bin2hex( random_bytes( 2 ) );
+
+		return $this->lessonRepository->save(
+			new \MintLMS\Domain\Lesson\Lesson(
+				0,
+				0,
+				0,
+				__( 'New Lesson', 'mint-lms' ),
+				$slug,
+				'',
+				null,
+				null,
+				false,
+				null,
+				0,
+				$now,
+				$now,
+			)
+		);
+	}
+
+	private function isDisposableHostLesson( \MintLMS\Domain\Lesson\Lesson $lesson ): bool {
+		if ( $lesson->courseId > 0 ) {
+			return false;
+		}
+
+		if ( '' !== trim( $lesson->content ) ) {
+			return false;
+		}
+
+		if ( null !== $lesson->videoUrl && '' !== trim( (string) $lesson->videoUrl ) ) {
+			return false;
+		}
+
+		if ( null !== $lesson->attachmentId && $lesson->attachmentId > 0 ) {
+			return false;
+		}
+
+		if ( null !== $lesson->featuredImageId && $lesson->featuredImageId > 0 ) {
+			return false;
+		}
+
+		return true;
 	}
 
 	private function findQuizOrFail( int $id ): Quiz {

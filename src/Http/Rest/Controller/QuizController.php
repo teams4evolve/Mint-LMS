@@ -86,6 +86,68 @@ final class QuizController {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/quizzes/(?P<id>\d+)/attach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'attach' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => array(
+						'lesson_id' => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/quizzes/(?P<id>\d+)/detach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'detach' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/questions/(?P<id>\d+)/attach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'attachQuestion' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => array(
+						'quiz_id' => array(
+							'required'          => true,
+							'type'              => 'integer',
+							'sanitize_callback' => 'absint',
+						),
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/questions/(?P<id>\d+)/detach',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'detachQuestion' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/quizzes/(?P<id>\d+)/questions',
 			array(
 				array(
@@ -194,11 +256,12 @@ final class QuizController {
 			$sectionId = $lessonId > 0 ? (int) get_post_meta( $lessonId, PostTypes::META_SECTION_ID, true ) : 0;
 
 			$items[] = array(
-				'id'        => (int) $post->ID,
-				'title'     => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
-				'lessonId'  => $lessonId,
-				'sectionId' => $sectionId,
-				'courseId'  => $courseId,
+				'id'          => (int) $post->ID,
+				'title'       => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
+				'lessonId'    => $lessonId,
+				'lessonTitle' => $lessonId > 0 ? (string) get_the_title( $lessonId ) : '',
+				'sectionId'   => $sectionId,
+				'courseId'    => $courseId,
 			);
 		}
 
@@ -281,6 +344,76 @@ final class QuizController {
 			if ( $request->offsetExists( 'featured_image_id' ) ) {
 				$this->saveQuizFeaturedImage( $quiz->id, (int) $request->get_param( 'featured_image_id' ) );
 			}
+
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function attach( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId   = $this->authorization->getCurrentUserId();
+			$quizId   = (int) $request->get_param( 'id' );
+			$lessonId = (int) $request->get_param( 'lesson_id' );
+
+			$quiz = $this->quizService->attachToLesson( $quizId, $lessonId, $userId );
+
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function detach( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+			$quizId = (int) $request->get_param( 'id' );
+
+			$quiz = $this->quizService->detachFromLesson( $quizId, $userId );
+
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function attachQuestion( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId     = $this->authorization->getCurrentUserId();
+			$questionId = (int) $request->get_param( 'id' );
+			$quizId     = (int) $request->get_param( 'quiz_id' );
+
+			$quiz = $this->quizService->attachQuestionToQuiz( $questionId, $quizId, $userId );
+
+			return ApiResponse::success( $this->quizPayload( $quiz ) );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function detachQuestion( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId     = $this->authorization->getCurrentUserId();
+			$questionId = (int) $request->get_param( 'id' );
+
+			$quiz = $this->quizService->detachQuestionFromQuiz( $questionId, $userId );
 
 			return ApiResponse::success( $this->quizPayload( $quiz ) );
 		} catch ( ValidationException $exception ) {
@@ -693,16 +826,17 @@ final class QuizController {
 	 */
 	private function defaultQuestionSettings(): array {
 		return array(
-			'freePreview'   => false,
-			'attachmentId'  => 0,
-			'attachmentName'=> '',
-			'attachmentUrl' => '',
-			'allowHtml'     => array(),
-			'submitMethod'  => 'Text Box',
-			'gradingMode'   => 'Not Graded, No Points Awarded',
-			'points'        => 1,
-			'extraTf'       => array(),
-			'displayTitle'  => '',
+			'freePreview'       => false,
+			'attachmentId'      => 0,
+			'attachmentName'    => '',
+			'attachmentUrl'     => '',
+			'allowHtml'         => array(),
+			'submitMethod'      => 'Text Box',
+			'gradingMode'       => 'Not Graded, No Points Awarded',
+			'points'            => 1,
+			'extraTf'           => array(),
+			'displayTitle'      => '',
+			'answerTypePending' => false,
 		);
 	}
 
@@ -738,6 +872,7 @@ final class QuizController {
 		$settings['points'] = max( 0, absint( $settings['points'] ?? 1 ) );
 		$settings['extraTf'] = $this->sanitizeExtraTfList( $settings['extraTf'] ?? array() );
 		$settings['displayTitle'] = sanitize_text_field( (string) ( $settings['displayTitle'] ?? '' ) );
+		$settings['answerTypePending'] = ! empty( $settings['answerTypePending'] );
 
 		return $settings;
 	}
@@ -820,6 +955,9 @@ final class QuizController {
 		}
 		if ( array_key_exists( 'displayTitle', $settings ) ) {
 			$clean['displayTitle'] = sanitize_text_field( (string) $settings['displayTitle'] );
+		}
+		if ( array_key_exists( 'answerTypePending', $settings ) ) {
+			$clean['answerTypePending'] = ! empty( $settings['answerTypePending'] );
 		}
 
 		update_post_meta( $questionId, PostTypes::META_QUESTION_SETTINGS, $clean );

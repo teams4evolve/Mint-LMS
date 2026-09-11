@@ -202,12 +202,6 @@ final class ShortcodeRegistrar {
 						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3-hero {
 							margin-bottom: 0;
 						}
-						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3b-media--empty {
-							display: flex;
-							align-items: center;
-							justify-content: center;
-							background: #e8fff3;
-						}
 					</style>';
 					return;
 				}
