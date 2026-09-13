@@ -193,6 +193,7 @@ final class Bootstrap {
 			$clock,
 			$quizService,
 			$authorization,
+			$lessonRepo,
 		);
 
 		$shortcodes = new ShortcodeRegistrar(

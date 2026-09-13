@@ -23,6 +23,8 @@ use MintLMS\Domain\Drip\DripAccessEvaluator;
 use MintLMS\Domain\Enrollment\Enrollment;
 use MintLMS\Domain\Enrollment\EnrollmentRepositoryInterface;
 use MintLMS\Domain\Enrollment\EnrollmentStatus;
+use MintLMS\Domain\Lesson\Lesson;
+use MintLMS\Domain\Lesson\LessonRepositoryInterface;
 use MintLMS\Domain\Progress\ProgressRepositoryInterface;
 use MintLMS\Domain\Quiz\QuizQuestion;
 use MintLMS\Domain\Section\SectionRepositoryInterface;
@@ -40,6 +42,7 @@ final class StudentExperienceService {
 		private Clock $clock,
 		private ?QuizService $quizService = null,
 		private ?AuthorizationInterface $authorization = null,
+		private ?LessonRepositoryInterface $lessonRepository = null,
 	) {
 	}
 
@@ -182,6 +185,10 @@ final class StudentExperienceService {
 	 * @return array{title: string, meta: string, quizzes: list<array<string, mixed>>}
 	 */
 	public function getLessonBuilderPreview( int $courseId, int $lessonId, int $userId ): array {
+		if ( $courseId <= 0 ) {
+			return $this->getStandaloneLessonBuilderPreview( $lessonId, $userId );
+		}
+
 		$course    = $this->requireEditableCourse( $courseId, $userId );
 		$structure = $this->loadGatedStructure( $courseId, true, $userId, true );
 		$outline   = $this->buildContentOutline( $structure, $userId, true );
@@ -238,7 +245,61 @@ final class StudentExperienceService {
 			}
 		}
 
-		throw new NotFoundException( 'Lesson not found.' );
+		// Lesson may be linked to this course in data but missing from outline (race / stale).
+		// Fall back to direct lesson load when the course is editable.
+		return $this->getStandaloneLessonBuilderPreview( $lessonId, $userId, $course->title );
+	}
+
+	/**
+	 * Instructor preview for a lesson that is not (yet) inside a course — LearnDash-style.
+	 *
+	 * @return array{title: string, meta: string, quizzes: list<array<string, mixed>>}
+	 */
+	public function getStandaloneLessonBuilderPreview( int $lessonId, int $userId, string $courseTitle = '' ): array {
+		$lesson = $this->requirePreviewableLesson( $lessonId, $userId );
+
+		if ( $lesson->courseId > 0 && '' === $courseTitle ) {
+			try {
+				return $this->getLessonBuilderPreview( $lesson->courseId, $lessonId, $userId );
+			} catch ( NotFoundException | ForbiddenException $exception ) {
+				// Continue with a direct lesson payload if course shell is unavailable.
+			}
+		}
+
+		$quizzes = $this->buildQuizOutlineForLesson( $lessonId, $userId, true );
+		$quizCount = count( $quizzes );
+		$meta      = 0 === $quizCount
+			? __( 'No quiz yet', 'mint-lms' )
+			: ( 1 === $quizCount
+				? __( '1 quiz', 'mint-lms' )
+				: sprintf(
+					/* translators: %d: quiz count */
+					__( '%d quizzes', 'mint-lms' ),
+					$quizCount
+				) );
+
+		$authorName = '';
+		if ( function_exists( 'get_userdata' ) ) {
+			$author = get_userdata( $userId );
+			if ( $author ) {
+				$authorName = (string) $author->display_name;
+			}
+		}
+
+		return array(
+			'title'           => $lesson->title,
+			'meta'            => $meta,
+			'quizzes'         => $quizzes,
+			'content'         => $lesson->content,
+			'courseTitle'     => $courseTitle,
+			'sectionTitle'    => '',
+			'featuredImageId' => $lesson->featuredImageId,
+			'authorName'      => $authorName,
+			'progressPct'     => 0.0,
+			'nextLessonId'    => null,
+			'courseId'        => $lesson->courseId,
+			'lessonId'        => $lesson->id,
+		);
 	}
 
 	/**
@@ -247,7 +308,13 @@ final class StudentExperienceService {
 	 * @return array{title: string, meta: string, questions: list<array{id: int, text: string}>, courseTitle: string}
 	 */
 	public function getQuizBuilderPreview( int $courseId, int $lessonId, int $userId ): array {
-		$course = $this->requireEditableCourse( $courseId, $userId );
+		$courseTitle = '';
+		if ( $courseId > 0 ) {
+			$course      = $this->requireEditableCourse( $courseId, $userId );
+			$courseTitle = $course->title;
+		} else {
+			$this->requirePreviewableLesson( $lessonId, $userId );
+		}
 
 		if ( null === $this->quizService ) {
 			throw new NotFoundException( 'Quiz not found.' );
@@ -268,6 +335,14 @@ final class StudentExperienceService {
 
 		$count = count( $questions );
 
+		$authorName = '';
+		if ( function_exists( 'get_userdata' ) ) {
+			$author = get_userdata( $userId );
+			if ( $author ) {
+				$authorName = (string) $author->display_name;
+			}
+		}
+
 		return array(
 			'title'       => null !== $quiz && '' !== trim( $quiz->title ) ? $quiz->title : __( 'Quiz', 'mint-lms' ),
 			'meta'        => 1 === $count
@@ -278,8 +353,27 @@ final class StudentExperienceService {
 					$count
 				),
 			'questions'   => $questions,
-			'courseTitle' => $course->title,
+			'courseTitle' => $courseTitle,
+			'authorName'  => $authorName,
+			'progressPct' => 0.0,
 		);
+	}
+
+	/**
+	 * Resolve host lesson for quiz preview when only mint_quiz is present.
+	 */
+	public function resolveLessonIdForQuizPreview( int $quizId, int $userId ): int {
+		if ( null === $this->quizService || $quizId <= 0 || $userId <= 0 ) {
+			return 0;
+		}
+
+		try {
+			$quiz = $this->quizService->get( $quizId, $userId, false );
+
+			return (int) $quiz->lessonId;
+		} catch ( NotFoundException | ForbiddenException $exception ) {
+			return 0;
+		}
 	}
 
 	/**
@@ -294,7 +388,15 @@ final class StudentExperienceService {
 	 * }
 	 */
 	public function getQuestionBuilderPreview( int $courseId, int $questionId, int $lessonId, int $userId ): array {
-		$course = $this->requireEditableCourse( $courseId, $userId );
+		$courseTitle = '';
+		if ( $courseId > 0 ) {
+			$course      = $this->requireEditableCourse( $courseId, $userId );
+			$courseTitle = $course->title;
+		} elseif ( $lessonId > 0 ) {
+			$this->requirePreviewableLesson( $lessonId, $userId );
+		} elseif ( null === $this->authorization || $userId <= 0 || ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException( 'You cannot preview this content.' );
+		}
 
 		if ( null === $this->quizService || $questionId <= 0 ) {
 			throw new NotFoundException( 'Question not found.' );
@@ -319,6 +421,10 @@ final class StudentExperienceService {
 		}
 
 		if ( null === $found ) {
+			if ( $courseId <= 0 ) {
+				throw new NotFoundException( 'Question not found.' );
+			}
+
 			$outline = $this->buildContentOutline(
 				$this->loadGatedStructure( $courseId, true, $userId, true ),
 				$userId,
@@ -392,7 +498,7 @@ final class StudentExperienceService {
 			),
 			'type'        => $found->type,
 			'options'     => $options,
-			'courseTitle' => $course->title,
+			'courseTitle' => $courseTitle,
 		);
 	}
 
@@ -408,6 +514,77 @@ final class StudentExperienceService {
 		}
 
 		return $course;
+	}
+
+	private function requirePreviewableLesson( int $lessonId, int $userId ): Lesson {
+		if ( null === $this->lessonRepository ) {
+			throw new NotFoundException( 'Lesson not found.' );
+		}
+
+		$lesson = $this->lessonRepository->findById( $lessonId );
+		if ( null === $lesson ) {
+			throw new NotFoundException( 'Lesson not found.' );
+		}
+
+		if ( $lesson->courseId > 0 ) {
+			$this->requireEditableCourse( $lesson->courseId, $userId );
+
+			return $lesson;
+		}
+
+		if ( $userId <= 0 || null === $this->authorization || ! $this->authorization->canCreateCourse( $userId ) ) {
+			throw new ForbiddenException( 'You cannot preview this lesson.' );
+		}
+
+		return $lesson;
+	}
+
+	/**
+	 * @return list<array<string, mixed>>
+	 */
+	private function buildQuizOutlineForLesson( int $lessonId, int $userId, bool $isEditorPreview ): array {
+		$quizzes = array();
+
+		if ( null === $this->quizService || $userId <= 0 || $lessonId <= 0 ) {
+			return $quizzes;
+		}
+
+		try {
+			$quizDto = $isEditorPreview
+				? $this->quizService->getByLessonId( $lessonId, $userId, false )
+				: $this->quizService->getByLessonId( $lessonId, $userId, true, true );
+		} catch ( ForbiddenException | NotFoundException $exception ) {
+			$quizDto = null;
+		}
+
+		if ( null === $quizDto || array() === $quizDto->questions ) {
+			return $quizzes;
+		}
+
+		$questionCount = count( $quizDto->questions );
+		$questions     = array();
+
+		foreach ( $quizDto->questions as $question ) {
+			$text = trim( strip_tags( $question->prompt ) );
+			if ( '' === $text ) {
+				$text = 'Untitled question';
+			}
+			$questions[] = array(
+				'id'   => $question->id,
+				'text' => $text,
+			);
+		}
+
+		$quizzes[] = array(
+			'id'        => $quizDto->id,
+			'title'     => '' !== trim( $quizDto->title ) ? $quizDto->title : 'Quiz',
+			'meta'      => 1 === $questionCount
+				? '1 question'
+				: $questionCount . ' questions',
+			'questions' => $questions,
+		);
+
+		return $quizzes;
 	}
 
 	public function getPlayerContext( int $courseId, int $lessonId, int $userId ): StudentPlayerContextDto {

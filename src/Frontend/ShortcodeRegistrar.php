@@ -113,11 +113,15 @@ final class ShortcodeRegistrar {
 			return;
 		}
 
-		$courseId = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+		$courseId   = $this->queryInt( PageSettings::COURSE_QUERY_ARG );
+		$lessonId   = $this->queryInt( 'mint_lesson' );
+		$questionId = $this->queryInt( 'mint_question' );
+		$quizId     = $this->queryInt( 'mint_quiz' );
 		if ( $courseId <= 0 ) {
 			$courseId = $this->queryInt( 'mint_course' );
 		}
-		if ( $courseId <= 0 ) {
+		// Course is preferred, but lesson/quiz/question preview can run without one.
+		if ( $courseId <= 0 && $lessonId <= 0 && $questionId <= 0 && $quizId <= 0 ) {
 			return;
 		}
 
@@ -126,8 +130,8 @@ final class ShortcodeRegistrar {
 			return;
 		}
 
-		// Lesson preview: show page heading as "Lessons" (like course overview shows "Courses").
-		// Quiz/question: hide theme title to avoid competing chrome.
+		// Lesson/quiz preview: keep theme page title visible ("Lessons" / "Quizzes").
+		// Question preview: hide theme title to avoid competing chrome.
 		add_filter( 'body_class', static function ( array $classes ) use ( $mode ): array {
 			$classes[] = 'mint-lms-builder-preview';
 			$classes[] = 'mint-lms-builder-preview--' . $mode;
@@ -148,22 +152,22 @@ final class ShortcodeRegistrar {
 			}
 		);
 
-		if ( 'lesson' === $mode ) {
+		if ( 'lesson' === $mode || 'quiz' === $mode ) {
+			$pageHeading = 'quiz' === $mode ? __( 'Quizzes', 'mint-lms' ) : __( 'Lessons', 'mint-lms' );
 			add_filter(
 				'the_title',
-				static function ( $title, $postId = 0 ) {
+				static function ( $title, $postId = 0 ) use ( $pageHeading ) {
 					if ( is_admin() ) {
 						return $title;
 					}
 
 					$queriedId = (int) get_queried_object_id();
 					if ( $queriedId > 0 && (int) $postId === $queriedId ) {
-						return __( 'Lessons', 'mint-lms' );
+						return $pageHeading;
 					}
 
-					// Kadence hero sometimes calls the_title without a reliable post id in-loop.
 					if ( 0 === (int) $postId && in_the_loop() && is_main_query() ) {
-						return __( 'Lessons', 'mint-lms' );
+						return $pageHeading;
 					}
 
 					return $title;
@@ -186,20 +190,20 @@ final class ShortcodeRegistrar {
 		add_action(
 			'wp_head',
 			static function () use ( $mode ): void {
-				if ( 'lesson' === $mode ) {
-					// Keep "Lessons" page title visible; only tighten hero spacing.
+				if ( 'lesson' === $mode || 'quiz' === $mode ) {
+					$mod = sanitize_html_class( $mode );
 					echo '<style id="mint-lms-builder-preview-chrome">
-						body.mint-lms-builder-preview--lesson .entry-hero,
-						body.mint-lms-builder-preview--lesson .entry-hero-container-inner,
-						body.mint-lms-builder-preview--lesson .hero-container {
+						body.mint-lms-builder-preview--' . $mod . ' .entry-hero,
+						body.mint-lms-builder-preview--' . $mod . ' .entry-hero-container-inner,
+						body.mint-lms-builder-preview--' . $mod . ' .hero-container {
 							min-height: 0 !important;
 							padding-top: 18px !important;
 							padding-bottom: 10px !important;
 						}
-						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3b-wrap {
+						body.mint-lms-builder-preview--' . $mod . ' #mint-lms-root.mint-lms-student .mint-s3b-wrap {
 							padding-top: 12px;
 						}
-						body.mint-lms-builder-preview--lesson #mint-lms-root.mint-lms-student .mint-s3-hero {
+						body.mint-lms-builder-preview--' . $mod . ' #mint-lms-root.mint-lms-student .mint-s3-hero {
 							margin-bottom: 0;
 						}
 					</style>';
@@ -360,11 +364,12 @@ final class ShortcodeRegistrar {
 				$featuredId = isset( $preview['featuredImageId'] ) ? (int) $preview['featuredImageId'] : 0;
 				$settings   = $this->settings();
 				$nextId     = isset( $preview['nextLessonId'] ) ? (int) $preview['nextLessonId'] : 0;
+				$resolvedCourseId = $courseId > 0 ? $courseId : (int) ( $preview['courseId'] ?? 0 );
 				$playerUrl  = $settings->getPlayerUrl();
-				$nextUrl    = $nextId > 0
+				$nextUrl    = $nextId > 0 && $resolvedCourseId > 0
 					? add_query_arg(
 						array(
-							'mint_course' => (string) $courseId,
+							'mint_course' => (string) $resolvedCourseId,
 							'mint_lesson' => (string) $nextId,
 						),
 						$playerUrl
@@ -377,7 +382,7 @@ final class ShortcodeRegistrar {
 						array(
 							'preview'     => $preview,
 							'featuredUrl' => $this->attachmentUrl( $featuredId > 0 ? $featuredId : null ) ?? '',
-							'courseUrl'   => $settings->getCourseUrl( $courseId ),
+							'courseUrl'   => $resolvedCourseId > 0 ? $settings->getCourseUrl( $resolvedCourseId ) : '',
 							'nextUrl'     => $nextUrl,
 						)
 					)
@@ -385,16 +390,25 @@ final class ShortcodeRegistrar {
 			}
 
 			if ( 'quiz' === $mode ) {
+				$quizId = $this->queryInt( 'mint_quiz' );
+				if ( $lessonId <= 0 && $quizId > 0 ) {
+					$lessonId = $this->studentExperience->resolveLessonIdForQuizPreview( $quizId, $userId );
+				}
 				if ( $lessonId <= 0 ) {
 					return $this->wrap( $this->errorMessage( __( 'Lesson is required for quiz preview.', 'mint-lms' ) ) );
 				}
 
 				$preview = $this->studentExperience->getQuizBuilderPreview( $courseId, $lessonId, $userId );
+				$settings = $this->settings();
+				$resolvedCourseId = $courseId > 0 ? $courseId : 0;
 
 				return $this->wrap(
 					$this->templateLoader->render(
 						'student/preview-quiz.php',
-						array( 'preview' => $preview )
+						array(
+							'preview'   => $preview,
+							'courseUrl' => $resolvedCourseId > 0 ? $settings->getCourseUrl( $resolvedCourseId ) : '',
+						)
 					)
 				);
 			}
