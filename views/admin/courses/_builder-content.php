@@ -783,8 +783,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											}"
 											:disabled="!!l.taken"
 											@click="pickAttachLesson(l.id); open = false"
-											x-text="l.taken ? (l.title + ' (has quiz)') : l.title"
-										></button>
+											x-text="l.taken ? (l.title + ' (has quiz)') : l.title"										></button>
 									</template>
 								</div>
 							</div>
@@ -844,8 +843,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 													}"
 													:disabled="!!l.taken"
 													@click="pickAttachLesson(l.id); open = false"
-													x-text="l.taken ? (l.title + ' (has quiz)') : l.title"
-												></button>
+													x-text="l.taken ? (l.title + ' (has quiz)') : l.title"												></button>
 											</template>
 										</div>
 									</div>
@@ -908,9 +906,8 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 					<div class="mint-course-tree__sections" id="mint-sections-sortable">
 						<template x-if="filteredContentsSections().length === 0">
 							<div class="mint-builder-tree__empty">
-								<p x-text="contentsSearchQuery() ? contentsSearchEmptyLabel() : '<?php echo esc_js( __( 'No sections yet', 'mint-lms' ) ); ?>'"></p>
-								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="createSectionWithLesson()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>
-								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add section', 'mint-lms' ); ?></button>
+								<p x-text="contentsSearchQuery() ? contentsSearchEmptyLabel() : '<?php echo esc_js( __( 'No content yet', 'mint-lms' ) ); ?>'"></p>
+								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="createCourseLesson()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add section', 'mint-lms' ); ?></button>
 							</div>
 						</template>
 
@@ -1324,8 +1321,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										}"
 										:disabled="!!l.taken"
 										@click="pickAttachLesson(l.id); open = false"
-										x-text="l.taken ? (l.title + ' (has quiz)') : l.title"
-									></button>
+										x-text="l.taken ? (l.title + ' (has quiz)') : l.title"									></button>
 								</template>
 							</div>
 						</div>
@@ -1460,8 +1456,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												class="mint-assoc-select__option"
 												:class="!attach.sectionId ? 'is-active' : ''"
 												@click="pickAttachSection(0); open = false"
-											><?php esc_html_e( 'First section (auto)', 'mint-lms' ); ?></button>
-											<template x-for="s in attachSections" :key="'chg-s-' + s.id">
+											><?php esc_html_e( 'No section', 'mint-lms' ); ?></button>											<template x-for="s in attachSections" :key="'chg-s-' + s.id">
 												<button
 													type="button"
 													class="mint-assoc-select__option"
@@ -1575,8 +1570,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										class="mint-assoc-select__option"
 										:class="!attach.sectionId ? 'is-active' : ''"
 										@click="pickAttachSection(0); open = false"
-									><?php esc_html_e( 'First section (auto)', 'mint-lms' ); ?></button>
-									<template x-for="s in attachSections" :key="s.id">
+									><?php esc_html_e( 'No section', 'mint-lms' ); ?></button>									<template x-for="s in attachSections" :key="s.id">
 										<button
 											type="button"
 											class="mint-assoc-select__option"

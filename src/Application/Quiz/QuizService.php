@@ -257,6 +257,7 @@ final class QuizService {
 		}
 
 		$previousLessonId = $quiz->lessonId;
+		$sortOrder        = $this->quizRepository->nextQuizSortOrderForLesson( $targetLessonId );
 
 		$this->quizRepository->saveQuiz(
 			new Quiz(
@@ -265,7 +266,7 @@ final class QuizService {
 				$target->courseId,
 				$quiz->title,
 				$quiz->passPercent,
-				$quiz->sortOrder,
+				$sortOrder,
 			)
 		);
 

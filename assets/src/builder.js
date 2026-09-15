@@ -582,8 +582,7 @@ function courseBuilder(courseId, opts = {}) {
             .filter((q) => (Number(q.id) || 0) !== currentQuizId)
             .map((q) => Number(q.lessonId) || 0)
             .filter((id) => id > 0)
-        );
-        const fromTree = [];
+        );        const fromTree = [];
         for (const section of this.sections) {
           for (const lesson of section.lessons || []) {
             const id = Number(lesson.id) || 0;
@@ -592,8 +591,7 @@ function courseBuilder(courseId, opts = {}) {
               id,
               title: lesson.title || `Lesson #${id}`,
               courseId,
-              taken: takenByCourseQuiz.has(id),
-            });
+              taken: takenByCourseQuiz.has(id),            });
           }
         }
         this.attachLessons = fromTree;
@@ -610,22 +608,19 @@ function courseBuilder(courseId, opts = {}) {
             .filter((q) => (Number(q.id) || 0) !== currentQuizId)
             .map((q) => Number(q.lessonId) || 0)
             .filter((id) => id > 0)
-        );
-        const hostId = Number(this.standaloneLessonId) || 0;
+        );        const hostId = Number(this.standaloneLessonId) || 0;
         this.attachLessons = (lessonsData?.items || [])
           .map((l) => ({
             id: Number(l.id) || 0,
             title: l.title || `Lesson #${l.id}`,
             courseId: Number(l.courseId) || 0,
-            taken: taken.has(Number(l.id) || 0),
-          }))
+            taken: taken.has(Number(l.id) || 0),          }))
           .filter(
             (l) =>
               l.id > 0 &&
               l.id !== hostId &&
               l.id !== currentLessonId &&
-              !l.taken
-          );
+              !l.taken          );
       } catch {
         this.attachLessons = [];
       }
@@ -998,8 +993,7 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     isExpanded(sectionId) {
-      return this.expanded[sectionId] === true;
-    },
+      return this.expanded[Number(sectionId)] === true;    },
 
     /** Full Course → Section → Lesson → Quiz → Question tree (course builder pages). */
     showCourseContentsTree() {
@@ -1060,57 +1054,6 @@ function courseBuilder(courseId, opts = {}) {
         ...this.expandedQuizzes,
         [id]: true,
       };
-    },
-
-    sectionChildCountLabel(section) {
-      const n = Array.isArray(section?.lessons) ? section.lessons.length : 0;
-      return n === 1 ? '1 lesson' : `${n} lessons`;
-    },
-
-    lessonChildCountLabel(lesson) {
-      const n = this.sidebarQuizzesForLesson(lesson).length;
-      return n === 1 ? '1 quiz' : `${n} quizzes`;
-    },
-
-    quizChildCountLabel(quiz) {
-      const n = this.sidebarQuestionsForQuiz(quiz).length;
-      return n === 1 ? '1 question' : `${n} questions`;
-    },
-
-    isLessonExpanded(lessonId) {
-      const id = Number(lessonId || 0);
-      if (id <= 0) return false;
-      return this.expandedLessons[id] === true;
-    },
-
-    toggleLesson(lessonId) {
-      const id = Number(lessonId || 0);
-      if (id <= 0) return;
-      this.expandedLessons[id] = !this.isLessonExpanded(id);
-    },
-
-    expandLesson(lessonId) {
-      const id = Number(lessonId || 0);
-      if (id <= 0) return;
-      this.expandedLessons[id] = true;
-    },
-
-    isQuizExpanded(quizId) {
-      const id = Number(quizId || 0);
-      if (id <= 0) return false;
-      return this.expandedQuizzes[id] === true;
-    },
-
-    toggleQuiz(quizId) {
-      const id = Number(quizId || 0);
-      if (id <= 0) return;
-      this.expandedQuizzes[id] = !this.isQuizExpanded(id);
-    },
-
-    expandQuiz(quizId) {
-      const id = Number(quizId || 0);
-      if (id <= 0) return;
-      this.expandedQuizzes[id] = true;
     },
 
     sectionChildCountLabel(section) {
@@ -1953,8 +1896,7 @@ function courseBuilder(courseId, opts = {}) {
         sectionId: resolvedSectionId || sectionId || 0,
       };
       this.lessonTab = 'quiz';
-      if (sectionId != null) this.expanded[sectionId] = true;
-      this.expandLesson(lessonId);
+      if (resolvedSectionId) this.expanded[resolvedSectionId] = true;      this.expandLesson(lessonId);
       this.refreshPreviewUrl();
       await this.loadLessonQuiz(lessonId, preferredQuizId || null);
       // Never invent a "New Quiz" when the URL asked for a specific quiz_id, and
@@ -2186,8 +2128,7 @@ function courseBuilder(courseId, opts = {}) {
         quizId: knownQuizId || null,
         sectionId: resolvedSectionId || sectionId || 0,
       };
-      if (sectionId != null) this.expanded[sectionId] = true;
-      this.expandLesson(lessonId);
+      if (resolvedSectionId) this.expanded[resolvedSectionId] = true;      this.expandLesson(lessonId);
       this.refreshPreviewUrl();
       this.lessonTab = 'quiz';
       await this.loadLessonQuiz(lessonId, knownQuizId || null);
@@ -3677,277 +3618,6 @@ function courseBuilder(courseId, opts = {}) {
       return 'Quiz';
     },
 
-    breadcrumbCourseTitle() {
-      if (this.isStandalone || !Number(this.courseId)) return '';
-      const title = String(this.course?.title || '').trim();
-      return title || 'Untitled course';
-    },
-
-    parentCourseEditorUrl() {
-      if (!Number(this.courseId)) return '#';
-      const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
-      const url = new URL(base, window.location.href);
-      url.searchParams.set('course_id', String(this.courseId));
-      return url.toString();
-    },
-
-    /** Course settings page (name, description, enroll options). */
-    courseSettingsUrl() {
-      if (!Number(this.courseId)) return '#';
-      const base = config.urls?.edit || 'admin.php?page=mint-lms-course-edit';
-      const url = new URL(base, window.location.href);
-      url.searchParams.set('course_id', String(this.courseId));
-      return url.toString();
-    },
-
-    goToCourseSettings(event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      const href = this.courseSettingsUrl();
-      if (href && href !== '#') {
-        window.location.assign(href);
-      }
-    },
-
-    goToParentCourse(event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      const href = this.parentCourseEditorUrl();
-      if (href && href !== '#') {
-        window.location.assign(href);
-      }
-    },
-
-    /** Owning lesson title for quiz/question chrome (sidebar + breadcrumbs). */
-    breadcrumbParentLessonTitle() {
-      const lesson = this.selectedLesson;
-      if (lesson?.title) {
-        return String(lesson.title).trim();
-      }
-      const lessonId = Number(this.selected?.lessonId || 0);
-      if (lessonId > 0) {
-        const row = this.courseQuizzes.find((item) => Number(item.lessonId) === lessonId);
-        if (row?.lessonTitle) {
-          return String(row.lessonTitle).trim();
-        }
-      }
-      return '';
-    },
-
-    /** Prefer lesson → quiz hierarchy; fall back to section in course builder. */
-    breadcrumbQuizContextTitle() {
-      return this.breadcrumbParentLessonTitle() || this.breadcrumbSectionTitle();
-    },
-
-    breadcrumbParentLessonId() {
-      const fromSelected = Number(this.selected?.lessonId || 0);
-      if (fromSelected > 0) return fromSelected;
-      return Number(this.selectedLesson?.id || this.standaloneLessonId || 0);
-    },
-
-    /** Canonical admin URL back to the owning lesson editor. */
-    parentLessonEditorUrl() {
-      return this.parentLessonEditorUrlFor(this.breadcrumbParentLessonId());
-    },
-
-    parentLessonEditorUrlFor(lessonId) {
-      const id = Number(lessonId) || 0;
-      if (id <= 0) return '#';
-
-      if (this.isStandalone || !Number(this.courseId)) {
-        const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
-        const url = new URL(base, window.location.href);
-        url.searchParams.set('lesson_id', String(id));
-        return url.toString();
-      }
-
-      const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
-      const url = new URL(base, window.location.href);
-      url.searchParams.set('course_id', String(this.courseId));
-      url.searchParams.set('lesson_id', String(id));
-      return url.toString();
-    },
-
-    parentQuizEditorUrl() {
-      return this.parentQuizEditorUrlFor(
-        this.breadcrumbParentLessonId(),
-        Number(this.lessonQuiz?.id || 0)
-      );
-    },
-
-    parentQuizEditorUrlFor(lessonId, quizId, opts = {}) {
-      const lid = Number(lessonId) || 0;
-      const qid = Number(quizId) || 0;
-      if (lid <= 0) return '#';
-
-      const originBuilder =
-        opts.originBuilder === true ||
-        (opts.originBuilder !== false && this.fromBuilderOrigin && !this.isStandalone);
-      const originLesson =
-        opts.originLesson === true ||
-        (opts.originLesson !== false && this.fromLessonOrigin && this.isStandalone);
-
-      if (this.isStandalone || !Number(this.courseId)) {
-        const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
-        const url = new URL(base, window.location.href);
-        url.searchParams.set('lesson_id', String(lid));
-        if (qid > 0) url.searchParams.set('quiz_id', String(qid));
-        url.searchParams.set('tab', 'quiz');
-        url.searchParams.set('from', 'quizzes');
-        if (originLesson) {
-          url.searchParams.set('origin', 'lesson');
-        }
-        return url.toString();
-      }
-
-      const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
-      const url = new URL(base, window.location.href);
-      url.searchParams.set('course_id', String(this.courseId));
-      url.searchParams.set('lesson_id', String(lid));
-      if (qid > 0) url.searchParams.set('quiz_id', String(qid));
-      url.searchParams.set('tab', 'quiz');
-      url.searchParams.set('from', 'quizzes');
-      if (originBuilder) {
-        url.searchParams.set('origin', 'builder');
-      }
-      return url.toString();
-    },
-
-    /** Show Lesson parent in quiz/question sidebar (course, or lesson→quiz flow). */
-    showSidebarLessonParent() {
-      return !this.isStandalone || this.fromLessonOrigin;
-    },
-
-    /** Show Quiz parent on question surface (course, quiz→question, or lesson→quiz→question). */
-    showSidebarQuizParent() {
-      return !this.isStandalone || this.fromQuizOrigin || this.fromLessonOrigin;
-    },
-
-    goToParentLesson(event) {
-      if (event) {
-        event.preventDefault();
-      }
-      this.navigateToLesson(this.breadcrumbParentLessonId(), this.selected?.sectionId ?? null);
-    },
-
-    goToParentQuiz(event) {
-      if (event) {
-        event.preventDefault();
-      }
-      const lessonId = this.breadcrumbParentLessonId();
-      const quizId = Number(this.lessonQuiz?.id || 0);
-      if (lessonId <= 0) return;
-
-      if (this.isStandalone || this.fromQuizzes || this.fromQuestions) {
-        const href = this.parentQuizEditorUrlFor(lessonId, quizId);
-        if (href && href !== '#') {
-          window.location.assign(href);
-        }
-        return;
-      }
-
-      this.selectQuiz(lessonId, this.selected?.sectionId ?? null);
-    },
-
-    goToQuizParentLesson(quiz, event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      if (!quiz) return;
-      this.navigateToLesson(Number(quiz.lessonId) || 0, quiz.sectionId ?? null);
-    },
-
-    goToQuestionParentLesson(question, event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      if (!question) return;
-      this.navigateToLesson(Number(question.lessonId) || 0, question.sectionId ?? null);
-    },
-
-    goToQuestionParentQuiz(question, event) {
-      if (event) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      if (!question) return;
-      const lessonId = Number(question.lessonId) || 0;
-      const quizId = Number(question.quizId || this.lessonQuiz?.id || 0);
-      if (lessonId <= 0) return;
-
-      if (this.isStandalone || this.fromQuizzes || this.fromQuestions) {
-        const href = this.parentQuizEditorUrlFor(lessonId, quizId);
-        if (href && href !== '#') {
-          window.location.assign(href);
-        }
-        return;
-      }
-
-      this.selectQuiz(lessonId, question.sectionId ?? null);
-    },
-
-    navigateToLesson(lessonId, sectionId = null) {
-      const id = Number(lessonId) || 0;
-      if (id <= 0) return;
-
-      // Dedicated quiz/question surfaces (or standalone) — hard navigate to lesson editor.
-      if (this.isStandalone || this.fromQuizzes || this.fromQuestions) {
-        const href = this.parentLessonEditorUrlFor(id);
-        if (href && href !== '#') {
-          window.location.assign(href);
-        }
-        return;
-      }
-
-      // In-course builder: stay in SPA.
-      this.selectItem('lesson', id, sectionId);
-      this.lessonTab = 'written';
-    },
-
-    quizParentLessonTitle(quiz) {
-      if (!quiz) return '';
-      if (quiz.lessonTitle) {
-        return String(quiz.lessonTitle).trim();
-      }
-      const lessonId = Number(quiz.lessonId || 0);
-      if (lessonId <= 0) return '';
-      for (const section of this.sections) {
-        const lesson = (section.lessons || []).find((item) => item.id === lessonId);
-        if (lesson?.title) {
-          return String(lesson.title).trim();
-        }
-      }
-      return '';
-    },
-
-    questionParentLessonTitle(question) {
-      if (!question) return '';
-      if (question.lessonTitle) {
-        return String(question.lessonTitle).trim();
-      }
-      return this.quizParentLessonTitle({
-        lessonId: question.lessonId,
-        lessonTitle: '',
-      });
-    },
-
-    questionParentQuizTitle(question) {
-      if (!question) return '';
-      if (question.quizTitle) {
-        return String(question.quizTitle).trim();
-      }
-      if (this.lessonQuiz?.title && Number(question.quizId || 0) === Number(this.lessonQuiz.id || 0)) {
-        return String(this.lessonQuiz.title).trim();
-      }
-      return 'Quiz';
-    },
-
     breadcrumbLessonLabel() {
       if (!this.selected || this.selected.type !== 'lesson') return '';
       if (this.isStandalone) return 'Lesson';
@@ -4807,10 +4477,9 @@ function courseBuilder(courseId, opts = {}) {
       if (lessonId <= 0) return;
       this.expandLesson(lessonId);
 
-      // Already on course quiz surface — switch in-page.
+      // Already on course quiz surface — switch in-page to this quiz.
       if (this.fromQuizzes && !this.isStandalone) {
-        await this.selectQuiz(lessonId, sectionId);
-        return;
+        await this.selectQuiz(lessonId, sectionId, quizId || null);        return;
       }
 
       // Contents tree / standalone: open dedicated quiz URL.

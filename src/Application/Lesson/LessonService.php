@@ -209,10 +209,6 @@ final class LessonService {
 			return LessonDto::fromLesson( $lesson );
 		}
 
-		if ( $lesson->courseId === $courseId && $lesson->sectionId === $section->id ) {
-			return LessonDto::fromLesson( $lesson );
-		}
-
 		$slug = $lesson->slug;
 		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId ) ) {
 			$existing = $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId );
