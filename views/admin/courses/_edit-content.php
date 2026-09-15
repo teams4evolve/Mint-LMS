@@ -52,7 +52,7 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 	<div x-show="!loading && !error" x-cloak>
 		<?php
 		$builderUrl = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId );
-		$treeUrl    = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId . '&open_nav=tree' );
+		$treeUrl    = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId . '&view=tree' );
 		?>
 		<nav class="mint-course-switcher" aria-label="<?php echo esc_attr__( 'Course navigation', 'mint-lms' ); ?>">
 			<a
@@ -122,7 +122,7 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 				<form class="mint-w-full mint-pb-[72px]" @submit.prevent="save()">
 					<div class="mint-grid mint-gap-8">
 
-						<div x-show="editPanel === 'page'" x-cloak class="mint-grid mint-gap-8">
+						<div x-show="editPanel === 'page'" x-cloak class="mint-grid mint-gap-5">
 							<div class="mint-grid mint-gap-[26px]">
 								<div class="mint-grid mint-gap-[9px]">
 									<label for="mint-course-title" class="mint-text-base mint-font-semibold mint-text-ink">
@@ -151,27 +151,27 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 								</div>
 							</div>
 
-							<section class="mint-grid mint-gap-[14px] mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-8">
+							<section class="mint-grid mint-gap-[14px] mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-5">
 								<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
 									<?php esc_html_e( 'Cover image', 'mint-lms' ); ?>
 								</div>
 
 								<div
 									x-show="!featuredImageUrl"
-									class="mint-cover-placeholder mint-flex mint-h-[200px] mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0]"
+									class="mint-cover-frame mint-cover-placeholder mint-flex mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0]"
 								>
-									<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'cover image · 1200×675', 'mint-lms' ); ?></span>
+									<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'cover image · 800×800', 'mint-lms' ); ?></span>
 								</div>
 								<div
 									x-show="featuredImageUrl"
 									x-cloak
-									class="mint-h-[200px] mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
+									class="mint-cover-frame mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
 								>
 									<img :src="featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
 								</div>
 
 								<p class="mint-m-0 mint-text-base mint-leading-[26px] mint-text-ink-2">
-									<?php esc_html_e( 'Optional. Shown on the student dashboard and course page. Landscape works best.', 'mint-lms' ); ?>
+									<?php esc_html_e( 'Optional. Shown on the student dashboard and course page. A square image looks best.', 'mint-lms' ); ?>
 								</p>
 
 								<div class="mint-flex mint-flex-wrap mint-gap-2.5">

@@ -14,6 +14,8 @@ function courseBuilder(courseId, opts = {}) {
   const config = getAdminConfig();
   let sectionSortable = null;
   const lessonSortables = new Map();
+  let treePageSectionSortable = null;
+  const treePageLessonSortables = new Map();
   const standaloneLessonId = Number(opts?.lessonId) || 0;
 
   return {
@@ -295,8 +297,12 @@ function courseBuilder(courseId, opts = {}) {
       await this.selectFromQuery();
       if (!this.selected) {
         const view = String(params.get('view') || '').trim();
-        if (['sections', 'lessons', 'quizzes', 'questions'].includes(view)) {
+        if (['sections', 'lessons', 'quizzes', 'questions', 'tree'].includes(view)) {
           this.overviewKind = view;
+          if (view === 'tree') {
+            this.expandAllTree();
+            this.$nextTick(() => this.initTreePageSortables());
+          }
         }
       }
       if (this.isStandalone && !this.selected && this.standaloneLessonId) {
@@ -311,7 +317,8 @@ function courseBuilder(courseId, opts = {}) {
         }
       }
       if (params.get('open_nav') === 'tree' && !this.isStandalone && Number(this.courseId) > 0) {
-        this.$nextTick(() => this.openNavMenu('tree'));
+        // Legacy query: open full tree page (not just the nav dropdown).
+        this.enterTypeOverview('tree');
       }
     },
 
@@ -959,22 +966,191 @@ function courseBuilder(courseId, opts = {}) {
           animation: 150,
           draggable: '[data-section-id]',
           filter: '[data-ungrouped]',
-          onEnd: () => this.persistSectionOrder(),
+          onEnd: () => {
+            this.syncSectionOrderFromDom(sectionsEl);
+            this.persistSectionOrder();
+          },
         });
       }
 
       document.querySelectorAll('.mint-lessons-sortable').forEach((el) => {
         const sectionId = parseInt(el.dataset.sectionId, 10);
+        if (Number.isNaN(sectionId)) return;
         if (lessonSortables.has(sectionId)) {
           lessonSortables.get(sectionId).destroy();
         }
         const instance = Sortable.create(el, {
+          group: 'mint-sidebar-lessons',
           handle: '.mint-handle-lesson',
           animation: 150,
           draggable: '[data-lesson-id]',
-          onEnd: () => this.persistLessonOrder(sectionId),
+          emptyInsertThreshold: 28,
+          onEnd: (evt) => {
+            this.handleLessonSortEnd(evt);
+          },
         });
         lessonSortables.set(sectionId, instance);
+      });
+
+      this.initTreePageSortables();
+    },
+
+    initTreePageSortables() {
+      const Sortable = window.MintLMS.Sortable;
+      if (!Sortable || this.overviewKind !== 'tree') return;
+
+      const sectionsEl = document.getElementById('mint-tree-page-sections');
+      if (sectionsEl) {
+        if (treePageSectionSortable) {
+          treePageSectionSortable.destroy();
+          treePageSectionSortable = null;
+        }
+        treePageSectionSortable = Sortable.create(sectionsEl, {
+          handle: '.mint-handle-section',
+          animation: 150,
+          draggable: '[data-section-id]',
+          filter: '[data-ungrouped]',
+          onEnd: () => {
+            this.syncSectionOrderFromDom(sectionsEl);
+            this.persistSectionOrder();
+          },
+        });
+      }
+
+      treePageLessonSortables.forEach((instance) => instance.destroy());
+      treePageLessonSortables.clear();
+
+      document.querySelectorAll('.mint-tree-page-lessons').forEach((el) => {
+        const sectionId = parseInt(el.dataset.sectionId, 10);
+        if (Number.isNaN(sectionId)) return;
+        const instance = Sortable.create(el, {
+          group: 'mint-tree-page-lessons',
+          handle: '.mint-handle-lesson',
+          animation: 150,
+          draggable: '[data-lesson-id]',
+          emptyInsertThreshold: 28,
+          onMove: (evt) => {
+            const toSid = parseInt(evt.to?.dataset?.sectionId, 10);
+            if (toSid > 0 && !this.isExpanded(toSid)) {
+              this.expanded = { ...this.expanded, [toSid]: true };
+            }
+            return true;
+          },
+          onEnd: (evt) => {
+            this.handleLessonSortEnd(evt);
+          },
+        });
+        treePageLessonSortables.set(sectionId, instance);
+      });
+    },
+
+    syncSectionOrderFromDom(container) {
+      if (!container) return;
+      const ids = Array.from(container.children)
+        .map((node) => Number(node.getAttribute('data-section-id') || 0))
+        .filter((id) => id > 0);
+      if (!ids.length) return;
+      const byId = new Map((this.sections || []).map((section) => [Number(section.id), section]));
+      const ordered = ids.map((id) => byId.get(id)).filter(Boolean);
+      const rest = (this.sections || []).filter((section) => !ids.includes(Number(section.id)));
+      this.sections = [...ordered, ...rest];
+    },
+
+    ensureSectionBucket(sectionId) {
+      const sid = Number(sectionId);
+      let section = (this.sections || []).find((row) => Number(row.id) === sid);
+      if (section) return section;
+      if (sid !== 0) return null;
+      section = { id: 0, title: '', lessons: [] };
+      this.sections = [...(this.sections || []), section];
+      return section;
+    },
+
+    lessonIdsFromContainer(container) {
+      if (!container) return [];
+      return Array.from(container.children)
+        .map((node) => Number(node.getAttribute('data-lesson-id') || 0))
+        .filter((id) => id > 0);
+    },
+
+    syncLessonOrderFromDom(container, sectionId) {
+      if (!container) return;
+      const sid = Number(sectionId);
+      const section = this.ensureSectionBucket(sid);
+      if (!section) return;
+      const ids = this.lessonIdsFromContainer(container);
+      const byId = new Map();
+      for (const row of this.sections || []) {
+        for (const lesson of row.lessons || []) {
+          byId.set(Number(lesson.id), lesson);
+        }
+      }
+      section.lessons = ids.map((id) => byId.get(id)).filter(Boolean);
+      for (const lesson of section.lessons) {
+        lesson.sectionId = sid;
+      }
+    },
+
+    /**
+     * Reorder within a section, or move a lesson across sections / ungrouped ↔ section.
+     */
+    async handleLessonSortEnd(evt) {
+      if (!evt?.from || !evt?.to) return;
+      const fromSid = parseInt(evt.from.dataset.sectionId, 10);
+      const toSid = parseInt(evt.to.dataset.sectionId, 10);
+      if (Number.isNaN(fromSid) || Number.isNaN(toSid)) return;
+
+      const lessonId = Number(evt.item?.getAttribute('data-lesson-id') || 0);
+      const fromSection = this.ensureSectionBucket(fromSid);
+      const toSection = this.ensureSectionBucket(toSid);
+      if (!fromSection || !toSection) return;
+
+      const byId = new Map();
+      for (const row of this.sections || []) {
+        for (const lesson of row.lessons || []) {
+          byId.set(Number(lesson.id), lesson);
+        }
+      }
+
+      if (fromSid === toSid) {
+        this.syncLessonOrderFromDom(evt.to, toSid);
+        await this.persistLessonOrder(toSid);
+        return;
+      }
+
+      const toIds = this.lessonIdsFromContainer(evt.to);
+      const fromIds = this.lessonIdsFromContainer(evt.from);
+      const moved = byId.get(lessonId);
+      if (moved) moved.sectionId = toSid;
+
+      fromSection.lessons = fromIds.map((id) => byId.get(id)).filter(Boolean);
+      toSection.lessons = toIds.map((id) => {
+        const lesson = byId.get(id);
+        if (lesson) lesson.sectionId = toSid;
+        return lesson;
+      }).filter(Boolean);
+
+      try {
+        if (lessonId > 0 && this.courseId) {
+          await mintApi(`lessons/${lessonId}/attach`, {
+            method: 'POST',
+            body: JSON.stringify({
+              course_id: this.courseId,
+              section_id: toSid > 0 ? toSid : 0,
+            }),
+          });
+        }
+        await this.persistLessonOrder(toSid);
+        if ((fromSection.lessons || []).length > 0) {
+          await this.persistLessonOrder(fromSid);
+        }
+      } catch (err) {
+        window.MintLMS.toast.error(err.message || 'Could not move lesson.');
+        await this.loadStructure();
+      }
+
+      this.$nextTick(() => {
+        this.initSortables();
       });
     },
 
@@ -1006,6 +1182,9 @@ function courseBuilder(courseId, opts = {}) {
         ...this.expanded,
         [id]: !this.isExpanded(id),
       };
+      if (this.overviewKind === 'tree') {
+        this.$nextTick(() => this.initTreePageSortables());
+      }
     },
 
     isLessonExpanded(lessonId) {
@@ -1021,6 +1200,9 @@ function courseBuilder(courseId, opts = {}) {
         ...this.expandedLessons,
         [id]: !this.isLessonExpanded(id),
       };
+      if (this.overviewKind === 'tree') {
+        this.$nextTick(() => this.initTreePageSortables());
+      }
     },
 
     expandLesson(lessonId) {
@@ -1122,6 +1304,7 @@ function courseBuilder(courseId, opts = {}) {
       if (key === 'lesson' && this.overviewKind === 'lessons') return true;
       if (key === 'quiz' && this.overviewKind === 'quizzes') return true;
       if (key === 'question' && this.overviewKind === 'questions') return true;
+      if (key === 'tree' && this.overviewKind === 'tree') return true;
       const type = this.selected?.type || '';
       if (key === 'section') return type === 'section';
       if (key === 'lesson') return type === 'lesson';
@@ -1136,6 +1319,44 @@ function courseBuilder(courseId, opts = {}) {
 
     navSectionList() {
       return (this.sections || []).filter((s) => Number(s.id) > 0);
+    },
+
+    /**
+     * Newest-first slice by post id (higher id = more recently created).
+     * @param {array} rows
+     * @param {number} limit
+     * @return {array}
+     */
+    navLatestById(rows, limit = 2) {
+      return [...(rows || [])]
+        .filter((row) => Number(row?.id) > 0)
+        .sort((a, b) => Number(b.id) - Number(a.id))
+        .slice(0, Math.max(0, Number(limit) || 0));
+    },
+
+    navLatestSections(limit = 2) {
+      return this.navLatestById(this.navSectionList(), limit);
+    },
+
+    navLatestLessons(limit = 2) {
+      return this.navLatestById(this.navLessonList(), limit);
+    },
+
+    navLatestQuizzes(limit = 2) {
+      return this.navLatestById(this.navQuizMenuList(), limit);
+    },
+
+    navLatestQuestions(limit = 2) {
+      return this.navLatestById(this.navQuestionList(), limit);
+    },
+
+    /** Total count for a navbar type key (section|lesson|quiz|question). */
+    navTypeTotal(kind) {
+      if (kind === 'section') return this.navSectionList().length;
+      if (kind === 'lesson') return this.navLessonList().length;
+      if (kind === 'quiz') return this.navQuizMenuList().length;
+      if (kind === 'question') return this.navQuestionList().length;
+      return 0;
     },
 
     hasRealSections() {
@@ -1611,6 +1832,34 @@ function courseBuilder(courseId, opts = {}) {
       window.location.assign(url.toString());
     },
 
+    /** Open the full-page Course Content Tree view. */
+    navOpenTreePage() {
+      this.closeAllNavMenus();
+      if (!Number(this.courseId)) return;
+
+      const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
+      const url = new URL(base, window.location.href);
+      url.searchParams.set('course_id', String(this.courseId));
+      url.searchParams.set('view', 'tree');
+      ['lesson_id', 'quiz_id', 'question_id', 'tab', 'from', 'origin', 'open_nav'].forEach((key) => {
+        url.searchParams.delete(key);
+      });
+
+      const current = new URL(window.location.href);
+      const already =
+        current.searchParams.get('view') === 'tree' &&
+        !current.searchParams.get('lesson_id') &&
+        !current.searchParams.get('quiz_id') &&
+        !current.searchParams.get('question_id');
+
+      if (already) {
+        this.enterTypeOverview('tree');
+        this.expandAllTree();
+        return;
+      }
+      window.location.assign(url.toString());
+    },
+
     enterTypeOverview(view) {
       this.overviewKind = view;
       this.overviewSearch = '';
@@ -1619,6 +1868,125 @@ function courseBuilder(courseId, opts = {}) {
       this.questionAnswerReady = false;
       this.lessonQuiz = null;
       this.openQuizEditor = false;
+      if (view === 'tree') {
+        this.expandAllTree();
+        this.$nextTick(() => this.initTreePageSortables());
+      }
+    },
+
+    treeStepsCount() {
+      return (
+        this.navSectionList().length +
+        this.navLessonList().length +
+        this.navQuizMenuList().length +
+        this.navQuestionList().length
+      );
+    },
+
+    treeStepsLabel() {
+      const n = this.treeStepsCount();
+      return n === 1 ? '1 step in this course' : `${n} steps in this course`;
+    },
+
+    expandAllTree() {
+      const nextSec = { ...this.expanded };
+      const nextLes = { ...this.expandedLessons };
+      const nextQuiz = { ...this.expandedQuizzes };
+      const expandLesson = (lesson) => {
+        nextLes[Number(lesson.id)] = true;
+        for (const quiz of this.sidebarQuizzesForLesson(lesson)) {
+          nextQuiz[Number(quiz.id)] = true;
+        }
+      };
+      for (const section of this.navSectionList()) {
+        nextSec[Number(section.id)] = true;
+        for (const lesson of section.lessons || []) {
+          expandLesson(lesson);
+        }
+      }
+      const ungrouped = this.navUngroupedSection();
+      if (ungrouped) {
+        for (const lesson of ungrouped.lessons || []) {
+          expandLesson(lesson);
+        }
+      }
+      this.expanded = nextSec;
+      this.expandedLessons = nextLes;
+      this.expandedQuizzes = nextQuiz;
+    },
+
+    collapseAllTree() {
+      const nextSec = { ...this.expanded };
+      const nextLes = { ...this.expandedLessons };
+      const nextQuiz = { ...this.expandedQuizzes };
+      const collapseLesson = (lesson) => {
+        nextLes[Number(lesson.id)] = false;
+        for (const quiz of this.sidebarQuizzesForLesson(lesson)) {
+          nextQuiz[Number(quiz.id)] = false;
+        }
+      };
+      for (const section of this.navSectionList()) {
+        nextSec[Number(section.id)] = false;
+        for (const lesson of section.lessons || []) {
+          collapseLesson(lesson);
+        }
+      }
+      const ungrouped = this.navUngroupedSection();
+      if (ungrouped) {
+        for (const lesson of ungrouped.lessons || []) {
+          collapseLesson(lesson);
+        }
+      }
+      this.expanded = nextSec;
+      this.expandedLessons = nextLes;
+      this.expandedQuizzes = nextQuiz;
+    },
+
+    isTreeFullyCollapsed() {
+      for (const section of this.navSectionList()) {
+        if (this.isExpanded(section.id)) return false;
+        for (const lesson of section.lessons || []) {
+          if (this.isLessonExpanded(lesson.id)) return false;
+          for (const quiz of this.sidebarQuizzesForLesson(lesson)) {
+            if (this.isQuizExpanded(quiz.id)) return false;
+          }
+        }
+      }
+      const ungrouped = this.navUngroupedSection();
+      if (ungrouped) {
+        for (const lesson of ungrouped.lessons || []) {
+          if (this.isLessonExpanded(lesson.id)) return false;
+          for (const quiz of this.sidebarQuizzesForLesson(lesson)) {
+            if (this.isQuizExpanded(quiz.id)) return false;
+          }
+        }
+      }
+      return true;
+    },
+
+    treeExpandCollapseLabel() {
+      return this.isTreeFullyCollapsed() ? 'Expand all' : 'Collapse all';
+    },
+
+    toggleTreeExpandCollapse() {
+      if (this.isTreeFullyCollapsed()) {
+        this.expandAllTree();
+      } else {
+        this.collapseAllTree();
+      }
+      this.$nextTick(() => this.initTreePageSortables());
+    },
+
+    editTreeSection(section) {
+      if (!section?.id) return;
+      this.overviewKind = null;
+      this.selectItem('section', Number(section.id));
+    },
+
+    editTreeLesson(lesson) {
+      if (!lesson?.id) return;
+      this.overviewKind = null;
+      this.selectItem('lesson', Number(lesson.id), Number(lesson.sectionId || 0));
     },
 
     overviewTitle() {
@@ -1629,18 +1997,52 @@ function courseBuilder(courseId, opts = {}) {
       return 'Overview';
     },
 
-    overviewCopy() {
+    overviewCount() {
+      if (this.overviewKind === 'sections') return this.navSectionList().length;
+      if (this.overviewKind === 'lessons') return this.navLessonList().length;
+      if (this.overviewKind === 'quizzes') return this.navQuizMenuList().length;
+      if (this.overviewKind === 'questions') return this.navQuestionList().length;
+      return 0;
+    },
+
+    overviewTotalLabel() {
+      const n = this.overviewCount();
       if (this.overviewKind === 'sections') {
-        return 'Browse sections in this course. Use search when the list gets long.';
+        return n === 1 ? '1 section' : `${n} sections`;
       }
       if (this.overviewKind === 'lessons') {
-        return 'Browse lessons in this course. Hierarchy stays in Course Content Tree.';
+        return n === 1 ? '1 lesson' : `${n} lessons`;
       }
       if (this.overviewKind === 'quizzes') {
-        return 'Browse quizzes in this course. Attach them to lessons when ready.';
+        return n === 1 ? '1 quiz' : `${n} quizzes`;
       }
       if (this.overviewKind === 'questions') {
-        return 'Browse questions in this course. Attach them to quizzes when ready.';
+        return n === 1 ? '1 question' : `${n} questions`;
+      }
+      return '';
+    },
+
+    overviewCopy() {
+      const n = this.overviewCount();
+      if (this.overviewKind === 'sections') {
+        return n
+          ? `This course has ${n} section${n === 1 ? '' : 's'}. Search or open one below.`
+          : 'No sections yet. Add the first section to start organizing the course.';
+      }
+      if (this.overviewKind === 'lessons') {
+        return n
+          ? `This course has ${n} lesson${n === 1 ? '' : 's'}. Hierarchy stays in Course Content Tree.`
+          : 'No lessons yet. Add a lesson to begin building content.';
+      }
+      if (this.overviewKind === 'quizzes') {
+        return n
+          ? `This course has ${n} quiz${n === 1 ? '' : 'zes'}. Attach them to lessons when ready.`
+          : 'No quizzes yet. Add a quiz, then link it to a lesson.';
+      }
+      if (this.overviewKind === 'questions') {
+        return n
+          ? `This course has ${n} question${n === 1 ? '' : 's'}. Attach them to quizzes when ready.`
+          : 'No questions yet. Add a question, then attach it to a quiz.';
       }
       return '';
     },
@@ -1716,25 +2118,30 @@ function courseBuilder(courseId, opts = {}) {
           const section = sectionId
             ? (this.sections || []).find((s) => Number(s.id) === sectionId)
             : null;
+          const sectionTitle =
+            sectionId > 0 ? section?.title || 'Section' : 'No section';
           return {
             id: Number(lesson.id),
             title: lesson.title || '',
             kind: 'lesson',
             sectionId,
-            meta: sectionId > 0 ? section?.title || 'Section' : 'No section',
+            meta: `${sectionTitle} · ${this.lessonChildCountLabel(lesson)}`,
           };
         });
       } else if (this.overviewKind === 'quizzes') {
-        rows = this.navQuizMenuList().map((quiz) => ({
-          id: Number(quiz.id),
-          title: quiz.title || '',
-          kind: 'quiz',
-          lessonId: Number(quiz.lessonId) || 0,
-          sectionId: Number(quiz.sectionId) || 0,
-          meta: this.isLinkedCourseQuiz(quiz)
-            ? quiz.lessonTitle || this.quizParentLessonTitle(quiz) || ''
-            : 'Unlinked',
-        }));
+        rows = this.navQuizMenuList().map((quiz) => {
+          const lessonTitle = this.isLinkedCourseQuiz(quiz)
+            ? quiz.lessonTitle || this.quizParentLessonTitle(quiz) || 'Lesson'
+            : 'Unlinked';
+          return {
+            id: Number(quiz.id),
+            title: quiz.title || '',
+            kind: 'quiz',
+            lessonId: Number(quiz.lessonId) || 0,
+            sectionId: Number(quiz.sectionId) || 0,
+            meta: `${lessonTitle} · ${this.quizChildCountLabel(quiz)}`,
+          };
+        });
       } else if (this.overviewKind === 'questions') {
         rows = this.navQuestionList().map((question) => ({
           id: Number(question.id),
@@ -1801,6 +2208,56 @@ function courseBuilder(courseId, opts = {}) {
         quizId: item.quizId,
         sectionId: item.sectionId || 0,
       });
+    },
+
+    async deleteOverviewQuiz(item) {
+      const quizId = Number(item?.id) || 0;
+      if (!quizId || !window.confirm('Delete this quiz and all questions?')) return;
+      try {
+        await mintApi(`quizzes/${quizId}`, { method: 'DELETE' });
+        this.courseQuizzes = (this.courseQuizzes || []).filter(
+          (quiz) => Number(quiz.id) !== quizId
+        );
+        this.courseQuestions = (this.courseQuestions || []).filter(
+          (question) => Number(question.quizId) !== quizId
+        );
+        if (Number(this.lessonQuiz?.id) === quizId) {
+          this.lessonQuiz = this.emptyQuizState();
+        }
+        if (this.selected?.type === 'quiz' && Number(this.selected.id) === quizId) {
+          this.selected = null;
+        }
+        window.MintLMS.toast.success('Quiz deleted');
+      } catch (err) {
+        window.MintLMS.toast.error(err.message);
+      }
+    },
+
+    async deleteOverviewQuestion(item) {
+      const questionId = Number(item?.id) || 0;
+      const quizId = Number(item?.quizId) || 0;
+      if (!questionId || !quizId || !window.confirm('Delete this question?')) return;
+      try {
+        await mintApi(`quizzes/${quizId}/questions/${questionId}`, { method: 'DELETE' });
+        this.courseQuestions = (this.courseQuestions || []).filter(
+          (question) => Number(question.id) !== questionId
+        );
+        if (Number(this.lessonQuiz?.id) === quizId && Array.isArray(this.lessonQuiz?.questions)) {
+          this.lessonQuiz.questions = this.lessonQuiz.questions.filter(
+            (question) => Number(question.id) !== questionId
+          );
+        }
+        if (
+          this.selected?.type === 'question' &&
+          Number(this.selected.id) === questionId
+        ) {
+          this.selected = null;
+          this.activeQuestion = null;
+        }
+        window.MintLMS.toast.success('Question deleted');
+      } catch (err) {
+        window.MintLMS.toast.error(err.message);
+      }
     },
 
     isQuizLessonSelected(lessonId) {
@@ -3960,7 +4417,8 @@ function courseBuilder(courseId, opts = {}) {
       const sid = Number(sectionId);
       const section = this.sections.find((s) => Number(s.id) === sid);
       if (!section) return;
-      const ids = section.lessons.map((l) => l.id);
+      const ids = (section.lessons || []).map((l) => l.id).filter((id) => Number(id) > 0);
+      if (!ids.length) return;
       try {
         if (sid === 0) {
           await mintApi(`courses/${this.courseId}/lessons/reorder`, {

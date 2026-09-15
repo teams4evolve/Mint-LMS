@@ -417,6 +417,13 @@
   );
 }
 
+/* Course Page cover preview — square frame (not wide strip) */
+#mint-lms-root .mint-cover-frame {
+  width: min(100%, 420px);
+  aspect-ratio: 1 / 1;
+  height: auto;
+}
+
 #mint-lms-root .mint-settings-radio {
   width: 22px;
   height: 22px;
