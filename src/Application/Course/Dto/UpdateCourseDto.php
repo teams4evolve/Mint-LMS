@@ -8,6 +8,9 @@ use MintLMS\Domain\Course\EnrollmentType;
 
 final readonly class UpdateCourseDto {
 
+	/**
+	 * @param list<int>|null $prerequisiteCourseIds
+	 */
 	public function __construct(
 		public ?string $title = null,
 		public ?string $slug = null,
@@ -19,6 +22,17 @@ final readonly class UpdateCourseDto {
 		public ?bool $emailOnPublish = null,
 		public ?bool $studentComplete = null,
 		public ?bool $certificate = null,
+		public ?string $progression = null,
+		public ?bool $expireAccess = null,
+		public ?int $expireAccessDays = null,
+		public ?bool $prerequisitesEnabled = null,
+		public ?array $prerequisiteCourseIds = null,
+		public ?string $prerequisiteCompare = null,
+		public ?string $accessStartAt = null,
+		public bool $clearAccessStartAt = false,
+		public ?string $accessEndAt = null,
+		public bool $clearAccessEndAt = false,
+		public ?int $seatLimit = null,
 	) {
 	}
 }

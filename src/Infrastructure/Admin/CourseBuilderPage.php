@@ -5,6 +5,7 @@ namespace MintLMS\Infrastructure\Admin;
 
 use MintLMS\Application\Course\Dto\CreateCourseDto;
 use MintLMS\Domain\Course\EnrollmentType;
+use MintLMS\Infrastructure\PostType\PostTypes;
 use MintLMS\Infrastructure\Setup\PageSettings;
 use MintLMS\Plugin;
 
@@ -90,7 +91,7 @@ final class CourseBuilderPage {
 
 		check_admin_referer( self::CREATE_NONCE_ACTION );
 
-		$coursesUrl = admin_url( 'admin.php?page=mint-lms-courses' );
+		$coursesUrl = PostTypes::listUrl( PostTypes::COURSE );
 
 		try {
 			$enrollmentRaw = ( new PageSettings() )->getDefaultEnrollment();
@@ -108,7 +109,7 @@ final class CourseBuilderPage {
 			);
 
 			wp_safe_redirect(
-				admin_url( 'admin.php?page=mint-lms-course-edit&course_id=' . (int) $course->id )
+				admin_url( 'post.php?post=' . (int) $course->id . '&action=edit' )
 			);
 			exit;
 		} catch ( \Throwable ) {
@@ -130,7 +131,7 @@ final class CourseBuilderPage {
 		$courseId = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( $courseId <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-courses' ) );
+			wp_safe_redirect( PostTypes::listUrl( PostTypes::COURSE ) );
 			exit;
 		}
 
@@ -152,7 +153,7 @@ final class CourseBuilderPage {
 		$courseId = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( $courseId <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-courses' ) );
+			wp_safe_redirect( PostTypes::listUrl( PostTypes::COURSE ) );
 			exit;
 		}
 
@@ -174,7 +175,7 @@ final class CourseBuilderPage {
 		$lessonId = isset( $_GET['lesson_id'] ) ? absint( $_GET['lesson_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 
 		if ( $lessonId <= 0 ) {
-			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-lessons' ) );
+			wp_safe_redirect( PostTypes::listUrl( PostTypes::LESSON ) );
 			exit;
 		}
 

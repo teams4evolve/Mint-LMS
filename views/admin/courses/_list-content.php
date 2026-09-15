@@ -85,7 +85,7 @@ defined( 'ABSPATH' ) || exit;
 					>
 						<div class="mint-flex mint-min-w-0 mint-items-center mint-gap-[14px]">
 							<a
-								:href="settingsUrl(course.id)"
+								:href="wpEditUrl(course.id)"
 								class="mint-flex mint-h-[46px] mint-w-[46px] mint-shrink-0 mint-items-center mint-justify-center mint-rounded-xl mint-text-[19px] mint-font-bold mint-tracking-[-0.02em] mint-no-underline"
 								:class="hueClass(idx)"
 								x-text="course.title ? course.title.charAt(0).toUpperCase() : '?'"
@@ -93,7 +93,7 @@ defined( 'ABSPATH' ) || exit;
 							<div class="mint-min-w-[340px] mint-flex-1">
 								<div class="mint-flex mint-items-center mint-gap-2">
 									<a
-										:href="settingsUrl(course.id)"
+										:href="wpEditUrl(course.id)"
 										class="mint-whitespace-nowrap mint-text-h3 mint-font-semibold mint-tracking-[-0.01em] mint-text-ink mint-no-underline"
 										x-text="course.title"
 									></a>
@@ -118,9 +118,9 @@ defined( 'ABSPATH' ) || exit;
 									x-cloak
 									class="mint-course-actions"
 								>
-									<a :href="settingsUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Edit', 'mint-lms' ); ?></a>
+									<a :href="wpEditUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Edit', 'mint-lms' ); ?></a>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="settingsUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Quick Edit', 'mint-lms' ); ?></a>
+									<a :href="settingsUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Open in builder', 'mint-lms' ); ?></a>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action mint-course-action--danger" @click.stop="trashCourse(course.id)"><?php esc_html_e( 'Trash', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
@@ -130,7 +130,7 @@ defined( 'ABSPATH' ) || exit;
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action" @click.stop="duplicateCourse(course.id)"><?php esc_html_e( 'Clone', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Builder', 'mint-lms' ); ?></a>
+									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Content tree', 'mint-lms' ); ?></a>
 								</div>
 
 								<div
@@ -144,7 +144,7 @@ defined( 'ABSPATH' ) || exit;
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action" @click.stop="duplicateCourse(course.id)"><?php esc_html_e( 'Clone', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Builder', 'mint-lms' ); ?></a>
+									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Content tree', 'mint-lms' ); ?></a>
 								</div>
 
 								<div

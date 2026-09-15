@@ -65,7 +65,63 @@ final class LessonService {
 			$dto->attachmentId,
 			$dto->isPreview,
 			null,
-			$this->lessonRepository->nextSortOrder( $sectionId ),
+			$this->lessonRepository->nextSortOrder( $sectionId, $section->courseId ),
+			$now,
+			$now,
+			null,
+		);
+
+		return LessonDto::fromLesson( $this->lessonRepository->save( $lesson ) );
+	}
+
+	/**
+	 * Create a lesson on a course. sectionId 0 / null = ungrouped (no section required).
+	 */
+	public function createForCourse( int $courseId, CreateLessonDto $dto, int $userId, ?int $sectionId = null ): LessonDto {
+		$course = $this->findCourseOrFail( $courseId );
+
+		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+			throw new ForbiddenException();
+		}
+
+		$resolvedSectionId = null !== $sectionId && $sectionId > 0 ? $sectionId : 0;
+
+		if ( $resolvedSectionId > 0 ) {
+			$section = $this->findSectionOrFail( $resolvedSectionId );
+			if ( $section->courseId !== $courseId ) {
+				throw new ValidationException(
+					'Validation failed.',
+					array( 'section_id' => 'Section does not belong to this course.' )
+				);
+			}
+		}
+
+		$title = trim( $dto->title );
+		if ( '' === $title ) {
+			$title = __( 'New Lesson', 'mint-lms' );
+		}
+
+		$slug = null !== $dto->slug ? $this->normalizeSlug( $dto->slug ) : $this->generateUniqueSlug( $title, $courseId );
+		$this->assertValidSlug( $slug );
+
+		if ( null !== $this->lessonRepository->findBySlugAndCourseId( $slug, $courseId ) ) {
+			$slug = $this->generateUniqueSlug( $title, $courseId );
+		}
+
+		$now = $this->clock->now();
+
+		$lesson = new Lesson(
+			0,
+			$resolvedSectionId,
+			$courseId,
+			$title,
+			$slug,
+			$dto->content,
+			$dto->videoUrl,
+			$dto->attachmentId,
+			$dto->isPreview,
+			null,
+			$this->lessonRepository->nextSortOrder( $resolvedSectionId, $courseId ),
 			$now,
 			$now,
 			null,
@@ -117,8 +173,8 @@ final class LessonService {
 	}
 
 	/**
-	 * Attach a library lesson to a course section (creates a section when needed).
-	 * Also moves a lesson that is already on another course.
+	 * Attach a library lesson to a course.
+	 * Pass sectionId null/0 to keep the lesson ungrouped (no auto-created section).
 	 */
 	public function attachToCourse( int $lessonId, int $courseId, ?int $sectionId, int $userId ): LessonDto {
 		$lesson = $this->findLessonOrFail( $lessonId );
@@ -137,6 +193,7 @@ final class LessonService {
 			throw new ForbiddenException();
 		}
 
+		$resolvedSectionId = 0;
 		if ( null !== $sectionId && $sectionId > 0 ) {
 			$section = $this->findSectionOrFail( $sectionId );
 			if ( $section->courseId !== $courseId ) {
@@ -145,21 +202,11 @@ final class LessonService {
 					array( 'section_id' => 'Section does not belong to this course.' )
 				);
 			}
-		} else {
-			$sections = $this->sectionRepository->findByCourseId( $courseId );
-			if ( array() !== $sections ) {
-				$section = $sections[0];
-			} else {
-				$section = $this->sectionRepository->save(
-					new \MintLMS\Domain\Section\Section(
-						0,
-						$courseId,
-						__( 'New Section', 'mint-lms' ),
-						$this->sectionRepository->nextSortOrder( $courseId ),
-						$this->clock->now(),
-					)
-				);
-			}
+			$resolvedSectionId = $section->id;
+		}
+
+		if ( $lesson->courseId === $courseId && $lesson->sectionId === $resolvedSectionId ) {
+			return LessonDto::fromLesson( $lesson );
 		}
 
 		if ( $lesson->courseId === $courseId && $lesson->sectionId === $section->id ) {
@@ -176,7 +223,7 @@ final class LessonService {
 
 		$updated = new Lesson(
 			$lesson->id,
-			$section->id,
+			$resolvedSectionId,
 			$courseId,
 			$lesson->title,
 			$slug,
@@ -185,7 +232,7 @@ final class LessonService {
 			$lesson->attachmentId,
 			$lesson->isPreview,
 			$lesson->availableAfterDays,
-			$this->lessonRepository->nextSortOrder( $section->id ),
+			$this->lessonRepository->nextSortOrder( $resolvedSectionId, $courseId ),
 			$lesson->createdAt,
 			$this->clock->now(),
 			$lesson->featuredImageId,
@@ -313,19 +360,33 @@ final class LessonService {
 		return LessonDto::fromLesson( $lesson );
 	}
 
-	public function reorder( int $sectionId, ReorderLessonsDto $dto, int $userId ): void {
-		$section = $this->findSectionOrFail( $sectionId );
-		$course  = $this->findCourseOrFail( $section->courseId );
+	public function reorder( int $sectionId, ReorderLessonsDto $dto, int $userId, ?int $courseId = null ): void {
+		if ( 0 === $sectionId ) {
+			if ( null === $courseId || $courseId <= 0 ) {
+				throw new ValidationException(
+					'Validation failed.',
+					array( 'course_id' => 'Course ID is required when reordering ungrouped lessons.' )
+				);
+			}
+			$course = $this->findCourseOrFail( $courseId );
+			if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+				throw new ForbiddenException();
+			}
+			$lessons = $this->lessonRepository->findByCourseIdAndSectionId( $courseId, 0 );
+		} else {
+			$section = $this->findSectionOrFail( $sectionId );
+			$course  = $this->findCourseOrFail( $section->courseId );
 
-		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
-			throw new ForbiddenException();
+			if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+				throw new ForbiddenException();
+			}
+
+			$lessons = $this->lessonRepository->findByCourseIdAndSectionId( $section->courseId, $sectionId );
 		}
 
 		if ( array() === $dto->lessonIds ) {
 			throw new ValidationException( 'Validation failed.', array( 'ids' => 'At least one lesson ID is required.' ) );
 		}
-
-		$lessons = $this->lessonRepository->findBySectionId( $sectionId );
 
 		if ( count( $lessons ) !== count( $dto->lessonIds ) ) {
 			throw new ValidationException(

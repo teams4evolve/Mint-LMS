@@ -132,22 +132,58 @@ function contentList(type) {
     },
 
     editUrl(item) {
-      // Quizzes / questions: bounce through quiz resolver so links are repaired.
-      if ((isQuizzes || isQuestions) && (item.quizId || item.id)) {
-        const editQuiz = config.urls.editQuiz || 'admin.php?page=mint-lms-edit-quiz';
-        const quizId = isQuestions ? item.quizId : item.id;
-        if (!quizId) {
-          return config.urls.questions || config.urls.quizzes;
-        }
-        const questionParam = isQuestions && item.id ? `&question_id=${item.id}` : '';
-        return `${editQuiz}&quiz_id=${quizId}${questionParam}`;
-      }
+      // All content lists: native WP editor is the default entry.
+      return this.wpEditUrl(item);
+    },
+
+    /** Native WordPress editor for lesson / quiz / question. */
+    wpEditUrl(item) {
+      const id = Number(item?.id || item?.lessonId || 0);
+      if (id <= 0) return '#';
+      return `post.php?post=${id}&action=edit`;
+    },
+
+    /** Mint lesson builder (course builder or standalone lesson-edit). */
+    lessonBuilderUrl(item) {
+      const lessonId = Number(item?.id || item?.lessonId || 0);
+      if (lessonId <= 0) return '#';
       if (!item.courseId) {
-        const lessonId = item.id || item.lessonId;
         const lessonEdit = config.urls.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
         return `${lessonEdit}&lesson_id=${lessonId}&from=lessons`;
       }
-      return `${config.urls.builder}&course_id=${item.courseId}&lesson_id=${item.id || item.lessonId}&from=lessons`;
+      return `${config.urls.builder}&course_id=${item.courseId}&lesson_id=${lessonId}&from=lessons`;
+    },
+
+    /** Mint quiz builder (repairs links via edit-quiz gate). */
+    quizBuilderUrl(item) {
+      const quizId = Number(item?.id || item?.quizId || 0);
+      if (quizId <= 0) return config.urls.quizzes || '#';
+      const editQuiz = config.urls.editQuiz || 'admin.php?page=mint-lms-edit-quiz';
+      return `${editQuiz}&quiz_id=${quizId}`;
+    },
+
+    /** Mint question builder (repairs links via edit-quiz gate). */
+    questionBuilderUrl(item) {
+      const questionId = Number(item?.id || 0);
+      const quizId = Number(item?.quizId || 0);
+      const editQuiz = config.urls.editQuiz || 'admin.php?page=mint-lms-edit-quiz';
+      if (questionId <= 0) return config.urls.questions || '#';
+      if (quizId > 0) {
+        return `${editQuiz}&quiz_id=${quizId}&question_id=${questionId}`;
+      }
+      return `${editQuiz}&question_id=${questionId}`;
+    },
+
+    mintBuilderUrl(item) {
+      if (isQuestions) return this.questionBuilderUrl(item);
+      if (isQuizzes) return this.quizBuilderUrl(item);
+      return this.lessonBuilderUrl(item);
+    },
+
+    mintBuilderLabel() {
+      if (isQuestions) return 'Open in question builder';
+      if (isQuizzes) return 'Open in quiz builder';
+      return 'Open in lesson builder';
     },
 
     viewUrl(item) {

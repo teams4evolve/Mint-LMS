@@ -88,6 +88,35 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 		return $lessons;
 	}
 
+	public function findByCourseIdAndSectionId( int $courseId, int $sectionId, bool $publishedOnly = false ): array {
+		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+
+		unset( $publishedOnly );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$rows = $this->wpdb->get_results(
+			$this->wpdb->prepare(
+				"SELECT id, section_id, course_id, title, slug, content, video_url, attachment_id, is_preview, available_after_days, sort_order, created_at, updated_at
+				FROM {$table}
+				WHERE course_id = %d AND section_id = %d
+				ORDER BY sort_order ASC, id ASC",
+				$courseId,
+				$sectionId
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		$lessons = array();
+
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$lessons[] = $this->mapRowToLesson( $row );
+			}
+		}
+
+		return $lessons;
+	}
+
 	public function save( Lesson $lesson ): Lesson {
 		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 		$now   = $lesson->updatedAt->format( 'Y-m-d H:i:s' );
@@ -140,6 +169,8 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 		$updated = $this->wpdb->update(
 			$table,
 			array(
+				'section_id'           => $lesson->sectionId,
+				'course_id'            => $lesson->courseId,
 				'title'                => $lesson->title,
 				'slug'                 => $lesson->slug,
 				'content'              => $lesson->content,
@@ -148,10 +179,10 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 				'is_preview'           => $lesson->isPreview ? 1 : 0,
 				'available_after_days' => $lesson->availableAfterDays,
 				'sort_order'           => $lesson->sortOrder,
-				'updated_at'    => $now,
+				'updated_at'           => $now,
 			),
 			array( 'id' => $lesson->id ),
-			array( '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s' ),
+			array( '%d', '%d', '%s', '%s', '%s', '%s', '%d', '%d', '%d', '%d', '%s' ),
 			array( '%d' )
 		);
 
@@ -176,6 +207,10 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function deleteBySectionId( int $sectionId ): void {
+		if ( $sectionId <= 0 ) {
+			return;
+		}
+
 		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
@@ -204,16 +239,26 @@ final class WpdbLessonRepository implements LessonRepositoryInterface {
 		}
 	}
 
-	public function nextSortOrder( int $sectionId ): int {
+	public function nextSortOrder( int $sectionId, ?int $courseId = null ): int {
 		$table = Schema::validateTable( Schema::lessonsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$max = $this->wpdb->get_var(
-			$this->wpdb->prepare(
-				"SELECT MAX(sort_order) FROM {$table} WHERE section_id = %d",
-				$sectionId
-			)
-		);
+		if ( null !== $courseId ) {
+			$max = $this->wpdb->get_var(
+				$this->wpdb->prepare(
+					"SELECT MAX(sort_order) FROM {$table} WHERE section_id = %d AND course_id = %d",
+					$sectionId,
+					$courseId
+				)
+			);
+		} else {
+			$max = $this->wpdb->get_var(
+				$this->wpdb->prepare(
+					"SELECT MAX(sort_order) FROM {$table} WHERE section_id = %d",
+					$sectionId
+				)
+			);
+		}
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
 		if ( null === $max || '' === $max ) {

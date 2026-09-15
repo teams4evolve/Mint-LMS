@@ -16,6 +16,7 @@ use MintLMS\Application\Student\Dto\StudentCourseItemDto;
 use MintLMS\Application\Student\Dto\StudentCourseOverviewDto;
 use MintLMS\Application\Student\Dto\StudentPlayerContextDto;
 use MintLMS\Domain\Course\Course;
+use MintLMS\Domain\Course\CourseAccessRules;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
@@ -129,8 +130,9 @@ final class StudentExperienceService {
 		}
 
 		$isEditorPreview = $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId );
+		$publicBrowse    = $course->enrollmentType->allowsPublicBrowse();
 		$isEnrolled      = ( $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId ) ) || $isEditorPreview;
-		$structure       = $this->loadGatedStructure( $courseId, $isEnrolled, $userId, $isEditorPreview );
+		$structure       = $this->loadGatedStructure( $courseId, $isEnrolled || $publicBrowse, $userId, $isEditorPreview, $isEnrolled );
 		$flat            = $this->flattenLessons( $structure );
 
 		$progressPct        = null;
@@ -594,14 +596,19 @@ final class StudentExperienceService {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
-		$isEditorPreview = $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId );
-
 		if ( ! $this->canViewCourseOnFrontend( $userId, $course->status, $course->authorId ) ) {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
-		$isEnrolled = ( $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId ) ) || $isEditorPreview;
-		$structure  = $this->loadGatedStructure( $courseId, $isEnrolled, $userId, $isEditorPreview );
+		$isEditorPreview = $this->canEditorPreviewCourse( $userId, $course->status, $course->authorId );
+		$publicBrowse    = $course->enrollmentType->allowsPublicBrowse();
+		$isEnrolled      = ( $userId > 0 && $this->progressRepository->isUserEnrolled( $userId, $courseId ) ) || $isEditorPreview;
+
+		if ( $isEnrolled && ! $isEditorPreview ) {
+			$this->assertCourseAccessWindow( $course, $userId );
+		}
+
+		$structure  = $this->loadGatedStructure( $courseId, $isEnrolled || $publicBrowse, $userId, $isEditorPreview, $isEnrolled );
 		$flat       = $this->flattenLessons( $structure );
 		$current    = $this->findLessonInStructure( $structure, $lessonId );
 
@@ -609,7 +616,7 @@ final class StudentExperienceService {
 			throw new NotFoundException( 'Lesson not found.' );
 		}
 
-		if ( ! $isEnrolled && ! $current->isPreview ) {
+		if ( ! $isEnrolled && ! $current->isPreview && ! $publicBrowse ) {
 			throw new ForbiddenException( 'Enroll in this course to access this lesson.' );
 		}
 
@@ -626,7 +633,7 @@ final class StudentExperienceService {
 			// phpcs:enable WordPress.Security.EscapeOutput.ExceptionNotEscaped
 		}
 
-		if ( ! $this->lessonHasAccessibleContent( $current, $isEnrolled ) ) {
+		if ( ! $this->lessonHasAccessibleContent( $current, $isEnrolled || $publicBrowse ) ) {
 			throw new ForbiddenException( 'This lesson is not available.' );
 		}
 
@@ -750,18 +757,52 @@ final class StudentExperienceService {
 			return false;
 		}
 
-		return EnrollmentType::Open === $enrollmentType;
+		return $enrollmentType->allowsSelfEnroll();
 	}
 
-	private function loadGatedStructure( int $courseId, bool $isEnrolled, int $userId, bool $skipDrip = false ): CourseStructureDto {
+	private function assertCourseAccessWindow( Course $course, int $userId ): void {
+		$now = $this->clock->now();
+
+		if ( CourseAccessRules::isBeforeAccessStart( $course->settings, $now ) ) {
+			throw new ForbiddenException( 'This course has not opened yet.' );
+		}
+
+		if ( CourseAccessRules::isAfterAccessEnd( $course->settings, $now ) ) {
+			throw new ForbiddenException( 'This course is no longer available.' );
+		}
+
+		$enrollment = $this->enrollmentRepository->findByUserAndCourse( $userId, $course->id );
+		if (
+			null !== $enrollment
+			&& EnrollmentStatus::Active === $enrollment->status
+			&& CourseAccessRules::isEnrollmentExpired( $enrollment->expiresAt, $now )
+		) {
+			throw new ForbiddenException( 'Your access to this course has expired.' );
+		}
+	}
+
+	private function loadGatedStructure( int $courseId, bool $canBrowseContent, int $userId, bool $skipDrip = false, ?bool $isReallyEnrolled = null ): CourseStructureDto {
 		$course = $this->courseRepository->findById( $courseId );
 
 		if ( null === $course ) {
 			throw new NotFoundException( 'Course not found.' );
 		}
 
-		$enrolledAt = $this->resolveEnrollmentDate( $userId, $courseId, $isEnrolled );
-		$rows       = $this->sectionRepository->loadStructureRows( $courseId );
+		$reallyEnrolled = null !== $isReallyEnrolled ? $isReallyEnrolled : $canBrowseContent;
+		$enrolledAt     = $this->resolveEnrollmentDate( $userId, $courseId, $reallyEnrolled );
+		$rows           = $this->sectionRepository->loadStructureRows( $courseId );
+
+		$orderedLessonIds = array();
+		foreach ( $rows as $row ) {
+			$lesson = $row['lesson'];
+			if ( null !== $lesson ) {
+				$orderedLessonIds[] = $lesson->id;
+			}
+		}
+
+		$completedLessonIds = ( $reallyEnrolled && $userId > 0 )
+			? $this->progressRepository->getCompletedLessonIds( $userId, $courseId )
+			: array();
 
 		/** @var array<int, CourseStructureSectionDto> $sectionsById */
 		$sectionsById = array();
@@ -786,7 +827,16 @@ final class StudentExperienceService {
 
 			$existing  = $sectionsById[ $section->id ];
 			$lessons   = $existing->lessons;
-			$lessons[] = $this->gateLesson( $lesson, $isEnrolled, $enrolledAt, $skipDrip );
+			$lessons[] = $this->gateLesson(
+				$lesson,
+				$canBrowseContent,
+				$enrolledAt,
+				$skipDrip,
+				$course,
+				$orderedLessonIds,
+				$completedLessonIds,
+				$reallyEnrolled,
+			);
 
 			$sectionsById[ $section->id ] = new CourseStructureSectionDto(
 				$existing->id,
@@ -801,7 +851,16 @@ final class StudentExperienceService {
 
 		usort(
 			$sections,
-			static fn( CourseStructureSectionDto $a, CourseStructureSectionDto $b ): int => $a->sortOrder <=> $b->sortOrder
+			static function ( CourseStructureSectionDto $a, CourseStructureSectionDto $b ): int {
+				if ( 0 === $a->id && 0 !== $b->id ) {
+					return -1;
+				}
+				if ( 0 !== $a->id && 0 === $b->id ) {
+					return 1;
+				}
+
+				return $a->sortOrder <=> $b->sortOrder;
+			}
 		);
 
 		foreach ( $sections as $index => $section ) {
@@ -828,11 +887,41 @@ final class StudentExperienceService {
 		);
 	}
 
-	private function gateLesson( \MintLMS\Domain\Lesson\Lesson $lesson, bool $isEnrolled, ?\DateTimeImmutable $enrolledAt, bool $skipDrip = false ): CourseStructureLessonDto {
-		$dripState   = $skipDrip
+	/**
+	 * @param list<int> $orderedLessonIds
+	 * @param list<int> $completedLessonIds
+	 */
+	private function gateLesson(
+		Lesson $lesson,
+		bool $canBrowseContent,
+		?\DateTimeImmutable $enrolledAt,
+		bool $skipDrip = false,
+		?Course $course = null,
+		array $orderedLessonIds = array(),
+		array $completedLessonIds = array(),
+		bool $reallyEnrolled = false,
+	): CourseStructureLessonDto {
+		$dripState = $skipDrip || ! $reallyEnrolled
 			? array( 'locked' => false, 'message' => null )
-			: $this->resolveDripState( $lesson, $isEnrolled, $enrolledAt );
-		$canAccess   = ( $isEnrolled && ! $dripState['locked'] ) || $lesson->isPreview;
+			: $this->resolveDripState( $lesson, $reallyEnrolled, $enrolledAt );
+
+		$progressionLocked = false;
+		$progressionMessage = null;
+		if ( ! $skipDrip && $reallyEnrolled && null !== $course ) {
+			$progressionLocked = CourseAccessRules::isLessonBlockedByProgression(
+				$course->settings,
+				$lesson->id,
+				$orderedLessonIds,
+				$completedLessonIds
+			);
+			if ( $progressionLocked ) {
+				$progressionMessage = 'Finish the previous lesson first';
+			}
+		}
+
+		$locked    = $dripState['locked'] || $progressionLocked;
+		$lockMsg   = $dripState['locked'] ? $dripState['message'] : $progressionMessage;
+		$canAccess = ( ( $canBrowseContent || $lesson->isPreview ) && ! $locked );
 
 		return new CourseStructureLessonDto(
 			$lesson->id,
@@ -844,8 +933,8 @@ final class StudentExperienceService {
 			$canAccess ? $lesson->attachmentId : null,
 			$lesson->isPreview,
 			$lesson->availableAfterDays,
-			$dripState['locked'],
-			$dripState['message'],
+			$locked,
+			$lockMsg,
 			$lesson->sortOrder,
 			$lesson->createdAt->format( 'c' ),
 			$lesson->updatedAt->format( 'c' ),

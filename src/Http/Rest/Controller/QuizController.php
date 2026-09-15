@@ -40,6 +40,24 @@ final class QuizController {
 					'callback'            => array( $this, 'listByCourse' ),
 					'permission_callback' => array( $this, 'canManageCourses' ),
 				),
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'createForCourse' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => $this->createQuizArgs(),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/questions',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'createQuestionForCourse' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
 			)
 		);
 
@@ -254,18 +272,82 @@ final class QuizController {
 
 			$lessonId  = (int) get_post_meta( $post->ID, PostTypes::META_LESSON_ID, true );
 			$sectionId = $lessonId > 0 ? (int) get_post_meta( $lessonId, PostTypes::META_SECTION_ID, true ) : 0;
+			$lessonCourseId = $lessonId > 0 ? (int) get_post_meta( $lessonId, PostTypes::META_COURSE_ID, true ) : 0;
+			// Disposable host lessons (courseId 0) are not part of the course tree.
+			$linked = $lessonId > 0 && $lessonCourseId > 0;
+			$questionShell = (bool) get_post_meta( $post->ID, PostTypes::META_QUESTION_SHELL, true );
 
 			$items[] = array(
-				'id'          => (int) $post->ID,
-				'title'       => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
-				'lessonId'    => $lessonId,
-				'lessonTitle' => $lessonId > 0 ? (string) get_the_title( $lessonId ) : '',
-				'sectionId'   => $sectionId,
-				'courseId'    => $courseId,
+				'id'            => (int) $post->ID,
+				'title'         => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
+				'lessonId'      => $lessonId,
+				'lessonTitle'   => $linked ? (string) get_the_title( $lessonId ) : '',
+				'sectionId'     => $linked ? $sectionId : 0,
+				'courseId'      => $courseId,
+				'linked'        => $linked,
+				'questionShell' => $questionShell,
 			);
 		}
 
 		return ApiResponse::success( array( 'items' => $items ) );
+	}
+
+	public function createForCourse( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId   = $this->authorization->getCurrentUserId();
+			$courseId = (int) $request->get_param( 'id' );
+
+			$dto = new CreateQuizDto(
+				(string) ( $request->get_param( 'title' ) ?? __( 'New Quiz', 'mint-lms' ) ),
+				(int) ( $request->get_param( 'pass_percent' ) ?? 80 ),
+				is_array( $request->get_param( 'questions' ) ) ? $request->get_param( 'questions' ) : null,
+			);
+
+			$quiz = $this->quizService->createForCourse( $courseId, $dto, $userId );
+
+			return ApiResponse::success( $this->quizPayload( $quiz ), 201 );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function createQuestionForCourse( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId   = $this->authorization->getCurrentUserId();
+			$courseId = (int) $request->get_param( 'id' );
+
+			$result     = $this->quizService->createQuestionForCourse( $courseId, $userId );
+			$questionId = (int) $result['questionId'];
+			$quizId     = (int) $result['quiz']->id;
+			update_post_meta( $quizId, PostTypes::META_QUESTION_SHELL, 1 );
+			$this->saveQuestionSettings(
+				$questionId,
+				array(
+					'displayTitle'      => 'New Question',
+					'answerTypePending' => true,
+				)
+			);
+
+			$quiz = $this->quizService->get( $quizId, $userId );
+
+			return ApiResponse::success(
+				array(
+					'quiz'       => $this->quizPayload( $quiz ),
+					'questionId' => $questionId,
+				),
+				201
+			);
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
 	}
 
 	public function getByLesson( \WP_REST_Request $request ): \WP_REST_Response {
@@ -591,7 +673,8 @@ final class QuizController {
 		return array(
 			'title'        => array(
 				'type'              => 'string',
-				'required'          => true,
+				'required'          => false,
+				'default'           => 'New Quiz',
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'pass_percent' => array(

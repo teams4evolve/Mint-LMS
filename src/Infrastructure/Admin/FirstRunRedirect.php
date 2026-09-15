@@ -5,6 +5,8 @@ namespace MintLMS\Infrastructure\Admin;
 
 defined( 'ABSPATH' ) || exit;
 
+use MintLMS\Infrastructure\PostType\PostTypes;
+
 final class FirstRunRedirect {
 
 	public const ACTIVATION_REDIRECT_TRANSIENT = 'mintlms_activation_redirect';
@@ -67,7 +69,7 @@ final class FirstRunRedirect {
 
 		FirstRunState::markOnboardingComplete();
 
-		wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-courses' ) );
+		wp_safe_redirect( PostTypes::listUrl( PostTypes::COURSE ) );
 		exit;
 	}
 
@@ -77,22 +79,23 @@ final class FirstRunRedirect {
 		}
 
 		$page = isset( $_GET['page'] ) ? sanitize_key( wp_unslash( (string) $_GET['page'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+		$onCoursesList = $this->isCoursesListScreen();
 
 		if ( 'mint-lms-guided-course' === $page ) {
 			if ( FirstRunState::isGuidedCourseComplete() ) {
-				wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-courses' ) );
+				wp_safe_redirect( PostTypes::listUrl( PostTypes::COURSE ) );
 				exit;
 			}
 
 			return;
 		}
 
-		if ( ! in_array( $page, array( 'mint-lms', 'mint-lms-courses' ), true ) ) {
+		if ( 'mint-lms' !== $page && ! $onCoursesList ) {
 			return;
 		}
 
 		if ( ! FirstRunState::isFirstRunComplete() ) {
-			if ( 'mint-lms-courses' === $page ) {
+			if ( $onCoursesList ) {
 				wp_safe_redirect( admin_url( 'admin.php?page=mint-lms' ) );
 				exit;
 			}
@@ -104,6 +107,18 @@ final class FirstRunRedirect {
 			wp_safe_redirect( admin_url( 'admin.php?page=mint-lms-guided-course' ) );
 			exit;
 		}
+	}
+
+	private function isCoursesListScreen(): bool {
+		global $pagenow;
+
+		if ( 'edit.php' !== $pagenow ) {
+			return false;
+		}
+
+		$postType = isset( $_GET['post_type'] ) ? sanitize_key( wp_unslash( (string) $_GET['post_type'] ) ) : ''; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
+
+		return PostTypes::COURSE === $postType;
 	}
 
 	public static function startGuidedUrl(): string {

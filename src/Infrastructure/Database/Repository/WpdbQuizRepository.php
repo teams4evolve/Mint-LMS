@@ -40,25 +40,55 @@ final class WpdbQuizRepository implements QuizRepositoryInterface {
 	}
 
 	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz {
+		$quizzes = $this->findAllByLessonId( $lessonId, $publishedOnly );
+
+		return $quizzes[0] ?? null;
+	}
+
+	public function findAllByLessonId( int $lessonId, bool $publishedOnly = false ): array {
 		unset( $publishedOnly );
 		$table = Schema::validateTable( Schema::quizzesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
 		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
-		$row = $this->wpdb->get_row(
+		$rows = $this->wpdb->get_results(
 			$this->wpdb->prepare(
 				"SELECT id, lesson_id, course_id, title, pass_percent, sort_order
 				FROM {$table}
-				WHERE lesson_id = %d",
+				WHERE lesson_id = %d
+				ORDER BY sort_order ASC, id ASC",
 				$lessonId
 			)
 		);
 		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
 
-		if ( null === $row ) {
-			return null;
+		$quizzes = array();
+
+		if ( is_array( $rows ) ) {
+			foreach ( $rows as $row ) {
+				$quizzes[] = $this->mapRowToQuiz( $row );
+			}
 		}
 
-		return $this->mapRowToQuiz( $row );
+		return $quizzes;
+	}
+
+	public function nextQuizSortOrderForLesson( int $lessonId ): int {
+		$table = Schema::validateTable( Schema::quizzesTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+
+		// phpcs:disable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		$max = $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				"SELECT MAX(sort_order) FROM {$table} WHERE lesson_id = %d",
+				$lessonId
+			)
+		);
+		// phpcs:enable WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, WordPress.DB.PreparedSQL.NotPrepared
+
+		if ( null === $max || '' === $max ) {
+			return 0;
+		}
+
+		return (int) $max + 1;
 	}
 
 	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array {
@@ -248,9 +278,7 @@ final class WpdbQuizRepository implements QuizRepositoryInterface {
 	}
 
 	public function deleteByLessonId( int $lessonId ): void {
-		$quiz = $this->findByLessonId( $lessonId );
-
-		if ( null !== $quiz ) {
+		foreach ( $this->findAllByLessonId( $lessonId ) as $quiz ) {
 			$this->deleteQuiz( $quiz->id );
 		}
 	}

@@ -9,6 +9,9 @@ defined( 'ABSPATH' ) || exit;
 
 final readonly class CourseDto {
 
+	/**
+	 * @param list<int> $prerequisiteCourseIds
+	 */
 	public function __construct(
 		public int $id,
 		public string $title,
@@ -28,6 +31,15 @@ final readonly class CourseDto {
 		public bool $emailOnPublish = true,
 		public bool $studentComplete = true,
 		public bool $certificate = false,
+		public string $progression = 'linear',
+		public bool $expireAccess = false,
+		public int $expireAccessDays = 30,
+		public bool $prerequisitesEnabled = false,
+		public array $prerequisiteCourseIds = array(),
+		public string $prerequisiteCompare = 'ANY',
+		public ?string $accessStartAt = null,
+		public ?string $accessEndAt = null,
+		public int $seatLimit = 0,
 	) {
 	}
 
@@ -43,6 +55,8 @@ final readonly class CourseDto {
 				? (int) $stats['completion_pct']
 				: null;
 		}
+
+		$settings = $course->settings;
 
 		return new self(
 			$course->id,
@@ -60,9 +74,18 @@ final readonly class CourseDto {
 			$completionRate,
 			$authorName,
 			$category,
-			$course->settings->emailOnPublish,
-			$course->settings->studentComplete,
-			$course->settings->certificate,
+			$settings->emailOnPublish,
+			$settings->studentComplete,
+			$settings->certificate,
+			$settings->progression,
+			$settings->expireAccess,
+			$settings->expireAccessDays,
+			$settings->prerequisitesEnabled,
+			$settings->prerequisiteCourseIds,
+			$settings->prerequisiteCompare,
+			$settings->accessStartAt,
+			$settings->accessEndAt,
+			$settings->seatLimit,
 		);
 	}
 
@@ -71,25 +94,34 @@ final readonly class CourseDto {
 	 */
 	public function toArray(): array {
 		return array(
-			'id'              => $this->id,
-			'title'           => $this->title,
-			'slug'            => $this->slug,
-			'description'     => $this->description,
-			'featuredImageId' => $this->featuredImageId,
-			'status'          => $this->status,
-			'enrollmentType'  => $this->enrollmentType,
-			'authorId'        => $this->authorId,
-			'authorName'      => $this->authorName,
-			'instructor'      => $this->authorName,
-			'category'        => $this->category,
-			'createdAt'       => $this->createdAt,
-			'updatedAt'       => $this->updatedAt,
-			'lessonCount'     => $this->lessonCount,
-			'studentCount'    => $this->studentCount,
-			'completionRate'  => $this->completionRate,
-			'emailOnPublish'  => $this->emailOnPublish,
-			'studentComplete' => $this->studentComplete,
-			'certificate'     => $this->certificate,
+			'id'                     => $this->id,
+			'title'                  => $this->title,
+			'slug'                   => $this->slug,
+			'description'            => $this->description,
+			'featuredImageId'        => $this->featuredImageId,
+			'status'                 => $this->status,
+			'enrollmentType'         => $this->enrollmentType,
+			'authorId'               => $this->authorId,
+			'authorName'             => $this->authorName,
+			'instructor'             => $this->authorName,
+			'category'               => $this->category,
+			'createdAt'              => $this->createdAt,
+			'updatedAt'              => $this->updatedAt,
+			'lessonCount'            => $this->lessonCount,
+			'studentCount'           => $this->studentCount,
+			'completionRate'         => $this->completionRate,
+			'emailOnPublish'         => $this->emailOnPublish,
+			'studentComplete'        => $this->studentComplete,
+			'certificate'            => $this->certificate,
+			'progression'            => $this->progression,
+			'expireAccess'           => $this->expireAccess,
+			'expireAccessDays'       => $this->expireAccessDays,
+			'prerequisitesEnabled'   => $this->prerequisitesEnabled,
+			'prerequisiteCourseIds'  => $this->prerequisiteCourseIds,
+			'prerequisiteCompare'    => $this->prerequisiteCompare,
+			'accessStartAt'          => $this->accessStartAt,
+			'accessEndAt'            => $this->accessEndAt,
+			'seatLimit'              => $this->seatLimit,
 		);
 	}
 }

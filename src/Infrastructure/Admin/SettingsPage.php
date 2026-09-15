@@ -139,7 +139,7 @@ final class SettingsPage {
 	public function sanitizeDefaultEnrollment( mixed $value ): string {
 		$value = sanitize_key( (string) $value );
 
-		return in_array( $value, array( 'open', 'manual' ), true ) ? $value : 'open';
+		return in_array( $value, array( 'open', 'free', 'manual', 'paid' ), true ) ? $value : 'free';
 	}
 
 	public function sanitizeCheckbox( mixed $value ): bool {

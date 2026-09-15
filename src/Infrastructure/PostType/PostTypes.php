@@ -30,6 +30,7 @@ final class PostTypes {
 	public const META_PASS_PERCENT          = '_mint_pass_percent';
 	public const META_QUIZ_SETTINGS         = '_mint_quiz_settings';
 	public const META_QUESTION_SETTINGS     = '_mint_question_settings';
+	public const META_QUESTION_SHELL        = '_mint_question_shell';
 	public const META_LEGACY_ID             = '_mint_legacy_id';
 
 	/**
@@ -37,5 +38,16 @@ final class PostTypes {
 	 */
 	public static function all(): array {
 		return array( self::COURSE, self::LESSON, self::QUIZ, self::QUESTION );
+	}
+
+	/**
+	 * Native WordPress list-table URL for a Mint CPT.
+	 */
+	public static function listUrl( string $postType ): string {
+		if ( ! in_array( $postType, self::all(), true ) ) {
+			return admin_url( 'admin.php?page=mint-lms' );
+		}
+
+		return admin_url( 'edit.php?post_type=' . $postType );
 	}
 }

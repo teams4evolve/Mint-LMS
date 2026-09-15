@@ -9,7 +9,7 @@ $newCourseUrl  = $newCourseUrl ?? \MintLMS\Infrastructure\Admin\CourseBuilderPag
 $pageLabel     = $pageLabel ?? '';
 $headerActions = $headerActions ?? '';
 $maxWidthClass = $maxWidthClass ?? 'mint-max-w-content';
-$searchUrl     = admin_url( 'admin.php?page=mint-lms-courses&focus=search' );
+$searchUrl     = \MintLMS\Infrastructure\PostType\PostTypes::listUrl( \MintLMS\Infrastructure\PostType\PostTypes::COURSE );
 $headerWidth   = $maxWidthClass;
 ?>
 <header class="mint-admin-header">

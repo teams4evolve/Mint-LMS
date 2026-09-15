@@ -111,7 +111,16 @@ final class CourseStructureService {
 
 		usort(
 			$sections,
-			static fn( CourseStructureSectionDto $a, CourseStructureSectionDto $b ): int => $a->sortOrder <=> $b->sortOrder
+			static function ( CourseStructureSectionDto $a, CourseStructureSectionDto $b ): int {
+				if ( 0 === $a->id && 0 !== $b->id ) {
+					return -1;
+				}
+				if ( 0 !== $a->id && 0 === $b->id ) {
+					return 1;
+				}
+
+				return $a->sortOrder <=> $b->sortOrder;
+			}
 		);
 
 		foreach ( $sections as $index => $section ) {

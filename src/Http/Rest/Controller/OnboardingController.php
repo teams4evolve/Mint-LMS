@@ -45,7 +45,7 @@ final class OnboardingController {
 
 		return ApiResponse::success(
 			array(
-				'redirect' => admin_url( 'admin.php?page=mint-lms-courses' ),
+				'redirect' => \MintLMS\Infrastructure\PostType\PostTypes::listUrl( \MintLMS\Infrastructure\PostType\PostTypes::COURSE ),
 			)
 		);
 	}

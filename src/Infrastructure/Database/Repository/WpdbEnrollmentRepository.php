@@ -236,6 +236,19 @@ final class WpdbEnrollmentRepository implements EnrollmentRepositoryInterface {
 		return $map;
 	}
 
+	public function countActiveByCourse( int $courseId ): int {
+		$table = Schema::validateTable( Schema::enrollmentsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching, WordPress.DB.PreparedSQL.InterpolatedNotPrepared, PluginCheck.Security.DirectDB.UnescapedDBParameter
+		return (int) $this->wpdb->get_var(
+			$this->wpdb->prepare(
+				"SELECT COUNT(*) FROM {$table} WHERE course_id = %d AND status = %s",
+				$courseId,
+				EnrollmentStatus::Active->value
+			)
+		);
+	}
+
 	private function mapRowToEnrollment( object $row ): Enrollment {
 		$expiresAt   = null;
 		$completedAt = null;

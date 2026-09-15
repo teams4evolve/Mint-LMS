@@ -42,6 +42,33 @@ final class LessonController {
 
 		register_rest_route(
 			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/lessons',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'createForCourse' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => array_merge(
+						$this->createArgs(),
+						array(
+							'title'      => array(
+								'type'              => 'string',
+								'required'          => false,
+								'sanitize_callback' => 'sanitize_text_field',
+							),
+							'section_id' => array(
+								'required'          => false,
+								'type'              => 'integer',
+								'sanitize_callback' => 'absint',
+							),
+						)
+					),
+				),
+			)
+		);
+
+		register_rest_route(
+			self::NAMESPACE,
 			'/lessons',
 			array(
 				array(
@@ -124,6 +151,29 @@ final class LessonController {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/courses/(?P<id>\d+)/lessons/reorder',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'reorderForCourse' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+					'args'                => array_merge(
+						$this->reorderArgs(),
+						array(
+							'section_id' => array(
+								'required'          => false,
+								'type'              => 'integer',
+								'sanitize_callback' => 'absint',
+								'default'           => 0,
+							),
+						)
+					),
+				),
+			)
+		);
 	}
 
 	public function canManageCourses(): bool {
@@ -147,6 +197,38 @@ final class LessonController {
 			);
 
 			$lesson = $this->lessonService->create( $sectionId, $dto, $userId );
+
+			return ApiResponse::success( $lesson->toArray(), 201 );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function createForCourse( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId    = $this->authorization->getCurrentUserId();
+			$courseId  = (int) $request->get_param( 'id' );
+			$sectionId = $request->offsetExists( 'section_id' ) ? (int) $request->get_param( 'section_id' ) : 0;
+
+			$dto = new CreateLessonDto(
+				(string) ( $request->get_param( 'title' ) ?? '' ),
+				$this->nullableString( $request->get_param( 'slug' ) ),
+				(string) ( $request->get_param( 'content' ) ?? '' ),
+				$this->nullableString( $request->get_param( 'video_url' ) ),
+				$this->nullableInt( $request->get_param( 'attachment_id' ) ),
+				(bool) $request->get_param( 'is_preview' ),
+			);
+
+			$lesson = $this->lessonService->createForCourse(
+				$courseId,
+				$dto,
+				$userId,
+				$sectionId > 0 ? $sectionId : null
+			);
 
 			return ApiResponse::success( $lesson->toArray(), 201 );
 		} catch ( ValidationException $exception ) {
@@ -294,6 +376,27 @@ final class LessonController {
 			$dto = new ReorderLessonsDto( is_array( $ids ) ? array_map( 'intval', $ids ) : array() );
 
 			$this->lessonService->reorder( $sectionId, $dto, $userId );
+
+			return ApiResponse::success( null, 204 );
+		} catch ( ValidationException $exception ) {
+			return ApiResponse::error( 'validation_error', $exception->getMessage(), 400, $exception->errors() );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
+	public function reorderForCourse( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId    = $this->authorization->getCurrentUserId();
+			$courseId  = (int) $request->get_param( 'id' );
+			$sectionId = (int) ( $request->get_param( 'section_id' ) ?? 0 );
+			$ids       = $request->get_param( 'ids' );
+
+			$dto = new ReorderLessonsDto( is_array( $ids ) ? array_map( 'intval', $ids ) : array() );
+
+			$this->lessonService->reorder( $sectionId, $dto, $userId, $courseId );
 
 			return ApiResponse::success( null, 204 );
 		} catch ( ValidationException $exception ) {

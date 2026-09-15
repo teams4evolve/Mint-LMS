@@ -29,8 +29,12 @@ use MintLMS\Http\Rest\RouteRegistrar;
 use MintLMS\Infrastructure\Admin\AdminAjaxHandler;
 use MintLMS\Infrastructure\Admin\AssetLoader;
 use MintLMS\Infrastructure\Admin\CourseBuilderPage;
+use MintLMS\Infrastructure\Admin\CoursePostEditUi;
 use MintLMS\Infrastructure\Admin\FirstRunRedirect;
+use MintLMS\Infrastructure\Admin\LessonPostEditUi;
 use MintLMS\Infrastructure\Admin\MenuRegistrar;
+use MintLMS\Infrastructure\Admin\QuestionPostEditUi;
+use MintLMS\Infrastructure\Admin\QuizPostEditUi;
 use MintLMS\Infrastructure\Admin\SettingsPage;
 use MintLMS\Infrastructure\Clock\SystemClock;
 use MintLMS\Infrastructure\Certificate\CertificateDownloadHandler;
@@ -42,6 +46,8 @@ use MintLMS\Infrastructure\Database\Migration\Migration_003_Drip;
 use MintLMS\Infrastructure\Database\Migration\Migration_004_CertificateTemplate;
 use MintLMS\Infrastructure\Database\Migration\Migration_005_CourseSettings;
 use MintLMS\Infrastructure\Database\Migration\Migration_006_CptHybrid;
+use MintLMS\Infrastructure\Database\Migration\Migration_007_MultiQuizPerLesson;
+use MintLMS\Infrastructure\Database\Migration\Migration_008_CourseAccessSettings;
 use MintLMS\Infrastructure\Database\Migration\MigrationRunner;
 use MintLMS\Infrastructure\Database\Repository\WpdbAdminDashboardRepository;
 use MintLMS\Infrastructure\Database\Repository\WpdbEnrollmentRepository;
@@ -102,6 +108,10 @@ final class Bootstrap {
 		( new MenuRegistrar() )->register();
 		( new SettingsPage() )->register();
 		( new CourseBuilderPage() )->register();
+		( new CoursePostEditUi() )->register();
+		( new LessonPostEditUi() )->register();
+		( new QuizPostEditUi() )->register();
+		( new QuestionPostEditUi() )->register();
 		( new FirstRunRedirect() )->register();
 		( new AssetLoader() )->register();
 		( new AdminAjaxHandler() )->register();
@@ -174,7 +184,8 @@ final class Bootstrap {
 			$courseRepo,
 			$authorization,
 			$clock,
-			Plugin::eventPublisher()
+			Plugin::eventPublisher(),
+			$progressRepo
 		);
 
 		$lessonAccessService = new LessonAccessService(
@@ -182,6 +193,8 @@ final class Bootstrap {
 			$enrollmentRepo,
 			$progressRepo,
 			$clock,
+			$courseRepo,
+			$sectionRepo,
 		);
 		$quizService    = new QuizService( $quizRepo, $lessonRepo, $courseRepo, $authorization, $clock, $progressRepo, $userLookup, $lessonAccessService );
 
@@ -233,6 +246,8 @@ final class Bootstrap {
 			$enrollmentRepo,
 			$progressRepo,
 			$clock,
+			$courseRepo,
+			$sectionRepo,
 		);
 		$quizService       = new QuizService( $quizRepo, $lessonRepo, $courseRepo, $authorization, $clock, $progressRepo, $userLookup, $lessonAccessService );
 		$progressService   = new ProgressService( $progressRepo, Plugin::eventPublisher(), $clock, $quizService, $lessonAccessService, $courseRepo );
@@ -241,7 +256,8 @@ final class Bootstrap {
 			$courseRepo,
 			$authorization,
 			$clock,
-			Plugin::eventPublisher()
+			Plugin::eventPublisher(),
+			$progressRepo
 		);
 		$lessonService     = new LessonService(
 			$lessonRepo,
@@ -298,6 +314,8 @@ final class Bootstrap {
 				new Migration_004_CertificateTemplate(),
 				new Migration_005_CourseSettings(),
 				new Migration_006_CptHybrid(),
+				new Migration_007_MultiQuizPerLesson(),
+				new Migration_008_CourseAccessSettings(),
 			)
 		);
 

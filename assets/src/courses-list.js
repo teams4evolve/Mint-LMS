@@ -103,6 +103,13 @@ function coursesList() {
       return `${config.urls.edit}&course_id=${courseId}`;
     },
 
+    /** Native WordPress course editor (default entry). */
+    wpEditUrl(courseId) {
+      const id = Number(courseId) || 0;
+      if (id <= 0) return '#';
+      return `post.php?post=${id}&action=edit`;
+    },
+
     previewUrl(courseId) {
       const base = String(config.urls.catalogPage || config.urls.playerPage || '').replace(/\/+$/, '');
       if (!base) {
@@ -325,10 +332,10 @@ function coursesList() {
           method: 'POST',
           body: JSON.stringify({
             title: 'Untitled Course',
-            enrollment_type: window.mintLmsAdmin?.defaultEnrollment || 'open',
+            enrollment_type: window.mintLmsAdmin?.defaultEnrollment || 'free',
           }),
         });
-        window.location.href = this.settingsUrl(course.id);
+        window.location.href = this.wpEditUrl(course.id);
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       } finally {
@@ -412,7 +419,7 @@ function coursesList() {
         }
 
         window.MintLMS.toast.success('Course duplicated');
-        window.location.href = this.builderUrl(newCourse.id);
+        window.location.href = this.wpEditUrl(newCourse.id);
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       }

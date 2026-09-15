@@ -68,7 +68,7 @@ final class LessonServiceTest extends TestCase
         $this->courseRepository->method('findById')->with(1)->willReturn($course);
         $this->authorization->method('canEditCourse')->with(2, 2)->willReturn(true);
         $this->lessonRepository->method('findBySlugAndCourseId')->willReturn(null);
-        $this->lessonRepository->method('nextSortOrder')->with(10)->willReturn(0);
+        $this->lessonRepository->method('nextSortOrder')->with(10, 1)->willReturn(0);
 
         $this->lessonRepository
             ->expects($this->once())
@@ -103,6 +103,77 @@ final class LessonServiceTest extends TestCase
 
         $this->assertSame(20, $result->id);
         $this->assertSame('welcome', $result->slug);
+    }
+
+    public function test_create_for_course_allows_ungrouped_lesson(): void
+    {
+        $course = $this->sampleCourse();
+
+        $this->courseRepository->method('findById')->with(1)->willReturn($course);
+        $this->authorization->method('canEditCourse')->with(2, 2)->willReturn(true);
+        $this->lessonRepository->method('findBySlugAndCourseId')->willReturn(null);
+        $this->lessonRepository->method('nextSortOrder')->with(0, 1)->willReturn(0);
+
+        $this->lessonRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(static function (Lesson $lesson): bool {
+                return 0 === $lesson->sectionId
+                    && 1 === $lesson->courseId
+                    && 'Solo Lesson' === $lesson->title;
+            }))
+            ->willReturnCallback(static function (Lesson $lesson): Lesson {
+                return new Lesson(
+                    55,
+                    $lesson->sectionId,
+                    $lesson->courseId,
+                    $lesson->title,
+                    $lesson->slug,
+                    $lesson->content,
+                    $lesson->videoUrl,
+                    $lesson->attachmentId,
+                    $lesson->isPreview,
+                    $lesson->availableAfterDays,
+                    $lesson->sortOrder,
+                    $lesson->createdAt,
+                    $lesson->updatedAt,
+                );
+            });
+
+        $dto = new CreateLessonDto('Solo Lesson', null, '', null, null, false);
+        $result = $this->service->createForCourse(1, $dto, 2, null);
+
+        $this->assertSame(55, $result->id);
+        $this->assertSame(0, $result->sectionId);
+        $this->assertSame(1, $result->courseId);
+    }
+
+    public function test_attach_to_course_without_section_keeps_ungrouped(): void
+    {
+        $now = new \DateTimeImmutable('2026-01-15 10:00:00');
+        $lesson = new Lesson(20, 0, 0, 'Library', 'library', '', null, null, false, null, 0, $now, $now);
+        $course = $this->sampleCourse();
+
+        $this->lessonRepository->method('findById')->with(20)->willReturn($lesson);
+        $this->courseRepository->method('findById')->with(1)->willReturn($course);
+        $this->authorization->method('canEditCourse')->willReturn(true);
+        $this->lessonRepository->method('findBySlugAndCourseId')->willReturn(null);
+        $this->lessonRepository->method('nextSortOrder')->with(0, 1)->willReturn(0);
+
+        $this->sectionRepository->expects($this->never())->method('save');
+
+        $this->lessonRepository
+            ->expects($this->once())
+            ->method('save')
+            ->with($this->callback(static function (Lesson $saved): bool {
+                return 0 === $saved->sectionId && 1 === $saved->courseId;
+            }))
+            ->willReturnArgument(0);
+
+        $result = $this->service->attachToCourse(20, 1, null, 2);
+
+        $this->assertSame(0, $result->sectionId);
+        $this->assertSame(1, $result->courseId);
     }
 
     public function test_create_throws_forbidden_when_unauthorized(): void
@@ -185,7 +256,7 @@ final class LessonServiceTest extends TestCase
         $this->sectionRepository->method('findById')->with(10)->willReturn($section);
         $this->courseRepository->method('findById')->with(1)->willReturn($course);
         $this->authorization->method('canEditCourse')->with(2, 2)->willReturn(true);
-        $this->lessonRepository->method('findBySectionId')->with(10)->willReturn($lessons);
+        $this->lessonRepository->method('findByCourseIdAndSectionId')->with(1, 10)->willReturn($lessons);
 
         $this->lessonRepository
             ->expects($this->once())

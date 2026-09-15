@@ -181,8 +181,10 @@ $showCta = $overview->isEnrolled || $overview->canEnroll || ( 'paid' === $overvi
 					$sectionTitle = (string) ( $section['title'] ?? '' );
 					$sectionMeta  = (string) ( $section['meta'] ?? '' );
 					$lessons      = is_array( $section['lessons'] ?? null ) ? $section['lessons'] : array();
+					$isUngrouped  = 0 === $sectionId;
 					?>
 					<div class="mint-s3-section">
+						<?php if ( ! $isUngrouped ) : ?>
 						<div class="mint-flex mint-items-center mint-gap-3.5 mint-bg-white mint-px-[18px] mint-py-4">
 							<div class="mint-shrink-0 mint-rounded-full mint-bg-[#E8FFF3] mint-px-2.5 mint-py-1 mint-text-[10px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-cta-ink"><?php esc_html_e( 'Section', 'mint-lms' ); ?></div>
 							<div class="mint-min-w-0 mint-flex-1">
@@ -201,8 +203,9 @@ $showCta = $overview->isEnrolled || $overview->canEnroll || ( 'paid' === $overvi
 								</svg>
 							</button>
 						</div>
+						<?php endif; ?>
 
-						<div class="mint-s3-section__body" x-show="isOpen('<?php echo esc_js( $sectionKey ); ?>')" x-cloak>
+						<div class="mint-s3-section__body" <?php echo $isUngrouped ? '' : 'x-show="isOpen(\'' . esc_js( $sectionKey ) . '\')" x-cloak'; ?>>
 							<?php if ( array() === $lessons ) : ?>
 								<p class="mint-m-0 mint-px-2 mint-py-2 mint-text-sm mint-text-[#5C5C77]"><?php esc_html_e( 'No lessons in this section yet.', 'mint-lms' ); ?></p>
 							<?php endif; ?>

@@ -242,6 +242,19 @@ final class CourseController {
 				$request->has_param( 'email_on_publish' ) ? (bool) $request->get_param( 'email_on_publish' ) : null,
 				$request->has_param( 'student_complete' ) ? (bool) $request->get_param( 'student_complete' ) : null,
 				$request->has_param( 'certificate' ) ? (bool) $request->get_param( 'certificate' ) : null,
+				$request->has_param( 'progression' ) ? (string) $request->get_param( 'progression' ) : null,
+				$request->has_param( 'expire_access' ) ? (bool) $request->get_param( 'expire_access' ) : null,
+				$request->has_param( 'expire_access_days' ) ? (int) $request->get_param( 'expire_access_days' ) : null,
+				$request->has_param( 'prerequisites_enabled' ) ? (bool) $request->get_param( 'prerequisites_enabled' ) : null,
+				$request->has_param( 'prerequisite_course_ids' )
+					? array_map( 'intval', (array) $request->get_param( 'prerequisite_course_ids' ) )
+					: null,
+				$request->has_param( 'prerequisite_compare' ) ? (string) $request->get_param( 'prerequisite_compare' ) : null,
+				$request->has_param( 'access_start_at' ) ? $this->nullableString( $request->get_param( 'access_start_at' ) ) : null,
+				$request->has_param( 'access_start_at' ) && '' === (string) $request->get_param( 'access_start_at' ),
+				$request->has_param( 'access_end_at' ) ? $this->nullableString( $request->get_param( 'access_end_at' ) ) : null,
+				$request->has_param( 'access_end_at' ) && '' === (string) $request->get_param( 'access_end_at' ),
+				$request->has_param( 'seat_limit' ) ? (int) $request->get_param( 'seat_limit' ) : null,
 			);
 
 			$course = $this->courseService->update( $id, $dto, $userId );
@@ -391,6 +404,34 @@ final class CourseController {
 		}
 
 		$course['featuredImageUrl'] = $url;
+
+		$courseId = isset( $course['id'] ) ? (int) $course['id'] : 0;
+		if ( $courseId > 0 ) {
+			$post = get_post( $courseId );
+			if ( $post instanceof \WP_Post ) {
+				if ( empty( $course['authorName'] ) ) {
+					$author = get_userdata( (int) $post->post_author );
+					$course['authorName'] = $author instanceof \WP_User
+						? (string) $author->user_nicename
+						: '';
+					$course['instructor'] = $course['authorName'];
+				}
+
+				$publishedTs = 'publish' === $post->post_status
+					? (int) get_post_time( 'U', true, $post )
+					: (int) get_post_modified_time( 'U', true, $post );
+				$course['publishedAt'] = $publishedTs > 0
+					? gmdate( 'c', $publishedTs )
+					: (string) ( $course['updatedAt'] ?? '' );
+
+				$revisions = wp_get_post_revisions( $courseId, array( 'numberposts' => -1 ) );
+				$course['revisionCount'] = is_array( $revisions ) ? count( $revisions ) : 0;
+			}
+		}
+
+		if ( ! isset( $course['revisionCount'] ) ) {
+			$course['revisionCount'] = 0;
+		}
 
 		return $course;
 	}
@@ -545,8 +586,8 @@ final class CourseController {
 			),
 			'enrollment_type'   => array(
 				'type'              => 'string',
-				'default'           => 'open',
-				'enum'              => array( 'open', 'manual', 'paid' ),
+				'default'           => 'free',
+				'enum'              => array( 'open', 'free', 'manual', 'paid' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 		);
@@ -585,7 +626,7 @@ final class CourseController {
 			),
 			'enrollment_type'   => array(
 				'type'              => 'string',
-				'enum'              => array( 'open', 'manual', 'paid' ),
+				'enum'              => array( 'open', 'free', 'manual', 'paid' ),
 				'sanitize_callback' => 'sanitize_text_field',
 			),
 			'status'            => array(
@@ -604,6 +645,44 @@ final class CourseController {
 			'certificate'       => array(
 				'type'              => 'boolean',
 				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
+			),
+			'progression'       => array(
+				'type'              => 'string',
+				'enum'              => array( 'linear', 'freeform' ),
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'expire_access'     => array(
+				'type'              => 'boolean',
+				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
+			),
+			'expire_access_days' => array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
+			),
+			'prerequisites_enabled' => array(
+				'type'              => 'boolean',
+				'sanitize_callback' => static fn( $value ): bool => (bool) $value,
+			),
+			'prerequisite_course_ids' => array(
+				'type'  => 'array',
+				'items' => array( 'type' => 'integer' ),
+			),
+			'prerequisite_compare' => array(
+				'type'              => 'string',
+				'enum'              => array( 'ANY', 'ALL' ),
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'access_start_at'   => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'access_end_at'     => array(
+				'type'              => 'string',
+				'sanitize_callback' => 'sanitize_text_field',
+			),
+			'seat_limit'        => array(
+				'type'              => 'integer',
+				'sanitize_callback' => 'absint',
 			),
 		);
 	}

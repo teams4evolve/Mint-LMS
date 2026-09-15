@@ -163,7 +163,16 @@ $fieldSelect = 'mint-block mint-w-full mint-rounded-lg mint-border mint-border-c
 						value="open"
 						<?php checked( $pageSettings->getDefaultEnrollment(), 'open' ); ?>
 					/>
-					<span><?php esc_html_e( 'Open — students can self-enroll', 'mint-lms' ); ?></span>
+					<span><?php esc_html_e( 'Open for everyone — browse without signing up', 'mint-lms' ); ?></span>
+				</label>
+				<label class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink">
+					<input
+						type="radio"
+						name="<?php echo esc_attr( PageSettings::OPTION_DEFAULT_ENROLLMENT ); ?>"
+						value="free"
+						<?php checked( $pageSettings->getDefaultEnrollment(), 'free' ); ?>
+					/>
+					<span><?php esc_html_e( 'Free — login to join', 'mint-lms' ); ?></span>
 				</label>
 				<label class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink">
 					<input
@@ -172,7 +181,7 @@ $fieldSelect = 'mint-block mint-w-full mint-rounded-lg mint-border mint-border-c
 						value="manual"
 						<?php checked( $pageSettings->getDefaultEnrollment(), 'manual' ); ?>
 					/>
-					<span><?php esc_html_e( 'Manual — admin must enroll students', 'mint-lms' ); ?></span>
+					<span><?php esc_html_e( 'Invite only — admin must enroll students', 'mint-lms' ); ?></span>
 				</label>
 				<label class="mint-flex mint-items-center mint-gap-3 mint-text-sm mint-text-ink">
 					<input

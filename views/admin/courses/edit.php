@@ -17,7 +17,6 @@ if ( $courseId <= 0 ) {
 	$courseId = isset( $_GET['course_id'] ) ? absint( $_GET['course_id'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
 }
 
-$builderUrl  = admin_url( 'admin.php?page=mint-lms-builder&course_id=' . $courseId );
 $pageSettings = new PageSettings();
 $previewUrl  = $courseId > 0 ? $pageSettings->getCourseUrl( $courseId ) : '';
 if ( '' === $previewUrl || home_url( '/' ) === $previewUrl ) {
@@ -38,9 +37,7 @@ $btnPrimary   = 'mint-settings-save mint-inline-flex mint-h-[38px] mint-items-ce
 $courseStatus   = $courseId > 0 ? (string) get_post_status( $courseId ) : 'draft';
 $courseIsLive   = 'publish' === $courseStatus;
 
-$headerActions = '<a href="' . esc_url( $builderUrl ) . '" class="' . esc_attr( $btnSecondary ) . '">'
-	. esc_html__( 'Open builder', 'mint-lms' )
-	. '</a>';
+$headerActions = '';
 
 if ( '' !== $previewUrl ) {
 	$headerActions .= '<a href="' . esc_url( $previewUrl ) . '" class="' . esc_attr( $btnSecondary ) . '" target="_blank" rel="noopener noreferrer">'
@@ -61,11 +58,11 @@ if ( ! $courseIsLive ) {
 $renderer->echo(
 	'admin/layout',
 	array(
-		'pageTitle'     => __( 'Course Settings', 'mint-lms' ),
-		'pageLabel'     => __( 'Course settings', 'mint-lms' ),
+		'pageTitle'     => __( 'Course', 'mint-lms' ),
+		'pageLabel'     => __( 'Course', 'mint-lms' ),
 		'activeNav'     => 'courses',
 		'headerActions' => $headerActions,
-		'maxWidthClass' => 'mint-max-w-[1000px]',
+		'maxWidthClass' => 'mint-max-w-wide',
 		'content'       => $content,
 	)
 );

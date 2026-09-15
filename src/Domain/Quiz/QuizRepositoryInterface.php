@@ -10,6 +10,18 @@ interface QuizRepositoryInterface {
 	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz;
 
 	/**
+	 * All quizzes linked to a lesson, ordered by sort_order.
+	 *
+	 * @return list<Quiz>
+	 */
+	public function findAllByLessonId( int $lessonId, bool $publishedOnly = false ): array;
+
+	/**
+	 * Next sort_order value for a new quiz on this lesson.
+	 */
+	public function nextQuizSortOrderForLesson( int $lessonId ): int;
+
+	/**
 	 * @return list<QuizQuestion>
 	 */
 	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array;

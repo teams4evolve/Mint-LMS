@@ -6,6 +6,7 @@ namespace MintLMS\Infrastructure\Admin;
 defined( 'ABSPATH' ) || exit;
 
 use MintLMS\Infrastructure\Setup\PageSettings;
+use MintLMS\Infrastructure\PostType\PostTypes;
 
 final class AssetLoader {
 
@@ -45,10 +46,10 @@ final class AssetLoader {
 				'nonce'              => wp_create_nonce( 'wp_rest' ),
 				'defaultEnrollment'  => $pageSettings->getDefaultEnrollment(),
 				'urls'               => array(
-					'courses'      => admin_url( 'admin.php?page=mint-lms-courses' ),
-					'lessons'      => admin_url( 'admin.php?page=mint-lms-lessons' ),
-					'quizzes'      => admin_url( 'admin.php?page=mint-lms-quizzes' ),
-					'questions'    => admin_url( 'admin.php?page=mint-lms-questions' ),
+					'courses'      => PostTypes::listUrl( PostTypes::COURSE ),
+					'lessons'      => PostTypes::listUrl( PostTypes::LESSON ),
+					'quizzes'      => PostTypes::listUrl( PostTypes::QUIZ ),
+					'questions'    => PostTypes::listUrl( PostTypes::QUESTION ),
 					'builder'      => admin_url( 'admin.php?page=mint-lms-builder' ),
 					'editQuiz'     => admin_url( 'admin.php?page=mint-lms-edit-quiz' ),
 					'edit'         => admin_url( 'admin.php?page=mint-lms-course-edit' ),
@@ -69,7 +70,7 @@ final class AssetLoader {
 				array(
 					'restBase'    => $restBase,
 					'nonce'       => wp_create_nonce( 'wp_rest' ),
-					'coursesUrl'  => admin_url( 'admin.php?page=mint-lms-courses' ),
+					'coursesUrl'  => PostTypes::listUrl( PostTypes::COURSE ),
 					'builderBase' => admin_url( 'admin.php?page=mint-lms-builder&course_id=' ),
 					'i18n'        => array(
 						'step'            => __( 'Step', 'mint-lms' ),

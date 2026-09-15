@@ -131,7 +131,9 @@ $pct          = (int) round( $context->progressPct );
 
 			<?php foreach ( $context->structure->sections as $section ) : ?>
 				<div class="mint-mb-5">
-					<h3 class="mint-mb-2 mint-text-xs mint-font-semibold mint-uppercase mint-tracking-wide mint-text-ink-3"><?php echo esc_html( $section->title ); ?></h3>
+					<?php if ( $section->id > 0 && '' !== trim( $section->title ) ) : ?>
+						<h3 class="mint-mb-2 mint-text-xs mint-font-semibold mint-uppercase mint-tracking-wide mint-text-ink-3"><?php echo esc_html( $section->title ); ?></h3>
+					<?php endif; ?>
 					<div class="mint-space-y-1">
 						<?php foreach ( $section->lessons as $sectionLesson ) :
 							$isCurrent   = $sectionLesson->id === $lesson->id;

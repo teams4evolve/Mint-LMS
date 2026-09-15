@@ -37,9 +37,9 @@ final class PageSettings {
 	}
 
 	public function getDefaultEnrollment(): string {
-		$value = (string) $this->option( self::OPTION_DEFAULT_ENROLLMENT, 'open' );
+		$value = (string) $this->option( self::OPTION_DEFAULT_ENROLLMENT, 'free' );
 
-		return in_array( $value, array( 'open', 'manual', 'paid' ), true ) ? $value : 'open';
+		return in_array( $value, array( 'open', 'free', 'manual', 'paid' ), true ) ? $value : 'free';
 	}
 
 	public function isEmailEnrollEnabled(): bool {
@@ -152,9 +152,12 @@ final class PageSettings {
 				'key'    => 'default_enrollment',
 				'label'  => __( 'Default enrollment mode set', 'mint-lms' ),
 				'done'   => '' !== $this->getDefaultEnrollment(),
-				'detail' => 'open' === $this->getDefaultEnrollment()
-					? __( 'Open enrollment', 'mint-lms' )
-					: __( 'Manual enrollment', 'mint-lms' ),
+				'detail' => match ( $this->getDefaultEnrollment() ) {
+					'open'   => __( 'Open for everyone', 'mint-lms' ),
+					'free'   => __( 'Free — login to join', 'mint-lms' ),
+					'paid'   => __( 'Paid (WooCommerce)', 'mint-lms' ),
+					default  => __( 'Invite only', 'mint-lms' ),
+				},
 			),
 		);
 	}

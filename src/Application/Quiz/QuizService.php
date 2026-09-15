@@ -97,13 +97,6 @@ final class QuizService {
 		$lesson = $this->findLessonOrFail( $lessonId );
 		$this->assertCanManageLessonContent( $userId, $lesson );
 
-		if ( null !== $this->quizRepository->findByLessonId( $lessonId ) ) {
-			throw new ValidationException(
-				'Validation failed.',
-				array( 'lesson_id' => 'This lesson already has a quiz.' )
-			);
-		}
-
 		$title = trim( $dto->title );
 
 		if ( '' === $title ) {
@@ -111,12 +104,51 @@ final class QuizService {
 		}
 
 		$passPercent = $this->normalizePassPercent( $dto->passPercent );
+		$sortOrder   = $this->quizRepository->nextQuizSortOrderForLesson( $lessonId );
 
 		$quiz = $this->quizRepository->saveQuiz(
 			new Quiz(
 				0,
 				$lessonId,
 				$lesson->courseId,
+				$title,
+				$passPercent,
+				$sortOrder,
+			)
+		);
+
+		if ( null !== $dto->questions ) {
+			foreach ( $dto->questions as $index => $questionData ) {
+				$this->createQuestionFromArray( $quiz->id, $questionData, $index );
+			}
+		}
+
+		return $this->get( $quiz->id, $userId );
+	}
+
+	/**
+	 * Create a course-scoped quiz without adding a visible course lesson.
+	 * Uses a disposable host lesson (courseId 0); quiz META_COURSE_ID links it to the course.
+	 */
+	public function createForCourse( int $courseId, CreateQuizDto $dto, int $userId ): QuizDto {
+		$course = $this->findCourseOrFail( $courseId );
+		if ( ! $this->authorization->canEditCourse( $userId, $course->authorId ) ) {
+			throw new ForbiddenException();
+		}
+
+		$title = trim( $dto->title );
+		if ( '' === $title ) {
+			throw new ValidationException( 'Validation failed.', array( 'title' => 'Title is required.' ) );
+		}
+
+		$passPercent = $this->normalizePassPercent( $dto->passPercent );
+		$host        = $this->createStandaloneHostLesson();
+
+		$quiz = $this->quizRepository->saveQuiz(
+			new Quiz(
+				0,
+				$host->id,
+				$courseId,
 				$title,
 				$passPercent,
 				0,
@@ -130,6 +162,48 @@ final class QuizService {
 		}
 
 		return $this->get( $quiz->id, $userId );
+	}
+
+	/**
+	 * Create a course-scoped question without requiring an existing (or visible) quiz.
+	 * Host quiz is disposable until the author links it via attach.
+	 *
+	 * @return array{quiz: QuizDto, questionId: int}
+	 */
+	public function createQuestionForCourse( int $courseId, int $userId ): array {
+		$quiz = $this->createForCourse(
+			$courseId,
+			new CreateQuizDto( __( 'New Quiz', 'mint-lms' ), 80, null ),
+			$userId
+		);
+
+		$updated = $this->addQuestion(
+			$quiz->id,
+			new CreateQuestionDto(
+				'essay',
+				'New Question',
+				array(),
+				'',
+			),
+			$userId
+		);
+
+		$questionId = 0;
+		foreach ( array_reverse( $updated->questions ) as $question ) {
+			if ( $question->id > 0 ) {
+				$questionId = $question->id;
+				break;
+			}
+		}
+
+		if ( $questionId <= 0 ) {
+			throw new ValidationException( 'Could not create question.' );
+		}
+
+		return array(
+			'quiz'       => $updated,
+			'questionId' => $questionId,
+		);
 	}
 
 	public function update( int $quizId, UpdateQuizDto $dto, int $userId ): QuizDto {
@@ -199,6 +273,8 @@ final class QuizService {
 			$this->lessonRepository->delete( $previousLessonId );
 		}
 
+		delete_post_meta( $quizId, \MintLMS\Infrastructure\PostType\PostTypes::META_QUESTION_SHELL );
+
 		return $this->get( $quizId, $userId );
 	}
 
@@ -214,13 +290,14 @@ final class QuizService {
 			return $this->get( $quizId, $userId );
 		}
 
-		$host = $this->createStandaloneHostLesson();
+		$host     = $this->createStandaloneHostLesson();
+		$courseId = $quiz->courseId > 0 ? $quiz->courseId : $currentLesson->courseId;
 
 		$this->quizRepository->saveQuiz(
 			new Quiz(
 				$quiz->id,
 				$host->id,
-				0,
+				$courseId,
 				$quiz->title,
 				$quiz->passPercent,
 				$quiz->sortOrder,
@@ -294,11 +371,12 @@ final class QuizService {
 		}
 
 		$hostLesson = $this->createStandaloneHostLesson();
+		$courseId   = $current->courseId > 0 ? $current->courseId : $currentLesson->courseId;
 		$hostQuiz   = $this->quizRepository->saveQuiz(
 			new Quiz(
 				0,
 				$hostLesson->id,
-				0,
+				$courseId,
 				__( 'New Quiz', 'mint-lms' ),
 				80,
 				0,
@@ -463,50 +541,44 @@ final class QuizService {
 	}
 
 	public function lessonRequiresQuizPass( int $lessonId ): bool {
-		$quiz = $this->quizRepository->findByLessonId( $lessonId );
-
-		if ( null === $quiz ) {
-			return false;
+		foreach ( $this->quizRepository->findAllByLessonId( $lessonId ) as $quiz ) {
+			$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
+			if ( array() !== $questions ) {
+				return true;
+			}
 		}
 
-		$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
-
-		return array() !== $questions;
+		return false;
 	}
 
 	public function hasPassedLessonQuiz( int $userId, int $lessonId ): bool {
-		$quiz = $this->quizRepository->findByLessonId( $lessonId );
-
-		if ( null === $quiz ) {
-			return true;
+		foreach ( $this->quizRepository->findAllByLessonId( $lessonId ) as $quiz ) {
+			$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
+			if ( array() === $questions ) {
+				continue;
+			}
+			if ( ! $this->hasPassed( $userId, $quiz->id ) ) {
+				return false;
+			}
 		}
 
-		$questions = $this->quizRepository->findQuestionsByQuizId( $quiz->id );
-
-		if ( array() === $questions ) {
-			return true;
-		}
-
-		return $this->hasPassed( $userId, $quiz->id );
+		return true;
 	}
 
 
 	public function syncCourseIdForLesson( int $lessonId, int $courseId ): void {
-		$quiz = $this->quizRepository->findByLessonId( $lessonId );
-		if ( null === $quiz ) {
-			return;
+		foreach ( $this->quizRepository->findAllByLessonId( $lessonId ) as $quiz ) {
+			$this->quizRepository->saveQuiz(
+				new Quiz(
+					$quiz->id,
+					$quiz->lessonId,
+					$courseId,
+					$quiz->title,
+					$quiz->passPercent,
+					$quiz->sortOrder,
+				)
+			);
 		}
-
-		$this->quizRepository->saveQuiz(
-			new Quiz(
-				$quiz->id,
-				$quiz->lessonId,
-				$courseId,
-				$quiz->title,
-				$quiz->passPercent,
-				$quiz->sortOrder,
-			)
-		);
 	}
 
 	public function onLessonDeleted( int $lessonId ): void {

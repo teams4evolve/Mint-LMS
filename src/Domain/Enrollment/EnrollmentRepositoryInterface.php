@@ -36,4 +36,6 @@ interface EnrollmentRepositoryInterface {
 	 * @return array<int, float>
 	 */
 	public function getProgressPercentagesForCourse( int $courseId, array $userIds ): array;
+
+	public function countActiveByCourse( int $courseId ): int;
 }

@@ -50,6 +50,44 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function findBySectionId( int $sectionId, bool $publishedOnly = false ): array {
+		return $this->queryLessonsByMeta(
+			array(
+				array(
+					'key'     => PostTypes::META_SECTION_ID,
+					'value'   => $sectionId,
+					'compare' => '=',
+					'type'    => 'NUMERIC',
+				),
+			),
+			$publishedOnly
+		);
+	}
+
+	public function findByCourseIdAndSectionId( int $courseId, int $sectionId, bool $publishedOnly = false ): array {
+		return $this->queryLessonsByMeta(
+			array(
+				array(
+					'key'     => PostTypes::META_COURSE_ID,
+					'value'   => $courseId,
+					'compare' => '=',
+					'type'    => 'NUMERIC',
+				),
+				array(
+					'key'     => PostTypes::META_SECTION_ID,
+					'value'   => $sectionId,
+					'compare' => '=',
+					'type'    => 'NUMERIC',
+				),
+			),
+			$publishedOnly
+		);
+	}
+
+	/**
+	 * @param list<array<string, mixed>> $metaQuery
+	 * @return list<Lesson>
+	 */
+	private function queryLessonsByMeta( array $metaQuery, bool $publishedOnly ): array {
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::LESSON,
@@ -63,14 +101,7 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => true,
 				'update_post_term_cache' => false,
-				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					array(
-						'key'     => PostTypes::META_SECTION_ID,
-						'value'   => $sectionId,
-						'compare' => '=',
-						'type'    => 'NUMERIC',
-					),
-				),
+				'meta_query'             => $metaQuery, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			)
 		);
 
@@ -144,6 +175,11 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 	}
 
 	public function deleteBySectionId( int $sectionId ): void {
+		// section_id 0 is the ungrouped/library bucket — never mass-delete it.
+		if ( $sectionId <= 0 ) {
+			return;
+		}
+
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::LESSON,
@@ -187,7 +223,25 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 		}
 	}
 
-	public function nextSortOrder( int $sectionId ): int {
+	public function nextSortOrder( int $sectionId, ?int $courseId = null ): int {
+		$metaQuery = array(
+			array(
+				'key'     => PostTypes::META_SECTION_ID,
+				'value'   => $sectionId,
+				'compare' => '=',
+				'type'    => 'NUMERIC',
+			),
+		);
+
+		if ( null !== $courseId ) {
+			$metaQuery[] = array(
+				'key'     => PostTypes::META_COURSE_ID,
+				'value'   => $courseId,
+				'compare' => '=',
+				'type'    => 'NUMERIC',
+			);
+		}
+
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::LESSON,
@@ -200,14 +254,7 @@ final class WpPostLessonRepository implements LessonRepositoryInterface {
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => true,
 				'update_post_term_cache' => false,
-				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
-					array(
-						'key'     => PostTypes::META_SECTION_ID,
-						'value'   => $sectionId,
-						'compare' => '=',
-						'type'    => 'NUMERIC',
-					),
-				),
+				'meta_query'             => $metaQuery, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query
 			)
 		);
 

@@ -6,7 +6,7 @@ defined( 'ABSPATH' ) || exit;
 // phpcs:disable WordPress.NamingConventions.PrefixAllGlobals.NonPrefixedVariableFound -- Template partial variables.
 
 /** @var MintLMS\Infrastructure\Admin\ViewRenderer $renderer */
-$addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-lesson' );
+$addNewUrl = $addNewUrl ?? admin_url( 'post-new.php?post_type=mint-lesson' );
 ?>
 <div
 	x-data="lessonsList()"
@@ -92,7 +92,7 @@ $addNewUrl = $addNewUrl ?? admin_url( 'admin.php?page=mint-lms-new-lesson' );
 					>
 						<a :href="editUrl(item)" class="mint-course-action"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></a>
 						<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-						<a :href="editUrl(item)" class="mint-course-action"><?php esc_html_e( 'Quick Edit', 'mint-lms' ); ?></a>
+						<a :href="mintBuilderUrl(item)" class="mint-course-action" x-text="mintBuilderLabel()"></a>
 						<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 						<button type="button" class="mint-course-action mint-course-action--danger" @click="trashItem(item)"><?php esc_html_e( 'Trash', 'mint-lms' ); ?></button>
 						<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>

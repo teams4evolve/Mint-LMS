@@ -135,7 +135,7 @@ $hue_tile_classes = array(
 					<svg class="mint-transition-transform mint-duration-150" :class="{ 'mint-rotate-180': showDetails }" style="transition-timing-function: cubic-bezier(.2,.8,.2,1)" width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 					<span x-text="showDetails ? '<?php echo esc_js( __( 'Hide details', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Show details', 'mint-lms' ) ); ?>'"></span>
 				</button>
-				<a href="<?php echo esc_url( admin_url( 'admin.php?page=mint-lms-courses' ) ); ?>" class="mint-text-sm mint-font-medium mint-text-ink-3 mint-no-underline hover:mint-text-ink">
+				<a href="<?php echo esc_url( \MintLMS\Infrastructure\PostType\PostTypes::listUrl( \MintLMS\Infrastructure\PostType\PostTypes::COURSE ) ); ?>" class="mint-text-sm mint-font-medium mint-text-ink-3 mint-no-underline hover:mint-text-ink">
 					<?php
 					printf(
 						/* translators: %d: number of courses */

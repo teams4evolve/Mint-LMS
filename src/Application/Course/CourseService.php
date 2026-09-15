@@ -85,11 +85,52 @@ final class CourseService {
 		$imageId     = $dto->updateFeaturedImage ? $dto->featuredImageId : $course->featuredImageId;
 		$enrollment  = null !== $dto->enrollmentType ? $dto->enrollmentType : $course->enrollmentType;
 		$status      = null !== $dto->status ? $dto->status : $course->status;
-		$settings    = $course->settings->with(
+		$settings = $course->settings->with(
 			$dto->emailOnPublish,
 			$dto->studentComplete,
 			$dto->certificate,
 		);
+
+		$settingsPatch = array();
+		if ( null !== $dto->progression ) {
+			$settingsPatch['progression'] = $dto->progression;
+		}
+		if ( null !== $dto->expireAccess ) {
+			$settingsPatch['expireAccess'] = $dto->expireAccess;
+		}
+		if ( null !== $dto->expireAccessDays ) {
+			$settingsPatch['expireAccessDays'] = $dto->expireAccessDays;
+		}
+		if ( null !== $dto->prerequisitesEnabled ) {
+			$settingsPatch['prerequisitesEnabled'] = $dto->prerequisitesEnabled;
+		}
+		if ( null !== $dto->prerequisiteCourseIds ) {
+			$settingsPatch['prerequisiteCourseIds'] = array_values(
+				array_filter(
+					array_map( 'intval', $dto->prerequisiteCourseIds ),
+					static fn( int $id ): bool => $id > 0 && $id !== $course->id
+				)
+			);
+		}
+		if ( null !== $dto->prerequisiteCompare ) {
+			$settingsPatch['prerequisiteCompare'] = $dto->prerequisiteCompare;
+		}
+		if ( $dto->clearAccessStartAt ) {
+			$settingsPatch['accessStartAt'] = null;
+		} elseif ( null !== $dto->accessStartAt ) {
+			$settingsPatch['accessStartAt'] = $dto->accessStartAt;
+		}
+		if ( $dto->clearAccessEndAt ) {
+			$settingsPatch['accessEndAt'] = null;
+		} elseif ( null !== $dto->accessEndAt ) {
+			$settingsPatch['accessEndAt'] = $dto->accessEndAt;
+		}
+		if ( null !== $dto->seatLimit ) {
+			$settingsPatch['seatLimit'] = $dto->seatLimit;
+		}
+		if ( array() !== $settingsPatch ) {
+			$settings = $settings->merge( $settingsPatch );
+		}
 		$wasPublished = CourseStatus::Published === $course->status;
 
 		if ( null !== $imageId && $imageId <= 0 ) {

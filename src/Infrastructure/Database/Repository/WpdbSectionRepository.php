@@ -190,6 +190,26 @@ final class WpdbSectionRepository implements SectionRepositoryInterface {
 			}
 		}
 
+		// Course lessons with no section (section_id = 0) — independent of sections.
+		if ( null !== $this->lessons ) {
+			$ungrouped = $this->lessons->findByCourseIdAndSectionId( $courseId, 0, $publishedOnly );
+			if ( array() !== $ungrouped ) {
+				$virtual = new Section(
+					0,
+					$courseId,
+					'',
+					-1,
+					new \DateTimeImmutable( '@0' ),
+				);
+				foreach ( $ungrouped as $lesson ) {
+					$structure[] = array(
+						'section' => $virtual,
+						'lesson'  => $lesson,
+					);
+				}
+			}
+		}
+
 		return $structure;
 	}
 

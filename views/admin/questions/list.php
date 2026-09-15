@@ -8,7 +8,7 @@ defined( 'ABSPATH' ) || exit;
 use MintLMS\Infrastructure\Admin\ViewRenderer;
 
 $renderer  = new ViewRenderer();
-$addNewUrl = admin_url( 'admin.php?page=mint-lms-new-question' );
+$addNewUrl = admin_url( 'post-new.php?post_type=mint-question' );
 
 $content = $renderer->render(
 	'admin/questions/_list-content',

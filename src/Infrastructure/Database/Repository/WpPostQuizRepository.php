@@ -35,16 +35,25 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 	}
 
 	public function findByLessonId( int $lessonId, bool $publishedOnly = false ): ?Quiz {
+		$quizzes = $this->findAllByLessonId( $lessonId, $publishedOnly );
+
+		return $quizzes[0] ?? null;
+	}
+
+	public function findAllByLessonId( int $lessonId, bool $publishedOnly = false ): array {
 		$query = new \WP_Query(
 			array(
 				'post_type'              => PostTypes::QUIZ,
 				'post_status'            => $publishedOnly
 					? 'publish'
 					: array( 'publish', 'draft', 'private' ),
-				'posts_per_page'         => 1,
+				'posts_per_page'         => -1,
 				'no_found_rows'          => true,
 				'update_post_meta_cache' => true,
 				'update_post_term_cache' => false,
+				'orderby'                => 'meta_value_num',
+				'meta_key'               => PostTypes::META_SORT_ORDER, // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_key -- Ordered lesson quizzes.
+				'order'                  => 'ASC',
 				'meta_query'             => array( // phpcs:ignore WordPress.DB.SlowDBQuery.slow_db_query_meta_query -- Lesson-scoped quiz lookup.
 					array(
 						'key'     => PostTypes::META_LESSON_ID,
@@ -56,13 +65,27 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 			)
 		);
 
-		$post = $query->posts[0] ?? null;
+		$quizzes = array();
 
-		if ( ! $post instanceof \WP_Post ) {
-			return null;
+		foreach ( $query->posts as $post ) {
+			if ( $post instanceof \WP_Post ) {
+				$quizzes[] = $this->mapPostToQuiz( $post );
+			}
 		}
 
-		return $this->mapPostToQuiz( $post );
+		return $quizzes;
+	}
+
+	public function nextQuizSortOrderForLesson( int $lessonId ): int {
+		$max = -1;
+
+		foreach ( $this->findAllByLessonId( $lessonId ) as $quiz ) {
+			if ( $quiz->sortOrder > $max ) {
+				$max = $quiz->sortOrder;
+			}
+		}
+
+		return $max + 1;
 	}
 
 	public function findQuestionsByQuizId( int $quizId, bool $publishedOnly = false ): array {
@@ -394,9 +417,7 @@ final class WpPostQuizRepository implements QuizRepositoryInterface {
 	}
 
 	public function deleteByLessonId( int $lessonId ): void {
-		$quiz = $this->findByLessonId( $lessonId );
-
-		if ( null !== $quiz ) {
+		foreach ( $this->findAllByLessonId( $lessonId ) as $quiz ) {
 			$this->deleteQuiz( $quiz->id );
 		}
 	}

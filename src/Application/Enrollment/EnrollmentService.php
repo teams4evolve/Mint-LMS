@@ -13,6 +13,7 @@ use MintLMS\Application\Event\DomainEventPublisher;
 use MintLMS\Application\Exception\ForbiddenException;
 use MintLMS\Application\Exception\NotFoundException;
 use MintLMS\Application\Exception\ValidationException;
+use MintLMS\Domain\Course\CourseAccessRules;
 use MintLMS\Domain\Course\CourseRepositoryInterface;
 use MintLMS\Domain\Course\CourseStatus;
 use MintLMS\Domain\Course\EnrollmentType;
@@ -21,6 +22,7 @@ use MintLMS\Domain\Enrollment\EnrollmentRepositoryInterface;
 use MintLMS\Domain\Enrollment\EnrollmentStatus;
 use MintLMS\Domain\Event\EnrollmentCancelled;
 use MintLMS\Domain\Event\EnrollmentCreated;
+use MintLMS\Domain\Progress\ProgressRepositoryInterface;
 use MintLMS\Domain\Shared\Clock;
 use MintLMS\Domain\Shared\UserId;
 
@@ -36,15 +38,23 @@ final class EnrollmentService {
 		private AuthorizationInterface $authorization,
 		private Clock $clock,
 		private DomainEventPublisher $events,
+		private ?ProgressRepositoryInterface $progressRepository = null,
 	) {
 	}
 
 	public function enroll( int $userId, int $courseId, int $actorUserId ): EnrollmentDto {
 		$course = $this->findCourseOrFail( $courseId );
+		$isSelf = $userId === $actorUserId;
 		$this->assertCanEnroll( $userId, $courseId, $actorUserId, $course->enrollmentType, $course->status, $course->authorId );
 
 		if ( $userId <= 0 ) {
 			throw new ValidationException( 'Validation failed.', array( 'userId' => 'User ID is required.' ) );
+		}
+
+		$now = $this->clock->now();
+
+		if ( $isSelf ) {
+			$this->assertSelfEnrollmentGates( $course, $userId, $now );
 		}
 
 		$existing = $this->enrollmentRepository->findByUserAndCourse( $userId, $courseId );
@@ -53,7 +63,7 @@ final class EnrollmentService {
 			return EnrollmentDto::fromEnrollment( $existing );
 		}
 
-		$now = $this->clock->now();
+		$expiresAt = CourseAccessRules::resolveExpiresAt( $course->settings, $now );
 
 		if ( null !== $existing && EnrollmentStatus::Cancelled === $existing->status ) {
 			$reactivated = new Enrollment(
@@ -62,7 +72,7 @@ final class EnrollmentService {
 				$existing->courseId,
 				EnrollmentStatus::Active,
 				$now,
-				$existing->expiresAt,
+				$expiresAt,
 				null,
 			);
 
@@ -87,7 +97,7 @@ final class EnrollmentService {
 			$courseId,
 			EnrollmentStatus::Active,
 			$now,
-			null,
+			$expiresAt,
 			null,
 		);
 
@@ -246,7 +256,7 @@ final class EnrollmentService {
 				throw new ForbiddenException();
 			}
 
-			if ( EnrollmentType::Manual === $enrollmentType || EnrollmentType::Paid === $enrollmentType ) {
+			if ( ! $enrollmentType->allowsSelfEnroll() ) {
 				throw new ForbiddenException(
 					EnrollmentType::Paid === $enrollmentType
 						? 'This course requires purchase.'
@@ -267,6 +277,31 @@ final class EnrollmentService {
 
 		if ( ! $this->authorization->canEditCourse( $actorUserId, $authorId ) ) {
 			throw new ForbiddenException();
+		}
+	}
+
+	private function assertSelfEnrollmentGates( \MintLMS\Domain\Course\Course $course, int $userId, \DateTimeImmutable $now ): void {
+		if ( CourseAccessRules::isAfterAccessEnd( $course->settings, $now ) ) {
+			throw new ForbiddenException( 'This course is no longer accepting students.' );
+		}
+
+		if ( CourseAccessRules::isSeatLimitReached( $course->settings, $this->enrollmentRepository->countActiveByCourse( $course->id ) ) ) {
+			throw new ForbiddenException( 'This course is full.' );
+		}
+
+		if ( ! CourseAccessRules::prerequisitesMet(
+			$course->settings,
+			function ( int $prereqCourseId ) use ( $userId ): bool {
+				if ( null === $this->progressRepository ) {
+					return false;
+				}
+
+				$summary = $this->progressRepository->getSummary( $userId, $prereqCourseId );
+
+				return null !== $summary && $summary->isCourseComplete();
+			}
+		) ) {
+			throw new ForbiddenException( 'Finish the required courses first.' );
 		}
 	}
 
