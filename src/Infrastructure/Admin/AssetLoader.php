@@ -80,7 +80,7 @@ final class AssetLoader {
 							3 => __( 'Publish your course', 'mint-lms' ),
 						),
 						'titleRequired'   => __( 'Course title is required.', 'mint-lms' ),
-						'sectionRequired' => __( 'Section and lesson titles are required.', 'mint-lms' ),
+						'sectionRequired' => __( 'Lesson group and lesson titles are required.', 'mint-lms' ),
 						'genericError'    => __( 'Something went wrong. Please try again.', 'mint-lms' ),
 					),
 				)

@@ -96,7 +96,7 @@ final class SectionService {
 		}
 
 		if ( array() === $dto->sectionIds ) {
-			throw new ValidationException( 'Validation failed.', array( 'ids' => 'At least one section ID is required.' ) );
+			throw new ValidationException( 'Validation failed.', array( 'ids' => 'At least one lesson group ID is required.' ) );
 		}
 
 		$sections = $this->sectionRepository->findByCourseId( $courseId );
@@ -104,7 +104,7 @@ final class SectionService {
 		if ( count( $sections ) !== count( $dto->sectionIds ) ) {
 			throw new ValidationException(
 				'Validation failed.',
-				array( 'ids' => 'Section IDs must include every section in the course.' )
+				array( 'ids' => 'Lesson group IDs must include every lesson group in the course.' )
 			);
 		}
 
@@ -117,13 +117,13 @@ final class SectionService {
 			if ( ! in_array( $sectionId, $existingIds, true ) ) {
 				throw new ValidationException(
 					'Validation failed.',
-					array( 'ids' => 'One or more section IDs do not belong to this course.' )
+					array( 'ids' => 'One or more lesson group IDs do not belong to this course.' )
 				);
 			}
 		}
 
 		if ( count( array_unique( $dto->sectionIds ) ) !== count( $dto->sectionIds ) ) {
-			throw new ValidationException( 'Validation failed.', array( 'ids' => 'Section IDs must be unique.' ) );
+			throw new ValidationException( 'Validation failed.', array( 'ids' => 'Lesson group IDs must be unique.' ) );
 		}
 
 		$this->sectionRepository->reorder( $courseId, $dto->sectionIds );
@@ -133,7 +133,7 @@ final class SectionService {
 		$section = $this->sectionRepository->findById( $id );
 
 		if ( null === $section ) {
-			throw new NotFoundException( 'Section not found.' );
+			throw new NotFoundException( 'Lesson group not found.' );
 		}
 
 		return $section;

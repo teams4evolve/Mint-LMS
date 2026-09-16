@@ -37,7 +37,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 			@mouseleave="closeNavMenu('section')"
 			:style="{ color: navTabInk('section') }"
 		>
-			<span><?php esc_html_e( 'Section', 'mint-lms' ); ?></span>
+			<span><?php esc_html_e( 'Lesson Group', 'mint-lms' ); ?></span>
 			<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" :style="{ transform: 'rotate(' + navChevronDeg('section') + 'deg)' }"><path d="m5 8 5 5 5-5" /></svg>
 			<div class="mint-builder-nav__menu" x-show="navMenuOpen('section')" x-cloak @click.stop>
 				<button type="button" class="mint-builder-nav__option mint-builder-nav__option--overview" @click="navOpenOverview('section')">
@@ -45,19 +45,12 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/></svg>
 					</span>
 					<span class="mint-truncate"><?php esc_html_e( 'Overview', 'mint-lms' ); ?></span>
+					<span class="mint-builder-nav__count" x-text="navTypeTotal('section')" aria-hidden="true"></span>
 				</button>
 				<div class="mint-builder-nav__divider" aria-hidden="true"></div>
-				<template x-for="section in navLatestSections()" :key="'nav-latest-section-' + section.id">
-					<button type="button" class="mint-builder-nav__option mint-builder-nav__option--recent" @click="selectNavSection(section)">
-						<span class="mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
-							<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8" /></svg>
-						</span>
-						<span class="mint-truncate" x-text="section.title || 'Untitled section'"></span>
-					</button>
-				</template>
 				<button type="button" class="mint-builder-nav__add" :disabled="addingSection || isStandalone || !courseId" @click="navAddSection()">
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10" /></svg>
-					<?php esc_html_e( 'Add new section', 'mint-lms' ); ?>
+					<?php esc_html_e( 'Add new lesson group', 'mint-lms' ); ?>
 				</button>
 			</div>
 		</div>
@@ -79,16 +72,9 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/></svg>
 					</span>
 					<span class="mint-truncate"><?php esc_html_e( 'Overview', 'mint-lms' ); ?></span>
+					<span class="mint-builder-nav__count" x-text="navTypeTotal('lesson')" aria-hidden="true"></span>
 				</button>
 				<div class="mint-builder-nav__divider" aria-hidden="true"></div>
-				<template x-for="lesson in navLatestLessons()" :key="'nav-latest-lesson-' + lesson.id">
-					<button type="button" class="mint-builder-nav__option mint-builder-nav__option--recent" @click="selectNavLesson(lesson)">
-						<span class="mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
-							<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5" /></svg>
-						</span>
-						<span class="mint-truncate" x-text="lesson.title || 'Untitled lesson'"></span>
-					</button>
-				</template>
 				<button type="button" class="mint-builder-nav__add" :disabled="addingLesson || isStandalone || !courseId" @click="navAddLesson()">
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10" /></svg>
 					<?php esc_html_e( 'Add new lesson', 'mint-lms' ); ?>
@@ -113,16 +99,9 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/></svg>
 					</span>
 					<span class="mint-truncate"><?php esc_html_e( 'Overview', 'mint-lms' ); ?></span>
+					<span class="mint-builder-nav__count" x-text="navTypeTotal('quiz')" aria-hidden="true"></span>
 				</button>
 				<div class="mint-builder-nav__divider" aria-hidden="true"></div>
-				<template x-for="quiz in navLatestQuizzes()" :key="'nav-latest-quiz-' + quiz.id">
-					<button type="button" class="mint-builder-nav__option mint-builder-nav__option--recent" @click="selectNavQuiz(quiz)">
-						<span class="mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
-							<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5" /></svg>
-						</span>
-						<span class="mint-truncate" x-text="quiz.title || 'Untitled quiz'"></span>
-					</button>
-				</template>
 				<button type="button" class="mint-builder-nav__add" :disabled="addingCourseQuiz || quizSaving" @click="navAddQuiz()">
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10" /></svg>
 					<?php esc_html_e( 'Add new quiz', 'mint-lms' ); ?>
@@ -147,14 +126,9 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="6" height="6" rx="1.2"/><rect x="11" y="3" width="6" height="6" rx="1.2"/><rect x="3" y="11" width="6" height="6" rx="1.2"/><rect x="11" y="11" width="6" height="6" rx="1.2"/></svg>
 					</span>
 					<span class="mint-truncate"><?php esc_html_e( 'Overview', 'mint-lms' ); ?></span>
+					<span class="mint-builder-nav__count" x-text="navTypeTotal('question')" aria-hidden="true"></span>
 				</button>
 				<div class="mint-builder-nav__divider" aria-hidden="true"></div>
-				<template x-for="question in navLatestQuestions()" :key="'nav-latest-question-' + question.id">
-					<button type="button" class="mint-builder-nav__option mint-builder-nav__option--recent" @click="selectNavQuestion(question)">
-						<span class="mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
-						<span class="mint-truncate" x-text="question.title || 'Untitled question'"></span>
-					</button>
-				</template>
 				<button type="button" class="mint-builder-nav__add" @click="navAddQuestion()">
 					<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10" /></svg>
 					<?php esc_html_e( 'Add new question', 'mint-lms' ); ?>
@@ -171,7 +145,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 			@mouseleave="closeNavMenu('tree')"
 			:style="{ color: navTabInk('tree') }"
 		>
-			<span><?php esc_html_e( 'Course Content Tree', 'mint-lms' ); ?></span>
+			<span><?php esc_html_e( 'Course Hierarchy', 'mint-lms' ); ?></span>
 			<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" :style="{ transform: 'rotate(' + navChevronDeg('tree') + 'deg)' }"><path d="m5 8 5 5 5-5" /></svg>
 			<div class="mint-builder-nav__menu mint-builder-nav__menu--tree" x-show="navMenuOpen('tree')" x-cloak @click.stop>
 				<div class="mint-builder-nav__tree-course">
@@ -831,7 +805,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<template x-if="filteredContentsSections().length === 0">
 							<div class="mint-builder-tree__empty">
 								<p x-text="contentsSearchQuery() ? contentsSearchEmptyLabel() : '<?php echo esc_js( __( 'No content yet', 'mint-lms' ) ); ?>'"></p>
-								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="createCourseLesson()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add section', 'mint-lms' ); ?></button>
+								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="createCourseLesson()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add lesson group', 'mint-lms' ); ?></button>
 							</div>
 						</template>
 
@@ -1359,7 +1333,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							</div>
 							<template x-if="attach.courseId">
 								<div class="mint-mt-3">
-									<label class="mint-assoc-card__label"><?php esc_html_e( 'Section', 'mint-lms' ); ?></label>
+									<label class="mint-assoc-card__label"><?php esc_html_e( 'Lesson Group', 'mint-lms' ); ?></label>
 																		<div
 										class="mint-assoc-select"
 										:class="open ? 'is-open' : ''"
@@ -1370,7 +1344,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											<span
 												class="mint-assoc-select__value"
 												:class="false ? 'is-placeholder' : ''"
-												x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No section', 'mint-lms' ) ); ?>'"
+												x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No lesson group', 'mint-lms' ) ); ?>'"
 											></span>
 											<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 										</button>
@@ -1380,7 +1354,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												class="mint-assoc-select__option"
 												:class="!attach.sectionId ? 'is-active' : ''"
 												@click="pickAttachSection(0); open = false"
-											><?php esc_html_e( 'No section', 'mint-lms' ); ?></button>											<template x-for="s in attachSections" :key="'chg-s-' + s.id">
+											><?php esc_html_e( 'No lesson group', 'mint-lms' ); ?></button>											<template x-for="s in attachSections" :key="'chg-s-' + s.id">
 												<button
 													type="button"
 													class="mint-assoc-select__option"
@@ -1437,7 +1411,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 				</button>
 				<div class="mint-assoc-card">
 					<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a course', 'mint-lms' ); ?></h2>
-					<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this lesson (and its quiz, if any) to a course. Section is optional.', 'mint-lms' ); ?></p>
+					<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this lesson (and its quiz, if any) to a course. Lesson group is optional.', 'mint-lms' ); ?></p>
 					<label class="mint-assoc-card__label"><?php esc_html_e( 'Course', 'mint-lms' ); ?></label>
 										<div
 						class="mint-assoc-select"
@@ -1473,7 +1447,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 					</div>
 					<template x-if="attach.courseId">
 						<div class="mint-mt-3">
-							<label class="mint-assoc-card__label"><?php esc_html_e( 'Section', 'mint-lms' ); ?></label>
+							<label class="mint-assoc-card__label"><?php esc_html_e( 'Lesson Group', 'mint-lms' ); ?></label>
 														<div
 								class="mint-assoc-select"
 								:class="open ? 'is-open' : ''"
@@ -1484,7 +1458,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									<span
 										class="mint-assoc-select__value"
 										:class="false ? 'is-placeholder' : ''"
-										x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No section', 'mint-lms' ) ); ?>'"
+										x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No lesson group', 'mint-lms' ) ); ?>'"
 									></span>
 									<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 								</button>
@@ -1494,7 +1468,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										class="mint-assoc-select__option"
 										:class="!attach.sectionId ? 'is-active' : ''"
 										@click="pickAttachSection(0); open = false"
-									><?php esc_html_e( 'No section', 'mint-lms' ); ?></button>									<template x-for="s in attachSections" :key="s.id">
+									><?php esc_html_e( 'No lesson group', 'mint-lms' ); ?></button>									<template x-for="s in attachSections" :key="s.id">
 										<button
 											type="button"
 											class="mint-assoc-select__option"
@@ -1528,7 +1502,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<div class="mint-builder-tree-page">
 							<div class="mint-builder-tree-page__head">
 								<div class="mint-builder-tree-page__intro">
-									<div class="mint-builder-tree-page__title"><?php esc_html_e( 'Course content tree', 'mint-lms' ); ?></div>
+									<div class="mint-builder-tree-page__title"><?php esc_html_e( 'Course hierarchy', 'mint-lms' ); ?></div>
 									<div class="mint-builder-tree-page__copy" x-text="treeStepsLabel()"></div>
 								</div>
 								<button type="button" class="mint-builder-tree-page__collapse" @click="toggleTreeExpandCollapse()" x-text="treeExpandCollapseLabel()"></button>
@@ -1540,7 +1514,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										<div class="mint-tree-page-lessons" data-section-id="0">
 										<template x-for="lesson in (navUngroupedSection().lessons || [])" :key="'tree-page-ules-' + lesson.id">
 											<div class="mint-builder-tree-page__branch" :data-lesson-id="lesson.id">
-												<div class="mint-builder-tree-page__row mint-builder-tree-page__row--lesson">
+												<div class="mint-builder-tree-page__row mint-builder-tree-page__row--lesson" :class="{ 'is-adding': treePageInlineQuizOpen(lesson.id) }">
 													<span class="mint-builder-tree-page__grip mint-handle-lesson" title="Drag to reorder">
 														<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
 													</span>
@@ -1548,17 +1522,21 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 														<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: 'rotate(' + (isLessonExpanded(lesson.id) ? 90 : 0) + 'deg)' }"><path d="m7 5 6 5-6 5"/></svg>
 													</button>
 													<span class="mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
-														<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+														<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
 													</span>
 													<span class="mint-builder-tree-page__name mint-truncate" x-text="lesson.title || 'Untitled lesson'"></span>
+													<button type="button" class="mint-builder-tree-page__new" :disabled="addingCourseQuiz" @click.stop="treePageStartAddQuiz(lesson, 0)">
+														<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+														<?php esc_html_e( 'New Quiz', 'mint-lms' ); ?>
+													</button>
 													<button type="button" class="mint-builder-tree-page__edit" @click.stop="editTreeLesson(lesson)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
 													<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteLesson(lesson.id, 0)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 													<span class="mint-builder-tree-page__meta" x-text="lessonChildCountLabel(lesson)"></span>
 												</div>
-												<div class="mint-builder-tree-page__children" x-show="isLessonExpanded(lesson.id)">
+												<div class="mint-builder-tree-page__children" x-show="isLessonExpanded(lesson.id) || treePageInlineQuizOpen(lesson.id)">
 													<template x-for="quiz in sidebarQuizzesForLesson(lesson)" :key="'tree-page-uqz-' + quiz.id">
 														<div class="mint-builder-tree-page__branch">
-															<div class="mint-builder-tree-page__row mint-builder-tree-page__row--quiz">
+															<div class="mint-builder-tree-page__row mint-builder-tree-page__row--quiz" :class="{ 'is-adding': treePageInlineQuestionOpen(quiz.id) }">
 																<span class="mint-builder-tree-page__grip" aria-hidden="true">
 																	<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
 																</span>
@@ -1566,14 +1544,18 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 																	<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: 'rotate(' + (isQuizExpanded(quiz.id) ? 90 : 0) + 'deg)' }"><path d="m7 5 6 5-6 5"/></svg>
 																</button>
 																<span class="mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
-																	<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+																	<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
 																</span>
 																<span class="mint-builder-tree-page__name mint-truncate" x-text="quiz.title || 'Untitled quiz'"></span>
+																<button type="button" class="mint-builder-tree-page__new" :disabled="quizSaving" @click.stop="treePageStartAddQuestion(quiz)">
+																	<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+																	<?php esc_html_e( 'New Question', 'mint-lms' ); ?>
+																</button>
 																<button type="button" class="mint-builder-tree-page__edit" @click.stop="selectNavQuiz(quiz)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
 																<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteOverviewQuiz(quiz)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 																<span class="mint-builder-tree-page__meta" x-text="quizChildCountLabel(quiz)"></span>
 															</div>
-															<div class="mint-builder-tree-page__children" x-show="isQuizExpanded(quiz.id)">
+															<div class="mint-builder-tree-page__children" x-show="isQuizExpanded(quiz.id) || treePageInlineQuestionOpen(quiz.id)">
 																<template x-for="question in sidebarQuestionsForQuiz(quiz)" :key="'tree-page-uqt-' + question.id">
 																	<div class="mint-builder-tree-page__row mint-builder-tree-page__row--question">
 																		<span class="mint-builder-tree-page__grip" aria-hidden="true">
@@ -1586,9 +1568,67 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 																		<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteOverviewQuestion({ id: question.id, quizId: quiz.id })"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 																	</div>
 																</template>
+
+																<div
+																	class="mint-builder-tree-page__inline mint-builder-tree-page__inline--question"
+																	x-show="treePageInlineQuestionOpen(quiz.id)"
+																	x-cloak
+																>
+																	<input
+																		type="text"
+																		class="mint-builder-tree-page__inline-input"
+																		:id="'mint-tree-page-inline-title-question-' + quiz.id"
+																		x-model="treePageInlineTitle"
+																		@keydown.enter.prevent="treePageConfirmAddQuestion()"
+																		@keydown.escape.prevent="treePageCancelInlineAdd()"
+																		placeholder="<?php echo esc_attr__( 'Enter a title', 'mint-lms' ); ?>"
+																		autocomplete="off"
+																	/>
+																	<button
+																		type="button"
+																		class="mint-builder-tree-page__inline-confirm"
+																		:disabled="quizSaving"
+																		@click="treePageConfirmAddQuestion()"
+																	><?php esc_html_e( 'Add Question', 'mint-lms' ); ?></button>
+																	<button
+																		type="button"
+																		class="mint-builder-tree-page__inline-cancel"
+																		:disabled="quizSaving"
+																		@click="treePageCancelInlineAdd()"
+																	><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
+																</div>
 															</div>
 														</div>
 													</template>
+
+													<div
+														class="mint-builder-tree-page__inline mint-builder-tree-page__inline--quiz"
+														x-show="treePageInlineQuizOpen(lesson.id)"
+														x-cloak
+													>
+														<input
+															type="text"
+															class="mint-builder-tree-page__inline-input"
+															:id="'mint-tree-page-inline-title-quiz-' + lesson.id"
+															x-model="treePageInlineTitle"
+															@keydown.enter.prevent="treePageConfirmAddQuiz()"
+															@keydown.escape.prevent="treePageCancelInlineAdd()"
+															placeholder="<?php echo esc_attr__( 'Enter a title', 'mint-lms' ); ?>"
+															autocomplete="off"
+														/>
+														<button
+															type="button"
+															class="mint-builder-tree-page__inline-confirm"
+															:disabled="addingCourseQuiz"
+															@click="treePageConfirmAddQuiz()"
+														><?php esc_html_e( 'Add Quiz', 'mint-lms' ); ?></button>
+														<button
+															type="button"
+															class="mint-builder-tree-page__inline-cancel"
+															:disabled="addingCourseQuiz"
+															@click="treePageCancelInlineAdd()"
+														><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
+													</div>
 												</div>
 											</div>
 										</template>
@@ -1598,7 +1638,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 								<template x-for="section in navSectionList()" :key="'tree-page-sec-' + section.id">
 									<div class="mint-builder-tree-page__branch" :data-section-id="section.id">
-										<div class="mint-builder-tree-page__row mint-builder-tree-page__row--section">
+										<div class="mint-builder-tree-page__row mint-builder-tree-page__row--section" :class="{ 'is-adding': treePageInlineLessonOpen(section.id) }">
 											<span class="mint-builder-tree-page__grip mint-handle-section" title="Drag to reorder">
 												<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
 											</span>
@@ -1606,18 +1646,22 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: 'rotate(' + (isExpanded(section.id) ? 90 : 0) + 'deg)' }"><path d="m7 5 6 5-6 5"/></svg>
 											</button>
 											<span class="mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
-												<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
+												<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
 											</span>
-											<span class="mint-builder-tree-page__name mint-truncate" x-text="section.title || 'Untitled section'"></span>
+											<span class="mint-builder-tree-page__name mint-truncate" x-text="section.title || 'Untitled lesson group'"></span>
+											<button type="button" class="mint-builder-tree-page__new" :disabled="addingLesson" @click.stop="treePageStartAddLesson(section.id)">
+												<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+												<?php esc_html_e( 'New Lesson', 'mint-lms' ); ?>
+											</button>
 											<button type="button" class="mint-builder-tree-page__edit" @click="editTreeSection(section)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
 											<button type="button" class="mint-builder-tree-page__remove" @click="deleteSection(section.id)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 											<span class="mint-builder-tree-page__meta" x-text="sectionChildCountLabel(section)"></span>
 										</div>
 
-										<div class="mint-builder-tree-page__children mint-tree-page-lessons" :data-section-id="section.id" x-show="isExpanded(section.id)">
+										<div class="mint-builder-tree-page__children mint-tree-page-lessons" :data-section-id="section.id" x-show="isExpanded(section.id) || treePageInlineLessonOpen(section.id)">
 											<template x-for="lesson in (section.lessons || [])" :key="'tree-page-les-' + lesson.id">
 												<div class="mint-builder-tree-page__branch" :data-lesson-id="lesson.id">
-													<div class="mint-builder-tree-page__row mint-builder-tree-page__row--lesson">
+													<div class="mint-builder-tree-page__row mint-builder-tree-page__row--lesson" :class="{ 'is-adding': treePageInlineQuizOpen(lesson.id) }">
 														<span class="mint-builder-tree-page__grip mint-handle-lesson" title="Drag to reorder">
 															<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
 														</span>
@@ -1625,18 +1669,22 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 															<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: 'rotate(' + (isLessonExpanded(lesson.id) ? 90 : 0) + 'deg)' }"><path d="m7 5 6 5-6 5"/></svg>
 														</button>
 														<span class="mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
-															<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+															<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
 														</span>
 														<span class="mint-builder-tree-page__name mint-truncate" x-text="lesson.title || 'Untitled lesson'"></span>
+														<button type="button" class="mint-builder-tree-page__new" :disabled="addingCourseQuiz" @click.stop="treePageStartAddQuiz({ ...lesson, sectionId: section.id }, section.id)">
+															<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+															<?php esc_html_e( 'New Quiz', 'mint-lms' ); ?>
+														</button>
 														<button type="button" class="mint-builder-tree-page__edit" @click.stop="editTreeLesson({ ...lesson, sectionId: section.id })"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
 														<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteLesson(lesson.id, section.id)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 														<span class="mint-builder-tree-page__meta" x-text="lessonChildCountLabel(lesson)"></span>
 													</div>
 
-													<div class="mint-builder-tree-page__children" x-show="isLessonExpanded(lesson.id)">
+													<div class="mint-builder-tree-page__children" x-show="isLessonExpanded(lesson.id) || treePageInlineQuizOpen(lesson.id)">
 														<template x-for="quiz in sidebarQuizzesForLesson(lesson)" :key="'tree-page-qz-' + quiz.id">
 															<div class="mint-builder-tree-page__branch">
-																<div class="mint-builder-tree-page__row mint-builder-tree-page__row--quiz">
+																<div class="mint-builder-tree-page__row mint-builder-tree-page__row--quiz" :class="{ 'is-adding': treePageInlineQuestionOpen(quiz.id) }">
 																	<span class="mint-builder-tree-page__grip" aria-hidden="true">
 																		<svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><circle cx="5" cy="3" r="1.5"/><circle cx="11" cy="3" r="1.5"/><circle cx="5" cy="8" r="1.5"/><circle cx="11" cy="8" r="1.5"/><circle cx="5" cy="13" r="1.5"/><circle cx="11" cy="13" r="1.5"/></svg>
 																	</span>
@@ -1644,14 +1692,18 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 																		<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" :style="{ transform: 'rotate(' + (isQuizExpanded(quiz.id) ? 90 : 0) + 'deg)' }"><path d="m7 5 6 5-6 5"/></svg>
 																	</button>
 																	<span class="mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
-																		<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+																		<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
 																	</span>
 																	<span class="mint-builder-tree-page__name mint-truncate" x-text="quiz.title || 'Untitled quiz'"></span>
+																	<button type="button" class="mint-builder-tree-page__new" :disabled="quizSaving" @click.stop="treePageStartAddQuestion({ ...quiz, sectionId: section.id })">
+																		<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+																		<?php esc_html_e( 'New Question', 'mint-lms' ); ?>
+																	</button>
 																	<button type="button" class="mint-builder-tree-page__edit" @click.stop="selectNavQuiz(quiz)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
 																	<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteOverviewQuiz(quiz)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 																	<span class="mint-builder-tree-page__meta" x-text="quizChildCountLabel(quiz)"></span>
 																</div>
-																<div class="mint-builder-tree-page__children" x-show="isQuizExpanded(quiz.id)">
+																<div class="mint-builder-tree-page__children" x-show="isQuizExpanded(quiz.id) || treePageInlineQuestionOpen(quiz.id)">
 																	<template x-for="question in sidebarQuestionsForQuiz(quiz)" :key="'tree-page-qt-' + question.id">
 																		<div class="mint-builder-tree-page__row mint-builder-tree-page__row--question">
 																			<span class="mint-builder-tree-page__grip" aria-hidden="true">
@@ -1664,259 +1716,585 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 																			<button type="button" class="mint-builder-tree-page__remove" @click.stop="deleteOverviewQuestion({ id: question.id, quizId: quiz.id })"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
 																		</div>
 																	</template>
+
+																	<div
+																		class="mint-builder-tree-page__inline mint-builder-tree-page__inline--question"
+																		x-show="treePageInlineQuestionOpen(quiz.id)"
+																		x-cloak
+																	>
+																		<input
+																			type="text"
+																			class="mint-builder-tree-page__inline-input"
+																			:id="'mint-tree-page-inline-title-question-' + quiz.id"
+																			x-model="treePageInlineTitle"
+																			@keydown.enter.prevent="treePageConfirmAddQuestion()"
+																			@keydown.escape.prevent="treePageCancelInlineAdd()"
+																			placeholder="<?php echo esc_attr__( 'Enter a title', 'mint-lms' ); ?>"
+																			autocomplete="off"
+																		/>
+																		<button
+																			type="button"
+																			class="mint-builder-tree-page__inline-confirm"
+																			:disabled="quizSaving"
+																			@click="treePageConfirmAddQuestion()"
+																		><?php esc_html_e( 'Add Question', 'mint-lms' ); ?></button>
+																		<button
+																			type="button"
+																			class="mint-builder-tree-page__inline-cancel"
+																			:disabled="quizSaving"
+																			@click="treePageCancelInlineAdd()"
+																		><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
+																	</div>
 																</div>
 															</div>
 														</template>
+
+														<div
+															class="mint-builder-tree-page__inline mint-builder-tree-page__inline--quiz"
+															x-show="treePageInlineQuizOpen(lesson.id)"
+															x-cloak
+														>
+															<input
+																type="text"
+																class="mint-builder-tree-page__inline-input"
+																:id="'mint-tree-page-inline-title-quiz-' + lesson.id"
+																x-model="treePageInlineTitle"
+																@keydown.enter.prevent="treePageConfirmAddQuiz()"
+																@keydown.escape.prevent="treePageCancelInlineAdd()"
+																placeholder="<?php echo esc_attr__( 'Enter a title', 'mint-lms' ); ?>"
+																autocomplete="off"
+															/>
+															<button
+																type="button"
+																class="mint-builder-tree-page__inline-confirm"
+																:disabled="addingCourseQuiz"
+																@click="treePageConfirmAddQuiz()"
+															><?php esc_html_e( 'Add Quiz', 'mint-lms' ); ?></button>
+															<button
+																type="button"
+																class="mint-builder-tree-page__inline-cancel"
+																:disabled="addingCourseQuiz"
+																@click="treePageCancelInlineAdd()"
+															><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
+														</div>
 													</div>
 												</div>
 											</template>
+
+											<div
+												class="mint-builder-tree-page__inline"
+												x-show="treePageInlineLessonOpen(section.id)"
+												x-cloak
+											>
+												<input
+													type="text"
+													class="mint-builder-tree-page__inline-input"
+													:id="'mint-tree-page-inline-title-lesson-' + section.id"
+													x-model="treePageInlineTitle"
+													@keydown.enter.prevent="treePageConfirmAddLesson()"
+													@keydown.escape.prevent="treePageCancelInlineAdd()"
+													placeholder="<?php echo esc_attr__( 'Enter a title', 'mint-lms' ); ?>"
+													autocomplete="off"
+												/>
+												<button
+													type="button"
+													class="mint-builder-tree-page__inline-confirm"
+													:disabled="addingLesson"
+													@click="treePageConfirmAddLesson()"
+												><?php esc_html_e( 'Add Lesson', 'mint-lms' ); ?></button>
+												<button
+													type="button"
+													class="mint-builder-tree-page__inline-cancel"
+													:disabled="addingLesson"
+													@click="treePageCancelInlineAdd()"
+												><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
+											</div>
 										</div>
 									</div>
 								</template>
 
 								<template x-if="!navSectionList().length && !(navUngroupedSection() && (navUngroupedSection().lessons || []).length)">
-									<div class="mint-builder-tree-page__empty"><?php esc_html_e( 'No content yet. Add a section to start.', 'mint-lms' ); ?></div>
+									<div class="mint-builder-tree-page__empty"><?php esc_html_e( 'No content yet. Add a lesson group to start.', 'mint-lms' ); ?></div>
 								</template>
 							</div>
 						</div>
 					</template>
 
 					<template x-if="overviewKind === 'sections'">
-						<div class="mint-builder-overview mint-builder-overview--sections">
+						<div class="mint-builder-overview mint-builder-overview--sections mint-builder-overview--with-rail">
 							<div class="mint-builder-overview__head">
 								<div class="mint-builder-overview__title-block">
 									<span class="mint-builder-overview__hero-icon mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
-										<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
+										<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
 									</span>
 									<div>
-										<div class="mint-builder-overview__title"><?php esc_html_e( 'Sections', 'mint-lms' ); ?></div>
-										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every section in this course, independent of lessons.', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__title"><?php esc_html_e( 'Lesson Groups', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every lesson group in this course, independent of lessons.', 'mint-lms' ); ?></div>
 									</div>
 								</div>
+								<button
+									type="button"
+									class="mint-builder-overview__add mint-builder-overview__add--header"
+									:disabled="overviewAddDisabled()"
+									@click="overviewAddNew()"
+								>
+									<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+									<?php esc_html_e( 'New Lesson Group', 'mint-lms' ); ?>
+								</button>
 							</div>
 
-							<div class="mint-builder-overview__stats">
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navSectionList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Sections', 'mint-lms' ); ?></div>
-								</div>
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="totalLessonCount()"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lessons total', 'mint-lms' ); ?></div>
-								</div>
-							</div>
+							<div class="mint-builder-overview__top">
+								<div class="mint-builder-overview__main-top">
+									<div class="mint-builder-overview__tip" role="note">
+										<svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+											<circle cx="10" cy="10" r="8" stroke="#0B4F3F" stroke-width="2"/>
+											<path d="M10 9v5" stroke="#0B4F3F" stroke-width="2.1" stroke-linecap="round"/>
+											<circle cx="10" cy="6.2" r="1.15" fill="#0B4F3F"/>
+										</svg>
+										<span><strong class="mint-builder-overview__tip-label"><?php esc_html_e( 'Tip:', 'mint-lms' ); ?></strong> <?php esc_html_e( 'Lesson groups organize related lessons together, like chapters. Drag them to reorder in Course Hierarchy.', 'mint-lms' ); ?></span>
+									</div>
 
-							<label class="mint-builder-overview__search">
-								<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<circle cx="9" cy="9" r="5.5"/>
-									<path d="m13.5 13.5 3 3"/>
-								</svg>
-								<input
-									type="search"
-									class="mint-builder-overview__search-input"
-									x-model="overviewSearch"
-									placeholder="<?php echo esc_attr__( 'Search sections…', 'mint-lms' ); ?>"
-									aria-label="<?php echo esc_attr__( 'Search sections…', 'mint-lms' ); ?>"
-									autocomplete="off"
-								/>
-							</label>
+									<div class="mint-builder-overview__toolbar">
+										<label class="mint-builder-overview__search">
+											<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<circle cx="9" cy="9" r="5.5"/>
+												<path d="m13.5 13.5 3 3"/>
+											</svg>
+											<input
+												type="search"
+												class="mint-builder-overview__search-input"
+												x-model="overviewSearch"
+												@input="overviewResetPage()"
+												placeholder="<?php echo esc_attr__( 'Search lesson groups…', 'mint-lms' ); ?>"
+												aria-label="<?php echo esc_attr__( 'Search lesson groups…', 'mint-lms' ); ?>"
+												autocomplete="off"
+											/>
+										</label>
+									</div>
 
-							<div class="mint-builder-overview__cards">
-								<template x-if="overviewItems().length === 0">
-									<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
-								</template>
-								<template x-for="item in overviewItems()" :key="'ov-sec-' + item.id">
-									<div
-										class="mint-builder-overview__card"
-										role="button"
-										tabindex="0"
-										@click="openOverviewItem(item)"
-										@keydown.enter.prevent="openOverviewItem(item)"
-										@keydown.space.prevent="openOverviewItem(item)"
-									>
-										<span class="mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
-											<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
-										</span>
-										<div class="mint-builder-overview__card-body">
-											<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled section'"></div>
-											<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+									<div class="mint-builder-overview__table" role="table" aria-label="<?php echo esc_attr__( 'Lesson groups', 'mint-lms' ); ?>">
+										<div class="mint-builder-overview__table-head" role="row">
+											<div class="mint-builder-overview__th mint-builder-overview__th--title" role="columnheader"><?php esc_html_e( 'Title', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--count" role="columnheader"><?php esc_html_e( 'Lessons', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--updated" role="columnheader"><?php esc_html_e( 'Updated', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--actions" role="columnheader"><span class="mint-sr-only"><?php esc_html_e( 'Actions', 'mint-lms' ); ?></span></div>
 										</div>
-										<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
-										<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteSection(item.id)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-									</div>
-								</template>
-							</div>
 
-							<button
-								type="button"
-								class="mint-builder-overview__add"
-								:disabled="overviewAddDisabled()"
-								@click="overviewAddNew()"
-							>
-								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
-								<?php esc_html_e( 'Add new section', 'mint-lms' ); ?>
-							</button>
+										<template x-if="overviewItems().length === 0">
+											<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
+										</template>
+
+										<template x-for="item in overviewPagedItems()" :key="'ov-sec-' + item.id">
+											<div
+												class="mint-builder-overview__table-row"
+												:class="{ 'mint-builder-overview__table-row--empty': item.isEmpty }"
+												role="row"
+												tabindex="0"
+												@click="openOverviewItem(item)"
+												@keydown.enter.prevent="openOverviewItem(item)"
+												@keydown.space.prevent="openOverviewItem(item)"
+											>
+												<div class="mint-builder-overview__td mint-builder-overview__td--title" role="cell">
+													<span class="mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
+														<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
+													</span>
+													<div class="mint-builder-overview__card-body">
+														<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled lesson group'"></div>
+														<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+													</div>
+												</div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--count" role="cell" data-col="<?php echo esc_attr__( 'Lessons', 'mint-lms' ); ?>" x-text="item.lessonCount"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--updated" role="cell" x-text="item.updatedLabel"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--actions" role="cell">
+													<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
+													<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteSection(item.id)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+												</div>
+											</div>
+										</template>
+									</div>
+
+									<div
+										class="mint-builder-overview__pager"
+										x-show="overviewTotalCount() > 0"
+										x-cloak
+									>
+										<div class="mint-builder-overview__pager-count" x-text="overviewItemsCountLabel()"></div>
+										<div class="mint-builder-overview__pager-nav" role="navigation" aria-label="<?php echo esc_attr__( 'Lesson groups pagination', 'mint-lms' ); ?>">
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(1)"
+												aria-label="<?php echo esc_attr__( 'First page', 'mint-lms' ); ?>"
+											>«</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(overviewSafePage() - 1)"
+												aria-label="<?php echo esc_attr__( 'Previous page', 'mint-lms' ); ?>"
+											>‹</button>
+											<span class="mint-builder-overview__pager-status" x-text="overviewPageStatusLabel()"></span>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewSafePage() + 1)"
+												aria-label="<?php echo esc_attr__( 'Next page', 'mint-lms' ); ?>"
+											>›</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewTotalPages())"
+												aria-label="<?php echo esc_attr__( 'Last page', 'mint-lms' ); ?>"
+											>»</button>
+										</div>
+									</div>
+								</div>
+
+								<aside class="mint-builder-overview__rail" aria-label="<?php echo esc_attr__( 'Lesson group summary', 'mint-lms' ); ?>">
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navSectionList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lesson Groups', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Chapters that organize your lessons', 'mint-lms' ); ?></div>
+									</div>
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="totalLessonCount()"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lessons total', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Individual lessons across all groups', 'mint-lms' ); ?></div>
+									</div>
+								</aside>
+							</div>
 						</div>
 					</template>
 
 					<template x-if="overviewKind === 'lessons'">
-						<div class="mint-builder-overview mint-builder-overview--lessons">
+						<div class="mint-builder-overview mint-builder-overview--lessons mint-builder-overview--with-rail">
 							<div class="mint-builder-overview__head">
 								<div class="mint-builder-overview__title-block">
 									<span class="mint-builder-overview__hero-icon mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
-										<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+										<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
 									</span>
 									<div>
 										<div class="mint-builder-overview__title"><?php esc_html_e( 'Lessons', 'mint-lms' ); ?></div>
-										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every lesson in this course, across all sections.', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every lesson in this course, across all lesson groups.', 'mint-lms' ); ?></div>
 									</div>
 								</div>
+								<button
+									type="button"
+									class="mint-builder-overview__add mint-builder-overview__add--header"
+									:disabled="overviewAddDisabled()"
+									@click="overviewAddNew()"
+								>
+									<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+									<?php esc_html_e( 'New Lesson', 'mint-lms' ); ?>
+								</button>
 							</div>
 
-							<div class="mint-builder-overview__stats">
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="totalLessonCount()"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lessons', 'mint-lms' ); ?></div>
-								</div>
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navSectionList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Sections', 'mint-lms' ); ?></div>
-								</div>
-							</div>
+							<div class="mint-builder-overview__top">
+								<div class="mint-builder-overview__main-top">
+									<div class="mint-builder-overview__tip" role="note">
+										<svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+											<circle cx="10" cy="10" r="8" stroke="#0B4F3F" stroke-width="2"/>
+											<path d="M10 9v5" stroke="#0B4F3F" stroke-width="2.1" stroke-linecap="round"/>
+											<circle cx="10" cy="6.2" r="1.15" fill="#0B4F3F"/>
+										</svg>
+										<span><strong class="mint-builder-overview__tip-label"><?php esc_html_e( 'Tip:', 'mint-lms' ); ?></strong> <?php esc_html_e( 'Lessons hold the teaching content — text, video, or a quiz. Each lesson lives inside one lesson group.', 'mint-lms' ); ?></span>
+									</div>
 
-							<label class="mint-builder-overview__search">
-								<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<circle cx="9" cy="9" r="5.5"/>
-									<path d="m13.5 13.5 3 3"/>
-								</svg>
-								<input
-									type="search"
-									class="mint-builder-overview__search-input"
-									x-model="overviewSearch"
-									placeholder="<?php echo esc_attr__( 'Search lessons…', 'mint-lms' ); ?>"
-									aria-label="<?php echo esc_attr__( 'Search lessons…', 'mint-lms' ); ?>"
-									autocomplete="off"
-								/>
-							</label>
+									<div class="mint-builder-overview__toolbar">
+										<label class="mint-builder-overview__search">
+											<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<circle cx="9" cy="9" r="5.5"/>
+												<path d="m13.5 13.5 3 3"/>
+											</svg>
+											<input
+												type="search"
+												class="mint-builder-overview__search-input"
+												x-model="overviewSearch"
+												@input="overviewResetPage()"
+												placeholder="<?php echo esc_attr__( 'Search lessons…', 'mint-lms' ); ?>"
+												aria-label="<?php echo esc_attr__( 'Search lessons…', 'mint-lms' ); ?>"
+												autocomplete="off"
+											/>
+										</label>
+									</div>
 
-							<div class="mint-builder-overview__cards">
-								<template x-if="overviewItems().length === 0">
-									<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
-								</template>
-								<template x-for="item in overviewItems()" :key="'ov-les-' + item.id">
-									<div
-										class="mint-builder-overview__card"
-										role="button"
-										tabindex="0"
-										@click="openOverviewItem(item)"
-										@keydown.enter.prevent="openOverviewItem(item)"
-										@keydown.space.prevent="openOverviewItem(item)"
-									>
-										<span class="mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
-											<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
-										</span>
-										<div class="mint-builder-overview__card-body">
-											<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled lesson'"></div>
-											<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+									<div class="mint-builder-overview__table" role="table" aria-label="<?php echo esc_attr__( 'Lessons', 'mint-lms' ); ?>">
+										<div class="mint-builder-overview__table-head" role="row">
+											<div class="mint-builder-overview__th mint-builder-overview__th--title" role="columnheader"><?php esc_html_e( 'Title', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--count" role="columnheader"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--updated" role="columnheader"><?php esc_html_e( 'Updated', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--actions" role="columnheader"><span class="mint-sr-only"><?php esc_html_e( 'Actions', 'mint-lms' ); ?></span></div>
 										</div>
-										<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
-										<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteLesson(item.id, item.sectionId)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-									</div>
-								</template>
-							</div>
 
-							<button
-								type="button"
-								class="mint-builder-overview__add"
-								:disabled="overviewAddDisabled()"
-								@click="overviewAddNew()"
-							>
-								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
-								<?php esc_html_e( 'Add new lesson', 'mint-lms' ); ?>
-							</button>
+										<template x-if="overviewItems().length === 0">
+											<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
+										</template>
+
+										<template x-for="item in overviewPagedItems()" :key="'ov-les-' + item.id">
+											<div
+												class="mint-builder-overview__table-row"
+												role="row"
+												tabindex="0"
+												@click="openOverviewItem(item)"
+												@keydown.enter.prevent="openOverviewItem(item)"
+												@keydown.space.prevent="openOverviewItem(item)"
+											>
+												<div class="mint-builder-overview__td mint-builder-overview__td--title" role="cell">
+													<span class="mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
+														<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+													</span>
+													<div class="mint-builder-overview__card-body">
+														<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled lesson'"></div>
+														<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+													</div>
+												</div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--count" role="cell" data-col="<?php echo esc_attr__( 'Quizzes', 'mint-lms' ); ?>" x-text="item.quizCount"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--updated" role="cell" x-text="item.updatedLabel"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--actions" role="cell">
+													<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
+													<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteLesson(item.id, item.sectionId)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+												</div>
+											</div>
+										</template>
+									</div>
+
+									<div
+										class="mint-builder-overview__pager"
+										x-show="overviewTotalCount() > 0"
+										x-cloak
+									>
+										<div class="mint-builder-overview__pager-count" x-text="overviewItemsCountLabel()"></div>
+										<div class="mint-builder-overview__pager-nav" role="navigation" aria-label="<?php echo esc_attr__( 'Lessons pagination', 'mint-lms' ); ?>">
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(1)"
+												aria-label="<?php echo esc_attr__( 'First page', 'mint-lms' ); ?>"
+											>«</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(overviewSafePage() - 1)"
+												aria-label="<?php echo esc_attr__( 'Previous page', 'mint-lms' ); ?>"
+											>‹</button>
+											<span class="mint-builder-overview__pager-status" x-text="overviewPageStatusLabel()"></span>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewSafePage() + 1)"
+												aria-label="<?php echo esc_attr__( 'Next page', 'mint-lms' ); ?>"
+											>›</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewTotalPages())"
+												aria-label="<?php echo esc_attr__( 'Last page', 'mint-lms' ); ?>"
+											>»</button>
+										</div>
+									</div>
+								</div>
+
+								<aside class="mint-builder-overview__rail" aria-label="<?php echo esc_attr__( 'Lesson summary', 'mint-lms' ); ?>">
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="totalLessonCount()"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--lesson" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#1A5AA8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="14" height="12" rx="2.5"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lessons', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Teaching content across all groups', 'mint-lms' ); ?></div>
+									</div>
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navSectionList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--section" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#5B2BFF" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h12M4 10h12M4 14.5h8"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Lesson Groups', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Chapters that organize your lessons', 'mint-lms' ); ?></div>
+									</div>
+								</aside>
+							</div>
 						</div>
 					</template>
 
 					<template x-if="overviewKind === 'quizzes'">
-						<div class="mint-builder-overview mint-builder-overview--quizzes">
+						<div class="mint-builder-overview mint-builder-overview--quizzes mint-builder-overview--with-rail">
 							<div class="mint-builder-overview__head">
 								<div class="mint-builder-overview__title-block">
 									<span class="mint-builder-overview__hero-icon mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
-										<svg width="12" height="12" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+										<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
 									</span>
 									<div>
 										<div class="mint-builder-overview__title"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
 										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every quiz in this course, across all lessons.', 'mint-lms' ); ?></div>
 									</div>
 								</div>
+								<button
+									type="button"
+									class="mint-builder-overview__add mint-builder-overview__add--header"
+									:disabled="overviewAddDisabled()"
+									@click="overviewAddNew()"
+								>
+									<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+									<?php esc_html_e( 'New Quiz', 'mint-lms' ); ?>
+								</button>
 							</div>
 
-							<div class="mint-builder-overview__stats">
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navQuizMenuList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
-								</div>
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navQuestionList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Questions total', 'mint-lms' ); ?></div>
-								</div>
-							</div>
-
-							<label class="mint-builder-overview__search">
-								<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<circle cx="9" cy="9" r="5.5"/>
-									<path d="m13.5 13.5 3 3"/>
-								</svg>
-								<input
-									type="search"
-									class="mint-builder-overview__search-input"
-									x-model="overviewSearch"
-									placeholder="<?php echo esc_attr__( 'Search quizzes…', 'mint-lms' ); ?>"
-									aria-label="<?php echo esc_attr__( 'Search quizzes…', 'mint-lms' ); ?>"
-									autocomplete="off"
-								/>
-							</label>
-
-							<div class="mint-builder-overview__cards">
-								<template x-if="overviewItems().length === 0">
-									<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
-								</template>
-								<template x-for="item in overviewItems()" :key="'ov-quiz-' + item.id">
-									<div
-										class="mint-builder-overview__card"
-										role="button"
-										tabindex="0"
-										@click="openOverviewItem(item)"
-										@keydown.enter.prevent="openOverviewItem(item)"
-										@keydown.space.prevent="openOverviewItem(item)"
-									>
-										<span class="mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
-											<svg width="11" height="11" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
-										</span>
-										<div class="mint-builder-overview__card-body">
-											<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled quiz'"></div>
-											<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
-										</div>
-										<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
-										<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteOverviewQuiz(item)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+							<div class="mint-builder-overview__top">
+								<div class="mint-builder-overview__main-top">
+									<div class="mint-builder-overview__tip" role="note">
+										<svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+											<circle cx="10" cy="10" r="8" stroke="#0B4F3F" stroke-width="2"/>
+											<path d="M10 9v5" stroke="#0B4F3F" stroke-width="2.1" stroke-linecap="round"/>
+											<circle cx="10" cy="6.2" r="1.15" fill="#0B4F3F"/>
+										</svg>
+										<span><strong class="mint-builder-overview__tip-label"><?php esc_html_e( 'Tip:', 'mint-lms' ); ?></strong> <?php esc_html_e( 'Quizzes check understanding at the end of a lesson. Set a pass % and add questions once created.', 'mint-lms' ); ?></span>
 									</div>
-								</template>
-							</div>
 
-							<button
-								type="button"
-								class="mint-builder-overview__add"
-								:disabled="overviewAddDisabled()"
-								@click="overviewAddNew()"
-							>
-								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
-								<?php esc_html_e( 'Add new quiz', 'mint-lms' ); ?>
-							</button>
+									<div class="mint-builder-overview__toolbar">
+										<label class="mint-builder-overview__search">
+											<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<circle cx="9" cy="9" r="5.5"/>
+												<path d="m13.5 13.5 3 3"/>
+											</svg>
+											<input
+												type="search"
+												class="mint-builder-overview__search-input"
+												x-model="overviewSearch"
+												@input="overviewResetPage()"
+												placeholder="<?php echo esc_attr__( 'Search quizzes…', 'mint-lms' ); ?>"
+												aria-label="<?php echo esc_attr__( 'Search quizzes…', 'mint-lms' ); ?>"
+												autocomplete="off"
+											/>
+										</label>
+									</div>
+
+									<div class="mint-builder-overview__table" role="table" aria-label="<?php echo esc_attr__( 'Quizzes', 'mint-lms' ); ?>">
+										<div class="mint-builder-overview__table-head" role="row">
+											<div class="mint-builder-overview__th mint-builder-overview__th--title" role="columnheader"><?php esc_html_e( 'Title', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--count" role="columnheader"><?php esc_html_e( 'Questions', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--updated" role="columnheader"><?php esc_html_e( 'Updated', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--actions" role="columnheader"><span class="mint-sr-only"><?php esc_html_e( 'Actions', 'mint-lms' ); ?></span></div>
+										</div>
+
+										<template x-if="overviewItems().length === 0">
+											<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
+										</template>
+
+										<template x-for="item in overviewPagedItems()" :key="'ov-quiz-' + item.id">
+											<div
+												class="mint-builder-overview__table-row"
+												role="row"
+												tabindex="0"
+												@click="openOverviewItem(item)"
+												@keydown.enter.prevent="openOverviewItem(item)"
+												@keydown.space.prevent="openOverviewItem(item)"
+											>
+												<div class="mint-builder-overview__td mint-builder-overview__td--title" role="cell">
+													<span class="mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
+														<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+													</span>
+													<div class="mint-builder-overview__card-body">
+														<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled quiz'"></div>
+														<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+													</div>
+												</div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--count" role="cell" data-col="<?php echo esc_attr__( 'Questions', 'mint-lms' ); ?>" x-text="item.questionCount"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--updated" role="cell" x-text="item.updatedLabel"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--actions" role="cell">
+													<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
+													<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteOverviewQuiz(item)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+												</div>
+											</div>
+										</template>
+									</div>
+
+									<div
+										class="mint-builder-overview__pager"
+										x-show="overviewTotalCount() > 0"
+										x-cloak
+									>
+										<div class="mint-builder-overview__pager-count" x-text="overviewItemsCountLabel()"></div>
+										<div class="mint-builder-overview__pager-nav" role="navigation" aria-label="<?php echo esc_attr__( 'Quizzes pagination', 'mint-lms' ); ?>">
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(1)"
+												aria-label="<?php echo esc_attr__( 'First page', 'mint-lms' ); ?>"
+											>«</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(overviewSafePage() - 1)"
+												aria-label="<?php echo esc_attr__( 'Previous page', 'mint-lms' ); ?>"
+											>‹</button>
+											<span class="mint-builder-overview__pager-status" x-text="overviewPageStatusLabel()"></span>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewSafePage() + 1)"
+												aria-label="<?php echo esc_attr__( 'Next page', 'mint-lms' ); ?>"
+											>›</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewTotalPages())"
+												aria-label="<?php echo esc_attr__( 'Last page', 'mint-lms' ); ?>"
+											>»</button>
+										</div>
+									</div>
+								</div>
+
+								<aside class="mint-builder-overview__rail" aria-label="<?php echo esc_attr__( 'Quiz summary', 'mint-lms' ); ?>">
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navQuizMenuList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Checks at the end of a lesson', 'mint-lms' ); ?></div>
+									</div>
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navQuestionList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Questions total', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Prompts inside all quizzes', 'mint-lms' ); ?></div>
+									</div>
+								</aside>
+							</div>
 						</div>
 					</template>
 
 					<template x-if="overviewKind === 'questions'">
-						<div class="mint-builder-overview mint-builder-overview--questions">
+						<div class="mint-builder-overview mint-builder-overview--questions mint-builder-overview--with-rail">
 							<div class="mint-builder-overview__head">
 								<div class="mint-builder-overview__title-block">
 									<span class="mint-builder-overview__hero-icon mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
@@ -1925,67 +2303,145 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every question in this course, across all quizzes.', 'mint-lms' ); ?></div>
 									</div>
 								</div>
+								<button
+									type="button"
+									class="mint-builder-overview__add mint-builder-overview__add--header"
+									:disabled="overviewAddDisabled()"
+									@click="overviewAddNew()"
+								>
+									<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
+									<?php esc_html_e( 'New Question', 'mint-lms' ); ?>
+								</button>
 							</div>
 
-							<div class="mint-builder-overview__stats">
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navQuestionList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Questions', 'mint-lms' ); ?></div>
-								</div>
-								<div class="mint-builder-overview__stat">
-									<div class="mint-builder-overview__stat-value" x-text="navQuizMenuList().length"></div>
-									<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
-								</div>
-							</div>
-
-							<label class="mint-builder-overview__search">
-								<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-									<circle cx="9" cy="9" r="5.5"/>
-									<path d="m13.5 13.5 3 3"/>
-								</svg>
-								<input
-									type="search"
-									class="mint-builder-overview__search-input"
-									x-model="overviewSearch"
-									placeholder="<?php echo esc_attr__( 'Search questions…', 'mint-lms' ); ?>"
-									aria-label="<?php echo esc_attr__( 'Search questions…', 'mint-lms' ); ?>"
-									autocomplete="off"
-								/>
-							</label>
-
-							<div class="mint-builder-overview__cards">
-								<template x-if="overviewItems().length === 0">
-									<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
-								</template>
-								<template x-for="item in overviewItems()" :key="'ov-q-' + item.id">
-									<div
-										class="mint-builder-overview__card"
-										role="button"
-										tabindex="0"
-										@click="openOverviewItem(item)"
-										@keydown.enter.prevent="openOverviewItem(item)"
-										@keydown.space.prevent="openOverviewItem(item)"
-									>
-										<span class="mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
-										<div class="mint-builder-overview__card-body">
-											<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled question'"></div>
-											<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
-										</div>
-										<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
-										<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteOverviewQuestion(item)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+							<div class="mint-builder-overview__top">
+								<div class="mint-builder-overview__main-top">
+									<div class="mint-builder-overview__tip" role="note">
+										<svg width="17" height="17" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+											<circle cx="10" cy="10" r="8" stroke="#0B4F3F" stroke-width="2"/>
+											<path d="M10 9v5" stroke="#0B4F3F" stroke-width="2.1" stroke-linecap="round"/>
+											<circle cx="10" cy="6.2" r="1.15" fill="#0B4F3F"/>
+										</svg>
+										<span><strong class="mint-builder-overview__tip-label"><?php esc_html_e( 'Tip:', 'mint-lms' ); ?></strong> <?php esc_html_e( 'Questions are the individual prompts inside a quiz — multiple choice, true/false, or essay answers.', 'mint-lms' ); ?></span>
 									</div>
-								</template>
-							</div>
 
-							<button
-								type="button"
-								class="mint-builder-overview__add"
-								:disabled="overviewAddDisabled()"
-								@click="overviewAddNew()"
-							>
-								<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
-								<?php esc_html_e( 'Add new question', 'mint-lms' ); ?>
-							</button>
+									<div class="mint-builder-overview__toolbar">
+										<label class="mint-builder-overview__search">
+											<svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.15" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+												<circle cx="9" cy="9" r="5.5"/>
+												<path d="m13.5 13.5 3 3"/>
+											</svg>
+											<input
+												type="search"
+												class="mint-builder-overview__search-input"
+												x-model="overviewSearch"
+												@input="overviewResetPage()"
+												placeholder="<?php echo esc_attr__( 'Search questions…', 'mint-lms' ); ?>"
+												aria-label="<?php echo esc_attr__( 'Search questions…', 'mint-lms' ); ?>"
+												autocomplete="off"
+											/>
+										</label>
+									</div>
+
+									<div class="mint-builder-overview__table" role="table" aria-label="<?php echo esc_attr__( 'Questions', 'mint-lms' ); ?>">
+										<div class="mint-builder-overview__table-head" role="row">
+											<div class="mint-builder-overview__th mint-builder-overview__th--title" role="columnheader"><?php esc_html_e( 'Title', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--count" role="columnheader"><span class="mint-sr-only"><?php esc_html_e( 'Count', 'mint-lms' ); ?></span></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--updated" role="columnheader"><?php esc_html_e( 'Updated', 'mint-lms' ); ?></div>
+											<div class="mint-builder-overview__th mint-builder-overview__th--actions" role="columnheader"><span class="mint-sr-only"><?php esc_html_e( 'Actions', 'mint-lms' ); ?></span></div>
+										</div>
+
+										<template x-if="overviewItems().length === 0">
+											<div class="mint-builder-overview__empty" x-text="overviewEmptyLabel()"></div>
+										</template>
+
+										<template x-for="item in overviewPagedItems()" :key="'ov-q-' + item.id">
+											<div
+												class="mint-builder-overview__table-row"
+												role="row"
+												tabindex="0"
+												@click="openOverviewItem(item)"
+												@keydown.enter.prevent="openOverviewItem(item)"
+												@keydown.space.prevent="openOverviewItem(item)"
+											>
+												<div class="mint-builder-overview__td mint-builder-overview__td--title" role="cell">
+													<span class="mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
+													<div class="mint-builder-overview__card-body">
+														<div class="mint-builder-overview__card-title mint-truncate" x-text="item.title || 'Untitled question'"></div>
+														<div class="mint-builder-overview__card-meta" x-text="item.meta"></div>
+													</div>
+												</div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--count mint-builder-overview__td--dash" role="cell">—</div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--updated" role="cell" x-text="item.updatedLabel"></div>
+												<div class="mint-builder-overview__td mint-builder-overview__td--actions" role="cell">
+													<button type="button" class="mint-builder-overview__card-edit" @click.stop="openOverviewItem(item)"><?php esc_html_e( 'Edit', 'mint-lms' ); ?></button>
+													<button type="button" class="mint-builder-overview__card-remove" @click.stop="deleteOverviewQuestion(item)"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+												</div>
+											</div>
+										</template>
+									</div>
+
+									<div
+										class="mint-builder-overview__pager"
+										x-show="overviewTotalCount() > 0"
+										x-cloak
+									>
+										<div class="mint-builder-overview__pager-count" x-text="overviewItemsCountLabel()"></div>
+										<div class="mint-builder-overview__pager-nav" role="navigation" aria-label="<?php echo esc_attr__( 'Questions pagination', 'mint-lms' ); ?>">
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(1)"
+												aria-label="<?php echo esc_attr__( 'First page', 'mint-lms' ); ?>"
+											>«</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanPrevPage()"
+												@click="overviewGoPage(overviewSafePage() - 1)"
+												aria-label="<?php echo esc_attr__( 'Previous page', 'mint-lms' ); ?>"
+											>‹</button>
+											<span class="mint-builder-overview__pager-status" x-text="overviewPageStatusLabel()"></span>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewSafePage() + 1)"
+												aria-label="<?php echo esc_attr__( 'Next page', 'mint-lms' ); ?>"
+											>›</button>
+											<button
+												type="button"
+												class="mint-builder-overview__pager-btn"
+												:disabled="!overviewCanNextPage()"
+												@click="overviewGoPage(overviewTotalPages())"
+												aria-label="<?php echo esc_attr__( 'Last page', 'mint-lms' ); ?>"
+											>»</button>
+										</div>
+									</div>
+								</div>
+
+								<aside class="mint-builder-overview__rail" aria-label="<?php echo esc_attr__( 'Question summary', 'mint-lms' ); ?>">
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navQuestionList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--question" aria-hidden="true">?</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Questions', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Individual prompts inside quizzes', 'mint-lms' ); ?></div>
+									</div>
+									<div class="mint-builder-overview__stat mint-builder-overview__stat--rail">
+										<div class="mint-builder-overview__stat-top">
+											<div class="mint-builder-overview__stat-value" x-text="navQuizMenuList().length"></div>
+											<span class="mint-builder-overview__stat-icon mint-builder-nav__icon mint-builder-nav__icon--quiz" aria-hidden="true">
+												<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 10.5 8 14 15.5 5.5"/></svg>
+											</span>
+										</div>
+										<div class="mint-builder-overview__stat-label"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__stat-desc"><?php esc_html_e( 'Containers that hold your questions', 'mint-lms' ); ?></div>
+									</div>
+								</aside>
+							</div>
 						</div>
 					</template>
 					<template x-if="!overviewKind">
@@ -1996,7 +2452,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="4.5" width="16" height="15" rx="2.5"/><path d="M8 4.5v15"/></svg>
 									</div>
 									<div class="mint-builder-empty__title"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></div>
-									<div class="mint-builder-empty__copy"><?php esc_html_e( 'Use Course Content Tree to browse, or add a lesson to keep building your course.', 'mint-lms' ); ?></div>
+									<div class="mint-builder-empty__copy"><?php esc_html_e( 'Use Course Hierarchy to browse, or add a lesson to keep building your course.', 'mint-lms' ); ?></div>
 									<button
 										type="button"
 										class="mint-builder-empty__cta"
@@ -2011,15 +2467,15 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									<div class="mint-builder-empty__icon">
 										<svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 6.5h15M4.5 12h15M4.5 17.5h9"/></svg>
 									</div>
-									<div class="mint-builder-empty__title"><?php esc_html_e( 'Start with a section', 'mint-lms' ); ?></div>
-									<div class="mint-builder-empty__copy"><?php esc_html_e( 'Add a section first, then add lessons, quizzes, and questions.', 'mint-lms' ); ?></div>
+									<div class="mint-builder-empty__title"><?php esc_html_e( 'Start with a lesson group', 'mint-lms' ); ?></div>
+									<div class="mint-builder-empty__copy"><?php esc_html_e( 'Add a lesson group first, then add lessons, quizzes, and questions.', 'mint-lms' ); ?></div>
 									<button
 										type="button"
 										class="mint-builder-empty__cta"
 										x-show="!isStandalone"
 										:disabled="addingSection"
 										@click="addSection()"
-									><?php esc_html_e( 'Add section', 'mint-lms' ); ?></button>
+									><?php esc_html_e( 'Add lesson group', 'mint-lms' ); ?></button>
 								</div>
 							</template>
 						</div>
@@ -2033,7 +2489,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<div class="mint-flex mint-h-[22px] mint-w-[22px] mint-items-center mint-justify-center mint-rounded-md mint-bg-[#E8FFF3]">
 							<svg width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#0B4F3F" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 						</div>
-						<?php esc_html_e( 'Section', 'mint-lms' ); ?>
+						<?php esc_html_e( 'Lesson Group', 'mint-lms' ); ?>
 					</div>
 
 					<input
@@ -2041,14 +2497,14 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						class="mint-section-title-input"
 						x-model="selectedSection.title"
 						@input="debouncedSaveSection(selectedSection)"
-						placeholder="<?php echo esc_attr__( 'New Section', 'mint-lms' ); ?>"
-						aria-label="<?php echo esc_attr__( 'Section title', 'mint-lms' ); ?>"
+						placeholder="<?php echo esc_attr__( 'New Lesson Group', 'mint-lms' ); ?>"
+						aria-label="<?php echo esc_attr__( 'Lesson group title', 'mint-lms' ); ?>"
 					/>
 					<div class="mint-mt-2 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Click the title to rename it.', 'mint-lms' ); ?></div>
 
 					<div class="mint-mt-8 mint-rounded-[14px] mint-border mint-border-[#E4E1F0] mint-bg-[#FAF9FE] mint-px-5 mint-py-[18px]">
 						<div class="mint-text-[15px] mint-font-semibold mint-text-ink" x-text="sectionLessonSummary()"></div>
-						<div class="mint-mt-1 mint-text-[15px] mint-text-ink-3"><?php esc_html_e( 'Add a lesson to this section, or keep building from the top menu.', 'mint-lms' ); ?></div>
+						<div class="mint-mt-1 mint-text-[15px] mint-text-ink-3"><?php esc_html_e( 'Add a lesson to this lesson group, or keep building from the top menu.', 'mint-lms' ); ?></div>
 						<button
 							type="button"
 							class="mint-builder-empty__cta mint-mt-4"
@@ -2062,7 +2518,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							type="button"
 							class="mint-builder-delete"
 							@click="deleteSection(selected.id)"
-						><?php esc_html_e( 'Delete section', 'mint-lms' ); ?></button>
+						><?php esc_html_e( 'Delete lesson group', 'mint-lms' ); ?></button>
 						<button
 							type="button"
 							class="mint-builder-btn-publish !mint-h-[38px] !mint-rounded-[9px] !mint-px-4 !mint-text-[15px]"
@@ -3296,7 +3752,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 								x-cloak
 							>
 								<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a course', 'mint-lms' ); ?></h2>
-								<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this lesson (and its quiz, if any) to a course. Section is optional.', 'mint-lms' ); ?></p>
+								<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this lesson (and its quiz, if any) to a course. Lesson group is optional.', 'mint-lms' ); ?></p>
 								<label class="mint-assoc-card__label"><?php esc_html_e( 'Course', 'mint-lms' ); ?></label>
 								<div
 									class="mint-assoc-select"
@@ -3332,7 +3788,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 								</div>
 								<template x-if="attach.courseId">
 									<div class="mint-mt-3">
-										<label class="mint-assoc-card__label"><?php esc_html_e( 'Section', 'mint-lms' ); ?></label>
+										<label class="mint-assoc-card__label"><?php esc_html_e( 'Lesson Group', 'mint-lms' ); ?></label>
 										<div
 											class="mint-assoc-select"
 											:class="open ? 'is-open' : ''"
@@ -3342,7 +3798,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
 												<span
 													class="mint-assoc-select__value"
-													x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No section', 'mint-lms' ) ); ?>'"
+													x-text="attachSectionLabel() || '<?php echo esc_js( __( 'No lesson group', 'mint-lms' ) ); ?>'"
 												></span>
 												<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 											</button>
@@ -3352,7 +3808,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 													class="mint-assoc-select__option"
 													:class="!attach.sectionId ? 'is-active' : ''"
 													@click="pickAttachSection(0); open = false"
-												><?php esc_html_e( 'No section', 'mint-lms' ); ?></button>
+												><?php esc_html_e( 'No lesson group', 'mint-lms' ); ?></button>
 												<template x-for="s in attachSections" :key="'ed-s-' + s.id">
 													<button
 														type="button"

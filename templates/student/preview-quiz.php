@@ -110,6 +110,6 @@ $courseUrl   = is_string( $courseUrl ?? null ) ? $courseUrl : '';
 		<?php else : ?>
 			<span></span>
 		<?php endif; ?>
-		<span class="mint-s3b-nav__next mint-s3b-nav__next--disabled"><?php esc_html_e( 'Next section', 'mint-lms' ); ?> →</span>
+		<span class="mint-s3b-nav__next mint-s3b-nav__next--disabled"><?php esc_html_e( 'Next lesson group', 'mint-lms' ); ?> →</span>
 	</div>
 </div>

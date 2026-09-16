@@ -170,9 +170,9 @@ $displayLesson = '' !== $lessonTitle ? $lessonTitle : __( 'Untitled lesson', 'mi
 		<?php endif; ?>
 
 		<?php if ( '' !== $nextUrl ) : ?>
-			<a href="<?php echo esc_url( $nextUrl ); ?>" class="mint-s3b-nav__next"><?php esc_html_e( 'Next section', 'mint-lms' ); ?> →</a>
+			<a href="<?php echo esc_url( $nextUrl ); ?>" class="mint-s3b-nav__next"><?php esc_html_e( 'Next lesson group', 'mint-lms' ); ?> →</a>
 		<?php else : ?>
-			<span class="mint-s3b-nav__next mint-s3b-nav__next--disabled"><?php esc_html_e( 'Next section', 'mint-lms' ); ?> →</span>
+			<span class="mint-s3b-nav__next mint-s3b-nav__next--disabled"><?php esc_html_e( 'Next lesson group', 'mint-lms' ); ?> →</span>
 		<?php endif; ?>
 	</div>
 </div>

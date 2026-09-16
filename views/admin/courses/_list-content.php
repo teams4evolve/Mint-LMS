@@ -120,7 +120,7 @@ defined( 'ABSPATH' ) || exit;
 								>
 									<a :href="wpEditUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Edit', 'mint-lms' ); ?></a>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="settingsUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Open in builder', 'mint-lms' ); ?></a>
+									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Open in builder', 'mint-lms' ); ?></a>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action mint-course-action--danger" @click.stop="trashCourse(course.id)"><?php esc_html_e( 'Trash', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
@@ -130,7 +130,7 @@ defined( 'ABSPATH' ) || exit;
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action" @click.stop="duplicateCourse(course.id)"><?php esc_html_e( 'Clone', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Content tree', 'mint-lms' ); ?></a>
+									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Hierarchy', 'mint-lms' ); ?></a>
 								</div>
 
 								<div
@@ -144,7 +144,7 @@ defined( 'ABSPATH' ) || exit;
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
 									<button type="button" class="mint-course-action" @click.stop="duplicateCourse(course.id)"><?php esc_html_e( 'Clone', 'mint-lms' ); ?></button>
 									<span class="mint-text-[#C4C1D6]" aria-hidden="true">|</span>
-									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Content tree', 'mint-lms' ); ?></a>
+									<a :href="builderUrl(course.id)" class="mint-course-action" @click.stop><?php esc_html_e( 'Hierarchy', 'mint-lms' ); ?></a>
 								</div>
 
 								<div

@@ -119,7 +119,7 @@ final class CreatorDashboardService {
 		}
 
 		if ( ( $courseStats['empty_sections'] ?? 0 ) > 0 ) {
-			return 'A section has no lessons yet';
+			return 'A lesson group has no lessons yet';
 		}
 
 		return null;

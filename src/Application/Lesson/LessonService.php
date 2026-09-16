@@ -91,7 +91,7 @@ final class LessonService {
 			if ( $section->courseId !== $courseId ) {
 				throw new ValidationException(
 					'Validation failed.',
-					array( 'section_id' => 'Section does not belong to this course.' )
+					array( 'section_id' => 'Lesson group does not belong to this course.' )
 				);
 			}
 		}
@@ -199,7 +199,7 @@ final class LessonService {
 			if ( $section->courseId !== $courseId ) {
 				throw new ValidationException(
 					'Validation failed.',
-					array( 'section_id' => 'Section does not belong to this course.' )
+					array( 'section_id' => 'Lesson group does not belong to this course.' )
 				);
 			}
 			$resolvedSectionId = $section->id;
@@ -387,7 +387,7 @@ final class LessonService {
 		if ( count( $lessons ) !== count( $dto->lessonIds ) ) {
 			throw new ValidationException(
 				'Validation failed.',
-				array( 'ids' => 'Lesson IDs must include every lesson in the section.' )
+				array( 'ids' => 'Lesson IDs must include every lesson in the lesson group.' )
 			);
 		}
 
@@ -400,7 +400,7 @@ final class LessonService {
 			if ( ! in_array( $lessonId, $existingIds, true ) ) {
 				throw new ValidationException(
 					'Validation failed.',
-					array( 'ids' => 'One or more lesson IDs do not belong to this section.' )
+					array( 'ids' => 'One or more lesson IDs do not belong to this lesson group.' )
 				);
 			}
 		}
@@ -426,7 +426,7 @@ final class LessonService {
 		$section = $this->sectionRepository->findById( $sectionId );
 
 		if ( null === $section ) {
-			throw new NotFoundException( 'Section not found.' );
+			throw new NotFoundException( 'Lesson group not found.' );
 		}
 
 		return $section;

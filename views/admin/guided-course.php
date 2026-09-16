@@ -78,7 +78,7 @@ $textareaClass = 'mint-block mint-w-full mint-min-h-[100px] mint-resize-y mint-r
 						<?php esc_html_e( 'Students see this on your course page.', 'mint-lms' ); ?>
 					</p>
 					<p class="mint-m-0 mint-mt-3 mint-text-[19px] mint-leading-[30px] mint-text-ink-2" x-show="step === 2" x-cloak>
-						<?php esc_html_e( 'Every course needs at least one section and lesson.', 'mint-lms' ); ?>
+						<?php esc_html_e( 'Every course needs at least one lesson group and lesson.', 'mint-lms' ); ?>
 					</p>
 					<p class="mint-m-0 mint-mt-3 mint-text-[19px] mint-leading-[30px] mint-text-ink-2" x-show="step === 3" x-cloak>
 						<?php esc_html_e( 'Publish now or keep editing as a draft.', 'mint-lms' ); ?>
@@ -122,7 +122,7 @@ $textareaClass = 'mint-block mint-w-full mint-min-h-[100px] mint-resize-y mint-r
 						<div class="mint-mt-9 mint-flex mint-flex-col mint-gap-6">
 							<div>
 								<label for="mint-guided-section-title" class="mint-mb-2 mint-block mint-text-base mint-font-semibold mint-text-ink">
-									<?php esc_html_e( 'Section name', 'mint-lms' ); ?> <span class="mint-text-danger">*</span>
+									<?php esc_html_e( 'Lesson group name', 'mint-lms' ); ?> <span class="mint-text-danger">*</span>
 								</label>
 								<p class="mint-m-0 mint-mb-2 mint-text-sm mint-text-ink-2"><?php esc_html_e( 'Group related lessons together.', 'mint-lms' ); ?></p>
 								<input

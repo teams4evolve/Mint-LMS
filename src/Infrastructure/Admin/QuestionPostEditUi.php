@@ -10,41 +10,13 @@ use MintLMS\Infrastructure\PostType\QuestionLinkResolver;
 
 /**
  * Native WP question editor (post.php) ↔ Mint question builder.
+ *
+ * Default edit surface is classic WP. Mint builder opens via Publish box link.
  */
 final class QuestionPostEditUi {
 
 	public function register(): void {
-		add_action( 'add_meta_boxes', array( $this, 'registerMetaBoxes' ) );
 		add_action( 'post_submitbox_misc_actions', array( $this, 'renderSubmitBoxLink' ) );
-		add_action( 'admin_notices', array( $this, 'renderEditNotice' ) );
-	}
-
-	public function registerMetaBoxes(): void {
-		add_meta_box(
-			'mint-lms-question-builder',
-			__( 'Mint LMS', 'mint-lms' ),
-			array( $this, 'renderMetaBox' ),
-			PostTypes::QUESTION,
-			'side',
-			'high'
-		);
-	}
-
-	public function renderMetaBox( \WP_Post $post ): void {
-		if ( PostTypes::QUESTION !== $post->post_type || $post->ID <= 0 ) {
-			return;
-		}
-
-		$url = self::questionBuilderUrl( (int) $post->ID );
-
-		echo '<p>';
-		echo esc_html__( 'Use the Mint question builder for answer types, options, and quiz placement.', 'mint-lms' );
-		echo '</p>';
-		echo '<p>';
-		echo '<a class="button button-primary button-large" href="' . esc_url( $url ) . '">';
-		echo esc_html__( 'Open in question builder', 'mint-lms' );
-		echo '</a>';
-		echo '</p>';
 	}
 
 	public function renderSubmitBoxLink( \WP_Post $post ): void {
@@ -56,32 +28,9 @@ final class QuestionPostEditUi {
 
 		echo '<div class="misc-pub-section">';
 		echo '<a class="button button-primary" style="width:100%;text-align:center;" href="' . esc_url( $url ) . '">';
-		echo esc_html__( 'Open in question builder', 'mint-lms' );
+		echo esc_html__( 'Open In Mint LMS Builder', 'mint-lms' );
 		echo '</a>';
 		echo '</div>';
-	}
-
-	public function renderEditNotice(): void {
-		$screen = function_exists( 'get_current_screen' ) ? get_current_screen() : null;
-
-		if ( ! $screen || PostTypes::QUESTION !== $screen->post_type || 'post' !== $screen->base ) {
-			return;
-		}
-
-		$postId = isset( $_GET['post'] ) ? absint( $_GET['post'] ) : 0; // phpcs:ignore WordPress.Security.NonceVerification.Recommended
-		if ( $postId <= 0 ) {
-			return;
-		}
-
-		$url = self::questionBuilderUrl( $postId );
-
-		echo '<div class="notice notice-info"><p>';
-		echo esc_html__( 'This is the WordPress question editor.', 'mint-lms' );
-		echo ' ';
-		echo '<a href="' . esc_url( $url ) . '"><strong>';
-		echo esc_html__( 'Open in question builder', 'mint-lms' );
-		echo '</strong></a>';
-		echo '</p></div>';
 	}
 
 	/**

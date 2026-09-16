@@ -43,7 +43,7 @@ $structure_steps = array(
 	array(
 		'key'    => 'lessons',
 		'label'  => __( 'Lessons', 'mint-lms' ),
-		'desc'   => __( 'A section inside a course, grouping related topics together.', 'mint-lms' ),
+		'desc'   => __( 'A lesson group inside a course, grouping related topics together.', 'mint-lms' ),
 		'height' => 46,
 		'size'   => 16,
 	),

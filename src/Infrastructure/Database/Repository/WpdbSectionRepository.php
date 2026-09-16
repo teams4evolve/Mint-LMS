@@ -84,7 +84,7 @@ final class WpdbSectionRepository implements SectionRepositoryInterface {
 			);
 
 			if ( false === $inserted ) {
-				throw new \RuntimeException( 'Failed to insert section.' );
+				throw new \RuntimeException( 'Failed to insert lesson group.' );
 			}
 
 			return new Section(
@@ -109,7 +109,7 @@ final class WpdbSectionRepository implements SectionRepositoryInterface {
 		);
 
 		if ( false === $updated ) {
-			throw new \RuntimeException( 'Failed to update section.' );
+			throw new \RuntimeException( 'Failed to update lesson group.' );
 		}
 
 		return $section;

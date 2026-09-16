@@ -63,33 +63,18 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 			>
 				<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<rect x="4" y="4" width="12" height="12" rx="2.5" />
-				</svg>
-			</a>
+					</svg>
+					</a>
 
 			<div class="mint-course-switcher__links">
-				<button
-					type="button"
-					class="mint-course-switcher__link"
-					:class="editPanel === 'page' ? 'is-active' : ''"
-					:aria-current="editPanel === 'page' ? 'page' : null"
-					@click="setEditPanel('page')"
-				>
-					<?php esc_html_e( 'Course Page', 'mint-lms' ); ?>
-				</button>
-				<button
-					type="button"
-					class="mint-course-switcher__link"
-					:class="editPanel === 'settings' ? 'is-active' : ''"
-					:aria-current="editPanel === 'settings' ? 'page' : null"
-					@click="setEditPanel('settings')"
-				>
+				<span class="mint-course-switcher__link is-active" aria-current="page">
 					<?php esc_html_e( 'Course Settings', 'mint-lms' ); ?>
-				</button>
+				</span>
 				<a class="mint-course-switcher__link" href="<?php echo esc_url( $builderUrl ); ?>">
 					<?php esc_html_e( 'Course Builder', 'mint-lms' ); ?>
 				</a>
 				<a class="mint-course-switcher__link" href="<?php echo esc_url( $treeUrl ); ?>">
-					<?php esc_html_e( 'Course Content Tree', 'mint-lms' ); ?>
+					<?php esc_html_e( 'Course Hierarchy', 'mint-lms' ); ?>
 				</a>
 			</div>
 
@@ -102,94 +87,16 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 			<span class="mint-truncate" x-text="form.title || '<?php echo esc_attr__( 'Untitled', 'mint-lms' ); ?>'"></span>
 		</nav>
 
-		<div class="mint-course-settings-layout" :class="editPanel === 'settings' ? 'is-settings-only' : ''">
+		<div class="mint-course-settings-layout is-settings-only">
 			<div class="mint-course-settings-main">
-				<h1
-					x-show="editPanel === 'page'"
-					x-cloak
-					class="mint-m-0 mint-mt-6 mint-pb-8 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink"
-				>
-					<?php esc_html_e( 'Course Page', 'mint-lms' ); ?>
-				</h1>
-				<h1
-					x-show="editPanel === 'settings'"
-					x-cloak
-					class="mint-m-0 mint-mt-6 mint-pb-8 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink"
-				>
+				<h1 class="mint-m-0 mint-mt-6 mint-pb-8 mint-text-[48px] mint-font-semibold mint-leading-[52px] mint-tracking-[-0.04em] mint-text-ink">
 					<?php esc_html_e( 'Course settings', 'mint-lms' ); ?>
 				</h1>
 
 				<form class="mint-w-full mint-pb-[72px]" @submit.prevent="save()">
 					<div class="mint-grid mint-gap-8">
 
-						<div x-show="editPanel === 'page'" x-cloak class="mint-grid mint-gap-5">
-							<div class="mint-grid mint-gap-[26px]">
-								<div class="mint-grid mint-gap-[9px]">
-									<label for="mint-course-title" class="mint-text-base mint-font-semibold mint-text-ink">
-										<?php esc_html_e( 'Course name', 'mint-lms' ); ?>
-									</label>
-									<input
-										id="mint-course-title"
-										type="text"
-										class="<?php echo esc_attr( $inputClass ); ?> mint-h-[50px]"
-										x-model="form.title"
-										required
-									/>
-									<p class="mint-m-0 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Students see this on their dashboard.', 'mint-lms' ); ?></p>
-								</div>
-
-								<div class="mint-grid mint-gap-[9px]">
-									<label for="mint-course-desc" class="mint-text-base mint-font-semibold mint-text-ink">
-										<?php esc_html_e( 'Short description', 'mint-lms' ); ?>
-									</label>
-									<textarea
-										id="mint-course-desc"
-										class="<?php echo esc_attr( $inputClass ); ?> mint-min-h-[110px] mint-resize-y mint-py-[13px]"
-										x-model="form.description"
-									></textarea>
-									<p class="mint-m-0 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Two sentences is plenty.', 'mint-lms' ); ?></p>
-								</div>
-							</div>
-
-							<section class="mint-grid mint-gap-[14px] mint-border-t-[1.5px] mint-border-[#DAD7E6] mint-pt-5">
-								<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
-									<?php esc_html_e( 'Cover image', 'mint-lms' ); ?>
-								</div>
-
-								<div
-									x-show="!featuredImageUrl"
-									class="mint-cover-frame mint-cover-placeholder mint-flex mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0]"
-								>
-									<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'cover image · 800×800', 'mint-lms' ); ?></span>
-								</div>
-								<div
-									x-show="featuredImageUrl"
-									x-cloak
-									class="mint-cover-frame mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
-								>
-									<img :src="featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
-								</div>
-
-								<p class="mint-m-0 mint-text-base mint-leading-[26px] mint-text-ink-2">
-									<?php esc_html_e( 'Optional. Shown on the student dashboard and course page. A square image looks best.', 'mint-lms' ); ?>
-								</p>
-
-								<div class="mint-flex mint-flex-wrap mint-gap-2.5">
-									<button
-										type="button"
-										class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-base mint-font-semibold mint-text-cta-ink"
-										@click="pickImage()"
-									><?php esc_html_e( 'Upload image', 'mint-lms' ); ?></button>
-									<button
-										type="button"
-										class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-[15px] mint-text-base mint-font-semibold mint-text-cta-ink"
-										@click="clearImage()"
-									><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-								</div>
-							</section>
-						</div>
-
-						<div x-show="editPanel === 'settings'" x-cloak class="mint-settings-stack">
+						<div class="mint-settings-stack">
 
 						<section class="mint-settings-card">
 							<header class="mint-settings-card__header">
@@ -483,104 +390,7 @@ $inputClass = 'mint-settings-input mint-block mint-w-full mint-rounded-md mint-b
 				</form>
 			</div>
 
-			<aside
-				x-show="editPanel === 'page'"
-				x-cloak
-				class="mint-course-sidebar"
-				aria-label="<?php echo esc_attr__( 'Course status', 'mint-lms' ); ?>"
-			>
-				<div class="mint-course-sidebar__intro">
-					<p class="mint-course-sidebar__kicker"><?php esc_html_e( 'Course status', 'mint-lms' ); ?></p>
-					<p class="mint-course-sidebar__hint" x-text="statusHint()"></p>
-				</div>
 
-				<button
-					type="button"
-					class="mint-course-sidebar__visibility"
-					:class="'is-' + form.status"
-					@click="visibilityOpen = !visibilityOpen"
-					:aria-expanded="visibilityOpen ? 'true' : 'false'"
-				>
-					<span class="mint-course-sidebar__visibility-copy">
-						<span class="mint-course-sidebar__visibility-label"><?php esc_html_e( 'Who can see it', 'mint-lms' ); ?></span>
-						<span class="mint-course-sidebar__visibility-state" x-text="statusBadgeLabel()"></span>
-					</span>
-					<span class="mint-course-sidebar__visibility-chevron" :class="visibilityOpen ? 'is-open' : ''" aria-hidden="true">
-						<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 5 5 5-5" /></svg>
-					</span>
-				</button>
-
-				<div
-					x-show="visibilityOpen"
-					x-cloak
-					class="mint-course-sidebar__chooser"
-					role="group"
-					aria-label="<?php echo esc_attr__( 'Who can see it', 'mint-lms' ); ?>"
-				>
-					<?php
-					$visibility_options = array(
-						array(
-							'value' => 'published',
-							'label' => __( 'Live', 'mint-lms' ),
-							'desc'  => __( 'Anyone you enroll can start it now.', 'mint-lms' ),
-						),
-						array(
-							'value' => 'draft',
-							'label' => __( 'Draft', 'mint-lms' ),
-							'desc'  => __( "Only you can see it. Students can't open it yet.", 'mint-lms' ),
-						),
-						array(
-							'value' => 'archived',
-							'label' => __( 'Hidden', 'mint-lms' ),
-							'desc'  => __( 'Enrolled students keep access; nobody new can join.', 'mint-lms' ),
-						),
-					);
-					foreach ( $visibility_options as $opt ) :
-						?>
-					<label
-						class="mint-course-sidebar__choice"
-						:class="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'is-selected' : ''"
-						@click="form.status = '<?php echo esc_attr( $opt['value'] ); ?>'"
-					>
-						<span
-							class="mint-settings-radio"
-							:class="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'mint-settings-radio--on' : ''"
-							role="radio"
-							:aria-checked="form.status === '<?php echo esc_attr( $opt['value'] ); ?>' ? 'true' : 'false'"
-						></span>
-						<span>
-							<span class="mint-course-sidebar__choice-title"><?php echo esc_html( $opt['label'] ); ?></span>
-							<span class="mint-course-sidebar__choice-desc"><?php echo esc_html( $opt['desc'] ); ?></span>
-						</span>
-					</label>
-					<?php endforeach; ?>
-				</div>
-
-				<div class="mint-course-sidebar__facts">
-					<div class="mint-course-sidebar__fact">
-						<span class="mint-course-sidebar__fact-label"><?php esc_html_e( 'Last updated', 'mint-lms' ); ?></span>
-						<span class="mint-course-sidebar__fact-value" x-text="formatPublishDate()"></span>
-					</div>
-					<div class="mint-course-sidebar__fact">
-						<span class="mint-course-sidebar__fact-label"><?php esc_html_e( 'URL slug', 'mint-lms' ); ?></span>
-						<span class="mint-course-sidebar__fact-value mint-course-sidebar__fact-value--mono" x-text="meta.slug || '—'"></span>
-					</div>
-					<div class="mint-course-sidebar__fact">
-						<span class="mint-course-sidebar__fact-label"><?php esc_html_e( 'Author', 'mint-lms' ); ?></span>
-						<span class="mint-course-sidebar__fact-value" x-text="meta.authorName || '—'"></span>
-					</div>
-					<div class="mint-course-sidebar__fact">
-						<span class="mint-course-sidebar__fact-label"><?php esc_html_e( 'Revisions', 'mint-lms' ); ?></span>
-						<span class="mint-course-sidebar__fact-value" x-text="meta.revisionCount"></span>
-					</div>
-				</div>
-
-				<button
-					type="button"
-					class="mint-course-sidebar__trash"
-					@click="deleteCourse()"
-				><?php esc_html_e( 'Move to trash', 'mint-lms' ); ?></button>
-			</aside>
 		</div>
 	</div>
 </div>
