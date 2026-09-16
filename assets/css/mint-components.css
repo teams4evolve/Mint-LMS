@@ -1830,8 +1830,126 @@
   margin-top: 0;
   border: 1px solid var(--mint-tint-line);
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 6px 20px rgba(28, 20, 80, 0.06);
+  background: #FFFFFF;
+  min-height: 280px;
+}
+#mint-lms-root .mint-editor-frame .mint-wp-editor {
+  overflow: hidden;
+  border-radius: 0 0 16px 16px;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area {
+  display: block;
+  width: 100%;
+  min-height: 220px;
+  border: 0;
+  resize: vertical;
+  padding: 20px;
+  font-family: var(--mint-font);
+  font-size: 17px;
+  line-height: 30px;
+  color: var(--mint-ink);
+  background: #FFFFFF;
+  outline: none;
+  box-sizing: border-box;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual {
+  resize: none;
+  overflow-y: auto;
+  overflow-x: hidden;
+  white-space: normal;
+  word-break: break-word;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual:empty::before {
+  content: attr(data-placeholder);
+  color: rgba(15, 14, 26, 0.35);
+  pointer-events: none;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual a {
+  color: #0B4F3F;
+  text-decoration: underline;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ul,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ol {
+  margin: 0 0 18px !important;
+  padding-left: 1.75em !important;
+  color: #000000;
+}
+/* Scoped reset zeros all lists — restore markers inside the lesson editor. */
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ul {
+  list-style-type: disc !important;
+  list-style-position: outside !important;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ol {
+  list-style-type: decimal !important;
+  list-style-position: outside !important;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ul ul {
+  list-style-type: circle !important;
+  margin-bottom: 0 !important;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ol ol {
+  list-style-type: lower-alpha !important;
+  margin-bottom: 0 !important;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ul li,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ol li {
+  display: list-item !important;
+  color: #000000;
+  margin: 0 0 6px;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ul li::marker,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual ol li::marker {
+  color: #000000;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual p,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h1,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h2,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h3,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h4,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h5,
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual pre {
+  margin: 0 0 18px;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h1 {
+  font-size: 28px;
+  line-height: 1.25;
+  font-weight: 700;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h2 {
+  font-size: 22px;
+  line-height: 1.3;
+  font-weight: 700;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h3 {
+  font-size: 18px;
+  line-height: 1.35;
+  font-weight: 700;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h4 {
+  font-size: 16px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual h5 {
+  font-size: 14px;
+  line-height: 1.4;
+  font-weight: 700;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area--visual pre {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  white-space: pre-wrap;
+}
+#mint-lms-root .mint-editor-frame.is-code .mint-lesson-content-area {
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 15px;
+  line-height: 26px;
+}
+#mint-lms-root .mint-editor-frame .mint-lesson-content-area::placeholder {
+  color: rgba(15, 14, 26, 0.35);
 }
 #mint-lms-root .mint-editor-frame__body {
   padding: 20px;
@@ -3335,6 +3453,7 @@
 #mint-lms-root .mint-lesson-format {
   position: relative;
   flex: none;
+  z-index: 40;
 }
 #mint-lms-root .mint-lesson-format__trigger {
   height: 32px;
@@ -3357,15 +3476,19 @@
 }
 #mint-lms-root .mint-lesson-format__menu {
   position: absolute;
-  top: 38px;
+  top: calc(100% + 6px);
   left: 0;
-  width: 200px;
+  width: 220px;
+  max-height: 240px;
+  overflow-x: hidden;
+  overflow-y: auto;
+  overscroll-behavior: contain;
   background: #FFFFFF;
   border: 1px solid #E4E1F0;
   border-radius: 10px;
   box-shadow: 0 12px 28px rgba(28, 20, 80, 0.14);
-  overflow: hidden;
-  z-index: 20;
+  z-index: 80;
+  -webkit-overflow-scrolling: touch;
 }
 #mint-lms-root .mint-lesson-format__option {
   display: block;
@@ -3378,8 +3501,12 @@
   cursor: pointer;
   font-family: var(--mint-font);
 }
-#mint-lms-root .mint-lesson-format__option:hover {
+#mint-lms-root .mint-lesson-format__option:hover,
+#mint-lms-root .mint-lesson-format__option.is-active {
   background: #E8FFF3;
+}
+#mint-lms-root .mint-lesson-format__option.is-active {
+  font-weight: 700;
 }
 #mint-lms-root .mint-lesson-editor-tool {
   width: 34px;
@@ -3401,8 +3528,24 @@
 #mint-lms-root .mint-lesson-editor-tool:focus-visible {
   background: #FFFFFF;
 }
+#mint-lms-root .mint-lesson-editor-tool.is-active {
+  background: #98FB98;
+  color: #0B4F3F;
+  box-shadow: inset 0 0 0 1.5px rgba(11, 79, 63, 0.28);
+}
+#mint-lms-root .mint-lesson-editor-tool.is-active[data-tool="ul"],
+#mint-lms-root .mint-lesson-editor-tool.is-active[data-tool="ol"] {
+  color: #000000;
+}
+#mint-lms-root .mint-lesson-editor-tool.is-active:hover,
+#mint-lms-root .mint-lesson-editor-tool.is-active:focus-visible {
+  background: #7AE87A;
+}
 #mint-lms-root .mint-lesson-editor-tool:focus-visible {
   box-shadow: 0 0 0 2px rgba(152, 251, 203, 0.7);
+}
+#mint-lms-root .mint-lesson-editor-tool.is-active:focus-visible {
+  box-shadow: inset 0 0 0 1.5px rgba(11, 79, 63, 0.28), 0 0 0 2px rgba(152, 251, 203, 0.7);
 }
 #mint-lms-root .mint-lesson-code-chip {
   height: 30px;
@@ -3445,10 +3588,44 @@
   border: 0 !important;
   box-shadow: none !important;
 }
-#mint-lms-root .mint-editor-frame.is-code .mint-wp-editor .wp-editor-area {
+/*
+ * Hide WP textarea only when TinyMCE is confirmed ready.
+ * Otherwise keep textarea visible so the user can always type.
+ */
+#mint-lms-root .mint-editor-frame.is-tinymce-ready:not(.is-code) .mint-wp-editor textarea.wp-editor-area,
+#mint-lms-root .mint-qeditor__frame.is-tinymce-ready:not(.is-code) .mint-wp-editor textarea.wp-editor-area {
+  display: none !important;
+}
+#mint-lms-root .mint-editor-frame:not(.is-tinymce-ready):not(.is-code) .mint-wp-editor textarea.wp-editor-area,
+#mint-lms-root .mint-qeditor__frame:not(.is-tinymce-ready):not(.is-code) .mint-wp-editor textarea.wp-editor-area {
+  display: block !important;
+  position: relative !important;
+  z-index: 5;
+  min-height: 220px !important;
+  background: #FFFFFF !important;
+  color: #0F0E1A !important;
+  pointer-events: auto !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+/* While TinyMCE is not healthy/ready, do not let a broken iframe steal clicks. */
+#mint-lms-root .mint-editor-frame:not(.is-tinymce-ready):not(.is-code) .mint-wp-editor .mce-tinymce,
+#mint-lms-root .mint-qeditor__frame:not(.is-tinymce-ready):not(.is-code) .mint-wp-editor .mce-tinymce {
+  display: none !important;
+}
+#mint-lms-root .mint-editor-frame.is-code .mint-wp-editor textarea.wp-editor-area,
+#mint-lms-root .mint-qeditor__frame.is-code .mint-wp-editor textarea.wp-editor-area {
+  display: block !important;
+  position: relative !important;
+  z-index: 2;
   font-family: "SF Mono", Menlo, Consolas, monospace;
   font-size: 15px;
   line-height: 26px;
+  background: #FFFFFF !important;
+}
+#mint-lms-root .mint-editor-frame.is-code .mint-wp-editor .mce-tinymce,
+#mint-lms-root .mint-qeditor__frame.is-code .mint-wp-editor .mce-tinymce {
+  display: none !important;
 }
 #mint-lms-root .mint-editor-frame .mint-wp-editor .wp-switch-editor {
   display: none !important;
@@ -3460,12 +3637,39 @@
   box-shadow: none !important;
   background: transparent !important;
 }
+#mint-lms-root .mint-editor-frame .mint-wp-editor .wp-editor-container,
+#mint-lms-root .mint-editor-frame .mint-wp-editor .wp-editor-wrap,
+#mint-lms-root .mint-editor-frame .mint-wp-editor .mce-edit-area {
+  min-height: 220px;
+  position: relative;
+  z-index: 1;
+}
 #mint-lms-root .mint-editor-frame .mint-wp-editor .mce-edit-area,
 #mint-lms-root .mint-editor-frame .mint-wp-editor .mce-edit-area iframe {
   border: 0 !important;
+  min-height: 220px !important;
+  height: 220px !important;
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 2;
 }
 #mint-lms-root .mint-editor-frame .mint-wp-editor .wp-editor-container {
   border: 0 !important;
+}
+#mint-lms-root .mint-lesson-editor-toolbar,
+#mint-lms-root .mint-qeditor__toolbar {
+  position: relative;
+  z-index: 30;
+  overflow: visible;
+  pointer-events: auto;
+}
+#mint-lms-root .mint-lesson-editor-tool,
+#mint-lms-root .mint-lesson-format__trigger,
+#mint-lms-root .mint-lesson-add-media,
+#mint-lms-root .mint-lesson-view-toggle__item {
+  pointer-events: auto !important;
+  position: relative;
+  z-index: 6;
 }
 
 #mint-lms-root .mint-builder-empty__icon {
@@ -4132,11 +4336,22 @@
   gap: 12px;
   margin-top: 14px;
 }
+#mint-lms-root .mint-qeditor__frame .mint-qeditor__visual {
+  min-height: 160px;
+  font-size: 16px;
+  line-height: 28px;
+}
+#mint-lms-root .mint-qeditor__frame .mint-qeditor__code {
+  min-height: 160px;
+  font-size: 15px;
+  line-height: 26px;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+}
 #mint-lms-root .mint-qeditor__frame {
   margin-top: 12px;
   border: 1px solid #E4E1F0;
   border-radius: 16px;
-  overflow: hidden;
+  overflow: visible;
   box-shadow: 0 6px 20px rgba(28, 20, 80, 0.06);
   background: #FFFFFF;
 }
@@ -4169,6 +4384,45 @@
 }
 #mint-lms-root .mint-qeditor__textarea::placeholder {
   color: #8B889E;
+}
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-editor-tools,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-toolbar,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-toolbar-grp,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-statusbar,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .quicktags-toolbar,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-editor-container .mce-top-part,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-switch-editor {
+  display: none !important;
+}
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-editor-area {
+  min-height: 140px;
+  font-size: 16px;
+  line-height: 28px;
+  padding: 18px;
+  border: 0 !important;
+  box-shadow: none !important;
+}
+#mint-lms-root .mint-qeditor__frame.is-code .mint-wp-editor .wp-editor-area {
+  display: block !important;
+  font-family: "SF Mono", Menlo, Consolas, monospace;
+  font-size: 14px;
+  line-height: 24px;
+}
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-tinymce,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-container,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-panel {
+  border: 0 !important;
+  box-shadow: none !important;
+  background: transparent !important;
+}
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-edit-area,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .mce-edit-area iframe {
+  border: 0 !important;
+  min-height: 140px;
+}
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-editor-container,
+#mint-lms-root .mint-qeditor__frame .mint-wp-editor .wp-editor-wrap {
+  border: 0 !important;
 }
 #mint-lms-root .mint-qeditor__attach-row {
   display: flex;
@@ -4681,6 +4935,7 @@ body.folded.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
   resize: vertical;
 }
 #mint-lms-root .mint-editor-frame.is-code .mint-wp-editor .wp-editor-area {
+  display: block !important;
   font-family: "SF Mono", Menlo, Consolas, monospace;
   font-size: 15px;
   line-height: 26px;
@@ -4688,6 +4943,9 @@ body.folded.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
 #mint-lms-root .mint-wp-editor .wp-editor-wrap {
   border: 0;
   box-shadow: none;
+  min-height: 220px;
+  position: relative;
+  z-index: 1;
 }
 
 

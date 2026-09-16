@@ -3064,13 +3064,16 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											<?php esc_html_e( 'Add media', 'mint-lms' ); ?>
 										</button>
 										<div class="mint-lesson-view-toggle">
-											<button type="button" class="mint-lesson-view-toggle__item" :class="questionEditorView === 'visual' ? 'is-active' : ''" @click="questionEditorView = 'visual'"><?php esc_html_e( 'Visual', 'mint-lms' ); ?></button>
-											<button type="button" class="mint-lesson-view-toggle__item" :class="questionEditorView === 'code' ? 'is-active' : ''" @click="questionEditorView = 'code'"><?php esc_html_e( 'Code', 'mint-lms' ); ?></button>
+											<button type="button" class="mint-lesson-view-toggle__item" :class="questionEditorView === 'visual' ? 'is-active' : ''" @click="setQuestionEditorView('visual')"><?php esc_html_e( 'Visual', 'mint-lms' ); ?></button>
+											<button type="button" class="mint-lesson-view-toggle__item" :class="questionEditorView === 'code' ? 'is-active' : ''" @click="setQuestionEditorView('code')"><?php esc_html_e( 'Code', 'mint-lms' ); ?></button>
 										</div>
 									</div>
 
-									<div class="mint-qeditor__frame" :class="questionEditorView === 'code' ? 'is-code' : 'is-visual'">
-										<div class="mint-qeditor__toolbar" x-show="questionEditorView === 'visual'" x-cloak @click.outside="questionFormatMenuOpen = false">
+									<div class="mint-qeditor__frame mint-editor-frame" :class="{
+										'is-code': questionEditorView === 'code',
+										'is-visual': questionEditorView !== 'code'
+									}">
+										<div class="mint-qeditor__toolbar" x-show="questionEditorView === 'visual'" x-cloak @click.outside="questionFormatMenuOpen = false" @mousedown.prevent>
 											<div class="mint-lesson-format">
 												<button type="button" class="mint-lesson-format__trigger" @click="questionFormatMenuOpen = !questionFormatMenuOpen" :aria-expanded="questionFormatMenuOpen ? 'true' : 'false'">
 													<span x-text="questionFormatLabel"></span>
@@ -3078,28 +3081,46 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												</button>
 												<div class="mint-lesson-format__menu" x-show="questionFormatMenuOpen" x-cloak>
 													<template x-for="option in formatOptions" :key="'qfmt-' + option.value">
-														<button type="button" class="mint-lesson-format__option" :style="`font-size: ${option.size}; font-weight: ${option.weight}`" @click="applyQuestionFormat(option)" x-text="option.label"></button>
+														<button type="button" class="mint-lesson-format__option" :class="questionFormatLabel === option.label ? 'is-active' : ''" :style="`font-size: ${option.size}; font-weight: ${option.weight}`" @click="applyQuestionFormat(option)" x-text="option.label"></button>
 													</template>
 												</div>
 											</div>
 											<div class="mint-lesson-editor-toolbar__divider" aria-hidden="true"></div>
-											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 700" @click="wrapQuestionPrompt('<strong>', '</strong>')">B</button>
-											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500; font-style: italic" @click="wrapQuestionPrompt('<em>', '</em>')">I</button>
-											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" @click="wrapQuestionPrompt('<h2>', '</h2>')">H2</button>
-											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" @click="wrapQuestionPrompt('<ul><li>', '</li></ul>')">•</button>
-											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500" @click="wrapQuestionPrompt('<ol><li>', '</li></ol>')">1.</button>
-											<button type="button" class="mint-lesson-editor-tool" @click="insertQuestionLink()">🔗</button>
+											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 700" :class="questionEditorMarks.bold ? 'is-active' : ''" :aria-pressed="questionEditorMarks.bold ? 'true' : 'false'" @click="runQuestionEditorCommand('bold')" title="<?php echo esc_attr__( 'Bold', 'mint-lms' ); ?>">B</button>
+											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500; font-style: italic" :class="questionEditorMarks.italic ? 'is-active' : ''" :aria-pressed="questionEditorMarks.italic ? 'true' : 'false'" @click="runQuestionEditorCommand('italic')" title="<?php echo esc_attr__( 'Italic', 'mint-lms' ); ?>">I</button>
+											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" :class="questionEditorMarks.h2 ? 'is-active' : ''" :aria-pressed="questionEditorMarks.h2 ? 'true' : 'false'" @click="applyQuestionFormat({ label: 'Heading 2', value: 'h2' })" title="<?php echo esc_attr__( 'Heading 2', 'mint-lms' ); ?>">H2</button>
+											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" data-tool="ul" :class="questionEditorMarks.ul ? 'is-active' : ''" :aria-pressed="questionEditorMarks.ul ? 'true' : 'false'" @click="runQuestionEditorCommand('InsertUnorderedList')" title="<?php echo esc_attr__( 'Bullet list', 'mint-lms' ); ?>">•</button>
+											<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500" data-tool="ol" :class="questionEditorMarks.ol ? 'is-active' : ''" :aria-pressed="questionEditorMarks.ol ? 'true' : 'false'" @click="runQuestionEditorCommand('InsertOrderedList')" title="<?php echo esc_attr__( 'Numbered list', 'mint-lms' ); ?>">1.</button>
+											<button type="button" class="mint-lesson-editor-tool" :class="questionEditorMarks.link ? 'is-active' : ''" :aria-pressed="questionEditorMarks.link ? 'true' : 'false'" @click="insertQuestionLink()" title="<?php echo esc_attr__( 'Link', 'mint-lms' ); ?>">🔗</button>
 										</div>
-										<div class="mint-qeditor__toolbar mint-qeditor__toolbar--code" x-show="questionEditorView === 'code'" x-cloak>
+										<div class="mint-qeditor__toolbar mint-qeditor__toolbar--code" x-show="questionEditorView === 'code'" x-cloak @mousedown.prevent>
 											<template x-for="tag in codeTags" :key="'qcode-' + tag">
 												<button type="button" class="mint-lesson-code-chip" @click="insertQuestionCodeTag(tag)" x-text="tag"></button>
 											</template>
 										</div>
+										<div
+											id="mint_question_prompt_visual"
+											class="mint-lesson-content-area mint-lesson-content-area--visual mint-qeditor__visual"
+											contenteditable="true"
+											role="textbox"
+											aria-multiline="true"
+											x-show="questionEditorView === 'visual'"
+											x-cloak
+											@input="onQuestionVisualInput()"
+											@blur="onQuestionVisualInput()"
+											@keyup="refreshQuestionEditorMarks()"
+											@mouseup="refreshQuestionEditorMarks()"
+											data-placeholder="<?php echo esc_attr__( 'Write your question…', 'mint-lms' ); ?>"
+										></div>
 										<textarea
-											id="mint-question-prompt"
-											class="mint-qeditor__textarea"
-											x-model="activeQuestion.prompt"
-											placeholder="<?php echo esc_attr__( 'Write your question', 'mint-lms' ); ?>"
+											id="mint_question_prompt"
+											name="mint_question_prompt"
+											class="mint-lesson-content-area mint-lesson-content-area--code mint-qeditor__code"
+											rows="8"
+											x-show="questionEditorView === 'code'"
+											x-cloak
+											@input="onQuestionCodeInput($event)"
+											placeholder="<?php echo esc_attr__( 'Write your question…', 'mint-lms' ); ?>"
 										></textarea>
 									</div>
 
@@ -3535,7 +3556,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<div class="mint-mt-2 mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Click the title to rename it.', 'mint-lms' ); ?></div>
 
 						<div class="mint-segmented mint-mt-8">
-							<button type="button" class="mint-segmented__item" :class="lessonTab === 'written' ? 'is-active' : ''" @click="lessonTab = 'written'">
+							<button type="button" class="mint-segmented__item" :class="lessonTab === 'written' ? 'is-active' : ''" @click="activateLessonWrittenEditor()">
 								<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4.5 5.5h11M4.5 10h11M4.5 14.5h7"/></svg>
 								<?php esc_html_e( 'Written', 'mint-lms' ); ?>
 							</button>
@@ -3555,7 +3576,12 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							</button>
 						</div>
 
-						<div x-show="lessonTab === 'written'" x-cloak>
+						<div
+							class="mint-lesson-written"
+							:class="{ 'is-active-panel': lessonTab === 'written' }"
+							x-show="lessonTab === 'written'"
+							x-cloak
+						>
 							<div class="mint-mt-[22px] mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-3">
 								<button type="button" class="mint-lesson-add-media" @click="addMediaToEditor()">
 									<svg width="17" height="17" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="3.5" width="15" height="13" rx="3"/><circle cx="7" cy="8" r="1.4"/><path d="m4 14 4-3.5 3 2 4.5-4"/></svg>
@@ -3567,12 +3593,19 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 								</div>
 							</div>
 
-							<div class="mint-editor-frame mint-mt-3" :class="editorView === 'code' ? 'is-code' : 'is-visual'">
+							<div
+								class="mint-editor-frame mint-mt-3"
+								:class="{
+									'is-code': editorView === 'code',
+									'is-visual': editorView !== 'code'
+								}"
+							>
 								<div
 									x-show="editorView === 'visual'"
 									x-cloak
 									class="mint-lesson-editor-toolbar mint-lesson-editor-toolbar--visual"
 									@click.outside="formatMenuOpen = false"
+									@mousedown.prevent
 								>
 									<div class="mint-lesson-format">
 										<button
@@ -3589,6 +3622,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												<button
 													type="button"
 													class="mint-lesson-format__option"
+													:class="formatLabel === option.label ? 'is-active' : ''"
 													:style="`font-size: ${option.size}; font-weight: ${option.weight}`"
 													@click="applyFormat(option)"
 													x-text="option.label"
@@ -3597,18 +3631,19 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										</div>
 									</div>
 									<div class="mint-lesson-editor-toolbar__divider" aria-hidden="true"></div>
-									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 700" @click="runEditorCommand('bold')" title="<?php echo esc_attr__( 'Bold', 'mint-lms' ); ?>">B</button>
-									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500; font-style: italic" @click="runEditorCommand('italic')" title="<?php echo esc_attr__( 'Italic', 'mint-lms' ); ?>">I</button>
-									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" @click="applyFormat({ label: 'Heading 2', value: 'h2' })" title="<?php echo esc_attr__( 'Heading 2', 'mint-lms' ); ?>">H2</button>
-									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" @click="runEditorCommand('InsertUnorderedList')" title="<?php echo esc_attr__( 'Bullet list', 'mint-lms' ); ?>">•</button>
-									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500" @click="runEditorCommand('InsertOrderedList')" title="<?php echo esc_attr__( 'Numbered list', 'mint-lms' ); ?>">1.</button>
-									<button type="button" class="mint-lesson-editor-tool" @click="insertEditorLink()" title="<?php echo esc_attr__( 'Link', 'mint-lms' ); ?>">🔗</button>
+									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 700" :class="lessonEditorMarks.bold ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.bold ? 'true' : 'false'" @click="runEditorCommand('bold')" title="<?php echo esc_attr__( 'Bold', 'mint-lms' ); ?>">B</button>
+									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500; font-style: italic" :class="lessonEditorMarks.italic ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.italic ? 'true' : 'false'" @click="runEditorCommand('italic')" title="<?php echo esc_attr__( 'Italic', 'mint-lms' ); ?>">I</button>
+									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" :class="lessonEditorMarks.h2 ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.h2 ? 'true' : 'false'" @click="applyFormat({ label: 'Heading 2', value: 'h2' })" title="<?php echo esc_attr__( 'Heading 2', 'mint-lms' ); ?>">H2</button>
+									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 600" data-tool="ul" :class="lessonEditorMarks.ul ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.ul ? 'true' : 'false'" @click="runEditorCommand('InsertUnorderedList')" title="<?php echo esc_attr__( 'Bullet list', 'mint-lms' ); ?>">•</button>
+									<button type="button" class="mint-lesson-editor-tool" style="font-weight: 500" data-tool="ol" :class="lessonEditorMarks.ol ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.ol ? 'true' : 'false'" @click="runEditorCommand('InsertOrderedList')" title="<?php echo esc_attr__( 'Numbered list', 'mint-lms' ); ?>">1.</button>
+									<button type="button" class="mint-lesson-editor-tool" :class="lessonEditorMarks.link ? 'is-active' : ''" :aria-pressed="lessonEditorMarks.link ? 'true' : 'false'" @click="insertEditorLink()" title="<?php echo esc_attr__( 'Link', 'mint-lms' ); ?>">🔗</button>
 								</div>
 
 								<div
 									x-show="editorView === 'code'"
 									x-cloak
 									class="mint-lesson-editor-toolbar mint-lesson-editor-toolbar--code"
+									@mousedown.prevent
 								>
 									<template x-for="tag in codeTags" :key="tag">
 										<button
@@ -3620,28 +3655,30 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									</template>
 								</div>
 
-								<div class="mint-wp-editor">
-									<?php
-									wp_editor(
-										'',
-										'mint_lesson_content',
-										array(
-											'textarea_rows' => 14,
-											'media_buttons' => false,
-											'teeny'         => false,
-											'quicktags'     => true,
-											'editor_height' => 220,
-											'tinymce'       => array(
-												'toolbar1'      => '',
-												'toolbar2'      => '',
-												'menubar'       => false,
-												'statusbar'     => false,
-												'content_style' => 'body { font-family: Aeonik, "General Sans", -apple-system, "Segoe UI", Helvetica, sans-serif; font-size: 17px; line-height: 30px; color: #0F0E1A; padding: 12px 8px; margin: 0; } p { margin: 0 0 18px; }',
-											),
-										)
-									);
-									?>
-								</div>
+								<div
+									id="mint_lesson_content_visual"
+									class="mint-lesson-content-area mint-lesson-content-area--visual"
+									contenteditable="true"
+									role="textbox"
+									aria-multiline="true"
+									x-show="editorView === 'visual'"
+									x-cloak
+									@input="onLessonVisualInput()"
+									@blur="onLessonVisualInput()"
+									@keyup="refreshLessonEditorMarks()"
+									@mouseup="refreshLessonEditorMarks()"
+									data-placeholder="<?php echo esc_attr__( 'Write your lesson description…', 'mint-lms' ); ?>"
+								></div>
+								<textarea
+									id="mint_lesson_content"
+									name="mint_lesson_content"
+									class="mint-lesson-content-area mint-lesson-content-area--code"
+									rows="14"
+									x-show="editorView === 'code'"
+									x-cloak
+									@input="onLessonContentInput($event)"
+									placeholder="<?php echo esc_attr__( 'Write your lesson description…', 'mint-lms' ); ?>"
+								></textarea>
 							</div>
 						</div>
 

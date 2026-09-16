@@ -57,6 +57,24 @@ function courseBuilder(courseId, opts = {}) {
     lessonMode: 'text',
     lessonTab: 'written',
     editorView: 'visual',
+    lessonTinyMceReady: false,
+    questionTinyMceReady: false,
+    lessonEditorMarks: {
+      bold: false,
+      italic: false,
+      h2: false,
+      ul: false,
+      ol: false,
+      link: false,
+    },
+    questionEditorMarks: {
+      bold: false,
+      italic: false,
+      h2: false,
+      ul: false,
+      ol: false,
+      link: false,
+    },
     formatMenuOpen: false,
     formatLabel: 'Paragraph',
     formatOptions: [
@@ -109,6 +127,7 @@ function courseBuilder(courseId, opts = {}) {
     treePageInlineAdd: null,
     treePageInlineTitle: '',
     editorReady: false,
+    questionEditorReady: false,
 
     buildPreviewUrl() {
       const base = String(config.urls.catalogPage || config.urls.playerPage || '').replace(/\/+$/, '');
@@ -482,7 +501,7 @@ function courseBuilder(courseId, opts = {}) {
             {
               id: lesson.id,
               title: lesson.title || 'New Lesson',
-              content: lesson.content || '',
+              content: this.sanitizeEditorHtml(lesson.content || ''),
               videoUrl: lesson.videoUrl || '',
               attachmentId: lesson.attachmentId || null,
               featuredImageId: lesson.featuredImageId || null,
@@ -2646,7 +2665,10 @@ function courseBuilder(courseId, opts = {}) {
       this.refreshPreviewUrl();
       if (type === 'lesson') {
         this.syncLessonMode();
-        this.$nextTick(() => this.syncEditorFromLesson());
+        this.$nextTick(() => {
+          this.initLessonEditor();
+          this.syncEditorFromLesson();
+        });
         this.loadLessonQuiz(id);
       }
     },
@@ -2957,6 +2979,11 @@ function courseBuilder(courseId, opts = {}) {
         await this.loadCourseQuestions();
         this.syncCourseQuestionSidebarTitle();
       }
+      this.$nextTick(() => {
+        if (!this.questionAnswerReady) return;
+        this.initQuestionEditor();
+        this.syncQuestionEditorFromActive();
+      });
     },
 
     isBlankQuestionPrompt(prompt) {
@@ -3237,7 +3264,11 @@ function courseBuilder(courseId, opts = {}) {
         this.activeQuestion.settings = this.normalizeQuestionSettings(this.activeQuestion.settings, 0);
         this.activeQuestion.settings.answerTypePending = false;
         this.questionAnswerReady = true;
-        this.focusQuestionPrompt();
+        this.$nextTick(() => {
+          this.initQuestionEditor();
+          this.syncQuestionEditorFromActive();
+          this.focusQuestionPrompt();
+        });
         return;
       }
       if (kind === 'true_false') {
@@ -3252,7 +3283,11 @@ function courseBuilder(courseId, opts = {}) {
         }
         this.activeQuestion.settings.answerTypePending = false;
         this.questionAnswerReady = true;
-        this.focusQuestionPrompt();
+        this.$nextTick(() => {
+          this.initQuestionEditor();
+          this.syncQuestionEditorFromActive();
+          this.focusQuestionPrompt();
+        });
         return;
       }
       const nextType = kind === 'mcq_multi' ? 'mcq_multi' : 'mcq';
@@ -3291,37 +3326,31 @@ function courseBuilder(courseId, opts = {}) {
         this.activeQuestion.correctAnswers = [];
       }
       this.questionAnswerReady = true;
-      this.focusQuestionPrompt();
+      this.$nextTick(() => {
+        this.initQuestionEditor();
+        this.syncQuestionEditorFromActive();
+        this.focusQuestionPrompt();
+      });
     },
 
     focusQuestionPrompt() {
       const focus = () => {
-        const textarea = document.getElementById('mint-question-prompt');
-        if (!textarea) return false;
-        textarea.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        textarea.focus({ preventScroll: true });
-        const len = (textarea.value || '').length;
-        try {
-          textarea.setSelectionRange(len, len);
-        } catch {
-          // Some browsers may reject selection on hidden nodes.
+        if (this.questionEditorView === 'visual') {
+          const el = this.questionVisualEditorEl();
+          if (!el) return false;
+          el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          el.focus({ preventScroll: true });
+          return true;
         }
+        const textarea = document.getElementById(this.questionEditorId());
+        if (!textarea) return false;
+        textarea.focus({ preventScroll: true });
         return true;
       };
       this.$nextTick?.(() => {
         if (focus()) return;
-        requestAnimationFrame(() => {
-          if (focus()) return;
-          setTimeout(focus, 50);
-        });
+        requestAnimationFrame(() => { if (!focus()) setTimeout(focus, 50); });
       });
-      // Fallback if Alpine $nextTick is unavailable in this context.
-      if (!this.$nextTick) {
-        requestAnimationFrame(() => {
-          if (focus()) return;
-          setTimeout(focus, 50);
-        });
-      }
     },
 
     syncActiveQuestionTitle() {
@@ -3360,6 +3389,8 @@ function courseBuilder(courseId, opts = {}) {
 
     async saveActiveQuestion() {
       if (!this.activeQuestion) return;
+
+      this.pullQuestionEditorContent();
 
       const title = (this.activeQuestion.title || '').trim();
       let prompt = (this.activeQuestion.prompt || '').trim();
@@ -3423,6 +3454,10 @@ function courseBuilder(courseId, opts = {}) {
         this.selected.questionId = refreshed.id || 0;
         this.selected.id = refreshed.id || 0;
         this.refreshPreviewUrl();
+        this.$nextTick(() => {
+          this.initQuestionEditor();
+          this.syncQuestionEditorFromActive();
+        });
       }
       this.syncCourseQuestionSidebarTitle();
       if (this.fromQuestions) {
@@ -3691,65 +3726,349 @@ function courseBuilder(courseId, opts = {}) {
       return 'mint_lesson_content';
     },
 
-    initLessonEditor() {
-      if (this.editorReady) return;
+    questionEditorId() {
+      return 'mint_question_prompt';
+    },
 
-      const bindEditor = () => {
-        const editorId = this.editorId();
-        const editor = window.tinymce?.get(editorId);
-        if (editor && !editor._mintBound) {
-          editor.on('change keyup', () => {
-            if (!this.selectedLesson) return;
-            this.selectedLesson.content = editor.getContent();
-            this.debouncedSaveLesson(this.selectedLesson);
-          });
-          editor._mintBound = true;
-        }
+    visualEditorEl() {
+      return document.getElementById('mint_lesson_content_visual');
+    },
 
-        const textarea = document.getElementById(editorId);
-        if (textarea && !textarea.dataset.mintBound) {
-          textarea.dataset.mintBound = '1';
-          textarea.addEventListener('input', () => {
-            if (!this.selectedLesson || window.tinymce?.get(editorId)) return;
-            this.selectedLesson.content = textarea.value;
-            this.debouncedSaveLesson(this.selectedLesson);
-          });
+    questionVisualEditorEl() {
+      return document.getElementById('mint_question_prompt_visual');
+    },
+
+    sanitizeEditorHtml(html) {
+      let raw = String(html || '');
+      if (!raw) return '';
+      raw = raw
+        .replace(/<span\b[^>]*\bdata-mce-type\s*=\s*["']?bookmark["']?[^>]*>[\s\S]*?(?:<\/span>|$)/gi, '')
+        .replace(/<span\b[^>]*\bmce_SELRES_[a-z_]+[^>]*>[\s\S]*?(?:<\/span>|$)/gi, '')
+        .replace(/\uFEFF/g, '')
+        .replace(/&nbsp;/gi, ' ')
+        .trim();
+      if (/^<br\s*\/?>$/i.test(raw) || raw === '<p><br></p>') return '';
+      for (let i = 0; i < 4; i += 1) {
+        const next = raw.replace(
+          /<(strong|b|em|i|u|h[1-6]|p|li|ul|ol|blockquote|code|pre)\b[^>]*>\s*<\/\1>/gi,
+          ''
+        );
+        if (next === raw) break;
+        raw = next;
+      }
+      raw = raw.trim();
+      const textOnly = raw.replace(/<[^>]+>/g, '').replace(/\s+/g, '');
+      const hasUsefulTags = /<(img|video|iframe|audio|embed|object|a|strong|b|em|i|u|h[1-6]|ul|ol|li|p|blockquote|code|pre)\b/i.test(raw);
+      if (!textOnly && !hasUsefulTags) return '';
+      return raw;
+    },
+
+    clearEditorMarks(target = 'lesson') {
+      const empty = { bold: false, italic: false, h2: false, ul: false, ol: false, link: false };
+      if (target === 'question') this.questionEditorMarks = empty;
+      else this.lessonEditorMarks = empty;
+    },
+
+    readDomFormatMarks() {
+      let bold = false, italic = false, ul = false, ol = false, link = false, block = 'p';
+      try {
+        bold = !!document.queryCommandState('bold');
+        italic = !!document.queryCommandState('italic');
+        ul = !!document.queryCommandState('insertUnorderedList');
+        ol = !!document.queryCommandState('insertOrderedList');
+        link = !!document.queryCommandState('createLink');
+        block = String(document.queryCommandValue('formatBlock') || 'p').toLowerCase().replace(/[<>]/g, '');
+      } catch { /* ignore */ }
+      if (!block || block === 'div') block = 'p';
+      return { bold, italic, h2: block === 'h2', ul, ol, link, block };
+    },
+
+    refreshLessonEditorMarks() {
+      if (this.editorView !== 'visual') { this.clearEditorMarks('lesson'); return; }
+      const el = this.visualEditorEl();
+      if (!el) { this.clearEditorMarks('lesson'); return; }
+      const sel = window.getSelection();
+      const node = sel?.anchorNode || null;
+      if (node && node !== el && !el.contains(node)) return;
+      const marks = this.readDomFormatMarks();
+      this.lessonEditorMarks = { bold: marks.bold, italic: marks.italic, h2: marks.h2, ul: marks.ul, ol: marks.ol, link: marks.link };
+      const opt = this.formatOptions.find((item) => item.value === marks.block);
+      if (opt) this.formatLabel = opt.label;
+    },
+
+    refreshQuestionEditorMarks() {
+      if (this.questionEditorView !== 'visual') { this.clearEditorMarks('question'); return; }
+      const el = this.questionVisualEditorEl();
+      if (!el) { this.clearEditorMarks('question'); return; }
+      const sel = window.getSelection();
+      const node = sel?.anchorNode || null;
+      if (node && node !== el && !el.contains(node)) return;
+      const marks = this.readDomFormatMarks();
+      this.questionEditorMarks = { bold: marks.bold, italic: marks.italic, h2: marks.h2, ul: marks.ul, ol: marks.ol, link: marks.link };
+      const opt = this.formatOptions.find((item) => item.value === marks.block);
+      if (opt) this.questionFormatLabel = opt.label;
+    },
+
+    ensureEditorMarksListener() {
+      if (this._editorMarksBound) return;
+      this._editorMarksBound = true;
+      document.addEventListener('selectionchange', () => {
+        this.refreshLessonEditorMarks();
+        this.refreshQuestionEditorMarks();
+      });
+    },
+
+    syncVisualToTextarea(kind) {
+      if (kind === 'question') {
+        const el = this.questionVisualEditorEl();
+        const ta = document.getElementById(this.questionEditorId());
+        const html = this.sanitizeEditorHtml(el?.innerHTML || '');
+        if (ta) ta.value = html;
+        if (this.activeQuestion) this.activeQuestion.prompt = html;
+        return html;
+      }
+      const el = this.visualEditorEl();
+      const ta = document.getElementById(this.editorId());
+      const html = this.sanitizeEditorHtml(el?.innerHTML || '');
+      if (ta) ta.value = html;
+      if (this.selectedLesson) this.selectedLesson.content = html;
+      return html;
+    },
+
+    onLessonVisualInput() {
+      if (!this.selectedLesson || this.editorView !== 'visual') return;
+      this.syncVisualToTextarea('lesson');
+      this.debouncedSaveLesson(this.selectedLesson);
+      this.refreshLessonEditorMarks();
+    },
+
+    onLessonContentInput(event) {
+      if (!this.selectedLesson) return;
+      const cleaned = this.sanitizeEditorHtml(event?.target?.value || '');
+      if (event?.target) event.target.value = cleaned;
+      this.selectedLesson.content = cleaned;
+      this.debouncedSaveLesson(this.selectedLesson);
+    },
+
+    onQuestionVisualInput() {
+      if (!this.activeQuestion || this.questionEditorView !== 'visual') return;
+      this.syncVisualToTextarea('question');
+      this.refreshQuestionEditorMarks();
+    },
+
+    onQuestionCodeInput(event) {
+      if (!this.activeQuestion) return;
+      const cleaned = this.sanitizeEditorHtml(event?.target?.value || '');
+      if (event?.target) event.target.value = cleaned;
+      this.activeQuestion.prompt = cleaned;
+    },
+
+    focusVisualEditor() {
+      const el = this.visualEditorEl();
+      if (!el) return null;
+      el.focus();
+      return el;
+    },
+
+    focusQuestionVisualEditor() {
+      const el = this.questionVisualEditorEl();
+      if (!el) return null;
+      el.focus();
+      return el;
+    },
+
+    getClosestBlockElement(root, node) {
+      if (!root) return null;
+      let el = node?.nodeType === Node.TEXT_NODE ? node.parentElement : node;
+      while (el && el !== root) {
+        const name = String(el.tagName || '').toLowerCase();
+        if (['p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'pre', 'blockquote', 'li', 'div'].includes(name)) return el;
+        el = el.parentElement;
+      }
+      return null;
+    },
+
+    placeCaretIn(el, atEnd = true) {
+      if (!el) return;
+      const sel = window.getSelection();
+      if (!sel) return;
+      const range = document.createRange();
+      range.selectNodeContents(el);
+      range.collapse(!!atEnd);
+      sel.removeAllRanges();
+      sel.addRange(range);
+    },
+
+    ensureCaretInEditor(rootEl) {
+      if (!rootEl) return;
+      rootEl.focus();
+      const sel = window.getSelection();
+      const anchor = sel?.anchorNode || null;
+      if (sel && anchor && (anchor === rootEl || rootEl.contains(anchor))) return;
+      if (!rootEl.innerHTML.trim()) rootEl.innerHTML = '<p><br></p>';
+      const target = this.getClosestBlockElement(rootEl, rootEl.firstChild) || rootEl.firstElementChild || rootEl;
+      this.placeCaretIn(target, true);
+    },
+
+    replaceBlockWithTag(rootEl, tagName) {
+      if (!rootEl) return;
+      const sel = window.getSelection();
+      const block = this.getClosestBlockElement(rootEl, sel?.anchorNode);
+      const next = document.createElement(tagName);
+      if (block && block !== rootEl && rootEl.contains(block) && block.tagName.toLowerCase() !== 'li') {
+        while (block.firstChild) next.appendChild(block.firstChild);
+        if (!next.innerHTML.trim()) next.innerHTML = '<br>';
+        block.replaceWith(next);
+      } else {
+        const html = (rootEl.innerHTML || '').trim();
+        if (!html || html === '<br>' || html === '<p><br></p>') {
+          next.innerHTML = '<br>';
+          rootEl.innerHTML = '';
+          rootEl.appendChild(next);
+        } else {
+          next.innerHTML = rootEl.innerHTML;
+          rootEl.innerHTML = '';
+          rootEl.appendChild(next);
         }
+      }
+      this.placeCaretIn(next, true);
+    },
+
+    applyVisualBlockFormat(rootEl, tag = 'p') {
+      if (!rootEl) return;
+      const tagName = String(tag || 'p').toLowerCase().replace(/[^a-z0-9]/g, '') || 'p';
+      this.ensureCaretInEditor(rootEl);
+      let applied = false;
+      try { applied = document.execCommand('formatBlock', false, `<${tagName}>`); } catch { applied = false; }
+      if (!applied) {
+        try { applied = document.execCommand('formatBlock', false, tagName); } catch { applied = false; }
+      }
+      const current = this.getClosestBlockElement(rootEl, window.getSelection()?.anchorNode);
+      if (!current || String(current.tagName || '').toLowerCase() !== tagName) {
+        this.replaceBlockWithTag(rootEl, tagName);
+      }
+    },
+
+    execVisualCommand(rootEl, command) {
+      if (!rootEl) return false;
+      this.ensureCaretInEditor(rootEl);
+      const map = {
+        bold: 'bold',
+        italic: 'italic',
+        InsertUnorderedList: 'insertUnorderedList',
+        InsertOrderedList: 'insertOrderedList',
       };
+      const cmd = map[command] || command;
+      try {
+        document.execCommand(cmd, false, null);
+        return true;
+      } catch {
+        return false;
+      }
+    },
 
-      bindEditor();
-      setTimeout(bindEditor, 600);
-      setTimeout(bindEditor, 1500);
-      this.editorReady = true;
+    initQuestionEditor() {
+      this.ensureEditorMarksListener();
+      const content = this.sanitizeEditorHtml(this.activeQuestion?.prompt || '');
+      if (this.activeQuestion) this.activeQuestion.prompt = content;
+      this.questionEditorView = this.questionEditorView === 'code' ? 'code' : 'visual';
+      this.questionTinyMceReady = false;
+      this.questionEditorReady = true;
+      this.$nextTick(() => {
+        const visual = this.questionVisualEditorEl();
+        const ta = document.getElementById(this.questionEditorId());
+        if (visual) visual.innerHTML = content || '';
+        if (ta) ta.value = content;
+        this.refreshQuestionEditorMarks();
+      });
+    },
+
+    pullQuestionEditorContent() {
+      if (!this.activeQuestion) return;
+      if (this.questionEditorView === 'visual') {
+        this.syncVisualToTextarea('question');
+        return;
+      }
+      const ta = document.getElementById(this.questionEditorId());
+      if (ta) this.activeQuestion.prompt = this.sanitizeEditorHtml(ta.value);
+    },
+
+    syncQuestionEditorFromActive() {
+      if (!this.activeQuestion) return;
+      const content = this.sanitizeEditorHtml(this.activeQuestion.prompt || '');
+      this.activeQuestion.prompt = content;
+      this.$nextTick(() => {
+        const visual = this.questionVisualEditorEl();
+        const ta = document.getElementById(this.questionEditorId());
+        if (this.questionEditorView === 'visual' && visual) visual.innerHTML = content || '';
+        if (ta) ta.value = content;
+        this.refreshQuestionEditorMarks();
+      });
+    },
+
+    setQuestionEditorView(view) {
+      this.pullQuestionEditorContent();
+      this.questionEditorView = view === 'code' ? 'code' : 'visual';
+      this.questionFormatMenuOpen = false;
+      this.$nextTick(() => this.syncQuestionEditorFromActive());
+    },
+
+    markQuestionDirtyFromEditor() {
+      if (!this.activeQuestion) return;
+      this.pullQuestionEditorContent();
+    },
+
+    runQuestionEditorCommand(command) {
+      if (this.questionEditorView !== 'visual') return;
+      this.execVisualCommand(this.questionVisualEditorEl(), command);
+      this.onQuestionVisualInput();
+      this.refreshQuestionEditorMarks();
+    },
+
+    initLessonEditor() {
+      this.mountLessonEditor(this.selectedLesson?.content || '');
+    },
+
+    mountLessonEditor(content = '') {
+      this.ensureEditorMarksListener();
+      const clean = this.sanitizeEditorHtml(content);
+      if (this.selectedLesson) this.selectedLesson.content = clean;
+      this.editorView = this.editorView === 'code' ? 'code' : 'visual';
+      this.lessonTinyMceReady = false;
+      this.$nextTick(() => {
+        const visual = this.visualEditorEl();
+        const ta = document.getElementById(this.editorId());
+        if (visual) visual.innerHTML = clean || '';
+        if (ta) ta.value = clean;
+        this.refreshLessonEditorMarks();
+      });
+    },
+
+    resetLessonEditorContent(content = '') {
+      this.mountLessonEditor(content);
+    },
+
+    activateLessonWrittenEditor() {
+      this.lessonTab = 'written';
+      this.editorView = 'visual';
+      this.$nextTick(() => this.mountLessonEditor(this.selectedLesson?.content || ''));
     },
 
     pullEditorContent() {
       const lesson = this.selectedLesson;
       if (!lesson) return;
-      const editorId = this.editorId();
-      if (window.tinymce?.get(editorId)) {
-        lesson.content = window.tinymce.get(editorId).getContent();
+      if (this.editorView === 'visual') {
+        this.syncVisualToTextarea('lesson');
         return;
       }
-      const textarea = document.getElementById(editorId);
-      if (textarea) {
-        lesson.content = textarea.value;
-      }
+      const ta = document.getElementById(this.editorId());
+      if (ta) lesson.content = this.sanitizeEditorHtml(ta.value);
     },
 
     syncEditorFromLesson() {
       const lesson = this.selectedLesson;
       if (!lesson) return;
-      const editorId = this.editorId();
-      const content = lesson.content || '';
-      if (window.tinymce?.get(editorId)) {
-        window.tinymce.get(editorId).setContent(content);
-        return;
-      }
-      const textarea = document.getElementById(editorId);
-      if (textarea) {
-        textarea.value = content;
-      }
+      this.mountLessonEditor(lesson.content || '');
     },
 
     syncLessonMode() {
@@ -3762,70 +4081,58 @@ function courseBuilder(courseId, opts = {}) {
     setLessonMode(mode) {
       this.lessonMode = mode;
       this.lessonTab = mode === 'video' ? 'video' : 'written';
+      if (mode !== 'video') {
+        this.$nextTick(() => this.mountLessonEditor(this.selectedLesson?.content || ''));
+      }
     },
 
     setEditorView(view) {
+      this.pullEditorContent();
       this.editorView = view === 'code' ? 'code' : 'visual';
       this.formatMenuOpen = false;
-      const editorId = this.editorId();
-      if (typeof window.switchEditors?.go === 'function') {
-        window.switchEditors.go(editorId, this.editorView === 'code' ? 'html' : 'tmce');
-      }
-      this.$nextTick(() => this.initLessonEditor());
-    },
-
-    getLessonEditor() {
-      return window.tinymce?.get(this.editorId()) || null;
+      this.$nextTick(() => {
+        const clean = this.sanitizeEditorHtml(this.selectedLesson?.content || '');
+        const visual = this.visualEditorEl();
+        const ta = document.getElementById(this.editorId());
+        if (this.editorView === 'visual' && visual) visual.innerHTML = clean || '';
+        if (ta) ta.value = clean;
+      });
     },
 
     markLessonDirtyFromEditor() {
       const lesson = this.selectedLesson;
       if (!lesson) return;
-      const editor = this.getLessonEditor();
-      if (editor) {
-        lesson.content = editor.getContent();
-      } else {
-        const textarea = document.getElementById(this.editorId());
-        if (textarea) lesson.content = textarea.value;
-      }
+      this.pullEditorContent();
       this.debouncedSaveLesson(lesson);
     },
 
-    runEditorCommand(command, value = null) {
-      const editor = this.getLessonEditor();
-      if (!editor) return;
-      editor.focus();
-      if (value == null) {
-        editor.execCommand(command);
-      } else {
-        editor.execCommand(command, false, value);
-      }
-      this.markLessonDirtyFromEditor();
+    runEditorCommand(command) {
+      if (this.editorView !== 'visual') return;
+      this.execVisualCommand(this.visualEditorEl(), command);
+      this.onLessonVisualInput();
+      this.refreshLessonEditorMarks();
     },
 
     applyFormat(option) {
       this.formatLabel = option.label;
       this.formatMenuOpen = false;
-      const editor = this.getLessonEditor();
-      if (!editor) return;
-      editor.focus();
-      try {
-        editor.execCommand('FormatBlock', false, option.value);
-      } catch {
-        editor.execCommand('FormatBlock', false, `<${option.value}>`);
-      }
-      this.markLessonDirtyFromEditor();
+      if (this.editorView !== 'visual') return;
+      this.applyVisualBlockFormat(this.visualEditorEl(), option?.value || 'p');
+      this.onLessonVisualInput();
+      this.refreshLessonEditorMarks();
     },
 
     insertEditorLink() {
-      const editor = this.getLessonEditor();
-      if (!editor) return;
       const url = window.prompt('Enter URL');
       if (!url) return;
-      editor.focus();
-      const selected = editor.selection.getContent({ format: 'text' }) || url;
-      editor.insertContent(`<a href="${url}">${selected}</a>`);
-      this.markLessonDirtyFromEditor();
+      if (this.editorView === 'visual') {
+        this.focusVisualEditor();
+        try { document.execCommand('createLink', false, url); } catch { /* ignore */ }
+        this.onLessonVisualInput();
+        this.refreshLessonEditorMarks();
+        return;
+      }
+      this.wrapTextareaSelection(`<a href="${url}">`, '</a>');
     },
 
     wrapTextareaSelection(before, after = '') {
@@ -3833,16 +4140,11 @@ function courseBuilder(courseId, opts = {}) {
       if (!textarea) return;
       const start = textarea.selectionStart ?? 0;
       const end = textarea.selectionEnd ?? 0;
-      const value = textarea.value || '';
-      const selected = value.slice(start, end);
-      const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
-      textarea.value = next;
-      const cursor = start + before.length + selected.length + after.length;
-      textarea.focus();
-      textarea.setSelectionRange(
-        selected ? start + before.length : cursor,
-        selected ? start + before.length + selected.length : cursor
+      const selected = (textarea.value || '').slice(start, end);
+      const next = this.sanitizeEditorHtml(
+        `${(textarea.value || '').slice(0, start)}${before}${selected}${after}${(textarea.value || '').slice(end)}`
       );
+      textarea.value = next;
       if (this.selectedLesson) {
         this.selectedLesson.content = next;
         this.debouncedSaveLesson(this.selectedLesson);
@@ -3850,57 +4152,10 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     insertCodeTag(tag) {
-      if (tag === 'close tags') {
-        if (typeof window.QTags?.closeAllTags === 'function') {
-          window.QTags.closeAllTags(this.editorId());
-          this.markLessonDirtyFromEditor();
-        }
-        return;
-      }
-
-      if (tag === 'link') {
-        const url = window.prompt('Enter URL');
-        if (!url) return;
-        const textarea = document.getElementById(this.editorId());
-        const selected = textarea
-          ? (textarea.value || '').slice(textarea.selectionStart || 0, textarea.selectionEnd || 0)
-          : '';
-        const label = selected || url;
-        if (selected) {
-          this.wrapTextareaSelection(`<a href="${url}">`, '</a>');
-        } else {
-          this.wrapTextareaSelection(`<a href="${url}">${label}</a>`, '');
-        }
-        return;
-      }
-
-      if (tag === 'img') {
-        if (typeof wp !== 'undefined' && wp.media) {
-          const frame = wp.media({
-            title: 'Insert image',
-            button: { text: 'Insert' },
-            library: { type: 'image' },
-            multiple: false,
-          });
-          frame.on('select', () => {
-            const attachment = frame.state().get('selection').first().toJSON();
-            const alt = attachment.alt || attachment.title || '';
-            this.wrapTextareaSelection(`<img src="${attachment.url}" alt="${alt}" />`, '');
-          });
-          frame.open();
-          return;
-        }
-        const src = window.prompt('Image URL');
-        if (!src) return;
-        this.wrapTextareaSelection(`<img src="${src}" alt="" />`, '');
-        return;
-      }
-
-      if (tag === 'more') {
-        this.wrapTextareaSelection('<!--more-->', '');
-        return;
-      }
-
+      if (tag === 'close tags') return;
+      if (tag === 'link') { this.insertEditorLink(); return; }
+      if (tag === 'img') { this.addMediaToEditor(); return; }
+      if (tag === 'more') { this.wrapTextareaSelection('<!--more-->', ''); return; }
       const pairs = {
         b: ['<strong>', '</strong>'],
         i: ['<em>', '</em>'],
@@ -3913,8 +4168,7 @@ function courseBuilder(courseId, opts = {}) {
         code: ['<code>', '</code>'],
       };
       const pair = pairs[tag];
-      if (!pair) return;
-      this.wrapTextareaSelection(pair[0], pair[1]);
+      if (pair) this.wrapTextareaSelection(pair[0], pair[1]);
     },
 
     addMediaToEditor() {
@@ -3929,35 +4183,22 @@ function courseBuilder(courseId, opts = {}) {
       });
       frame.on('select', () => {
         const attachment = frame.state().get('selection').first().toJSON();
-        const editorId = this.editorId();
         let html = '';
         if (attachment.type === 'image') {
-          const alt = attachment.alt || attachment.title || '';
-          html = `<img src="${attachment.url}" alt="${alt}" />`;
+          html = `<img src="${attachment.url}" alt="${attachment.alt || attachment.title || ''}" />`;
         } else if (attachment.url) {
-          const title = attachment.title || attachment.filename || 'Download';
-          html = `<a href="${attachment.url}">${title}</a>`;
+          html = `<a href="${attachment.url}">${attachment.title || attachment.filename || 'Download'}</a>`;
         }
         if (!html) return;
-
         this.setEditorView('visual');
-        const editor = window.tinymce?.get(editorId);
-        if (editor) {
-          editor.insertContent(html);
-          if (this.selectedLesson) {
-            this.selectedLesson.content = editor.getContent();
-            this.debouncedSaveLesson(this.selectedLesson);
+        this.$nextTick(() => {
+          this.focusVisualEditor();
+          try { document.execCommand('insertHTML', false, html); } catch {
+            const el = this.visualEditorEl();
+            if (el) el.innerHTML = `${el.innerHTML || ''}${html}`;
           }
-          return;
-        }
-        const textarea = document.getElementById(editorId);
-        if (textarea) {
-          textarea.value = `${textarea.value || ''}${html}`;
-          if (this.selectedLesson) {
-            this.selectedLesson.content = textarea.value;
-            this.debouncedSaveLesson(this.selectedLesson);
-          }
-        }
+          this.onLessonVisualInput();
+        });
       });
       frame.open();
     },
@@ -4624,7 +4865,7 @@ function courseBuilder(courseId, opts = {}) {
           method: 'PATCH',
           body: JSON.stringify({
             title: lesson.title,
-            content: lesson.content || '',
+            content: this.sanitizeEditorHtml(lesson.content || ''),
             video_url: lesson.videoUrl || '',
             attachment_id: lesson.attachmentId || null,
             // Send 0 (not omit/null-only) so clear survives REST null handling.
@@ -5606,65 +5847,64 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     wrapQuestionPrompt(before, after = '') {
-      const textarea = document.getElementById('mint-question-prompt');
-      if (!textarea || !this.activeQuestion) return;
-      const start = textarea.selectionStart ?? 0;
-      const end = textarea.selectionEnd ?? 0;
+      if (!this.activeQuestion) return;
+      if (this.questionEditorView === 'visual') {
+        this.focusQuestionVisualEditor();
+        const selected = window.getSelection()?.toString() || '';
+        try {
+          document.execCommand('insertHTML', false, `${before}${selected}${after}`);
+        } catch {
+          const el = this.questionVisualEditorEl();
+          if (el) el.innerHTML = `${el.innerHTML || ''}${before}${selected}${after}`;
+        }
+        this.onQuestionVisualInput();
+        return;
+      }
+      const textarea = document.getElementById(this.questionEditorId());
+      if (!textarea) return;
+      const startPos = textarea.selectionStart ?? 0;
+      const endPos = textarea.selectionEnd ?? 0;
       const value = textarea.value || '';
-      const selected = value.slice(start, end);
-      const next = `${value.slice(0, start)}${before}${selected}${after}${value.slice(end)}`;
-      this.activeQuestion.prompt = next;
+      const selected = value.slice(startPos, endPos);
+      const next = this.sanitizeEditorHtml(`${value.slice(0, startPos)}${before}${selected}${after}${value.slice(endPos)}`);
       textarea.value = next;
-      requestAnimationFrame(() => {
-        textarea.focus();
-        const cursorStart = start + before.length;
-        const cursorEnd = selected ? cursorStart + selected.length : cursorStart;
-        textarea.setSelectionRange(cursorStart, cursorEnd);
-      });
+      this.activeQuestion.prompt = next;
     },
 
     applyQuestionFormat(option) {
       this.questionFormatLabel = option.label;
       this.questionFormatMenuOpen = false;
-      if (!option?.value || option.value === 'p') {
-        this.wrapQuestionPrompt('<p>', '</p>');
-        return;
-      }
-      this.wrapQuestionPrompt(`<${option.value}>`, `</${option.value}>`);
+      if (this.questionEditorView !== 'visual') return;
+      this.applyVisualBlockFormat(this.questionVisualEditorEl(), option?.value || 'p');
+      this.onQuestionVisualInput();
+      this.refreshQuestionEditorMarks();
     },
 
     insertQuestionLink() {
       const url = window.prompt('Enter URL');
       if (!url) return;
-      const textarea = document.getElementById('mint-question-prompt');
-      const selected = textarea
-        ? (textarea.value || '').slice(textarea.selectionStart || 0, textarea.selectionEnd || 0)
-        : '';
-      if (selected) {
-        this.wrapQuestionPrompt(`<a href="${url}">`, '</a>');
-      } else {
-        this.wrapQuestionPrompt(`<a href="${url}">${url}</a>`, '');
+      if (this.questionEditorView === 'visual') {
+        this.focusQuestionVisualEditor();
+        try { document.execCommand('createLink', false, url); } catch { /* ignore */ }
+        this.onQuestionVisualInput();
+        this.refreshQuestionEditorMarks();
+        return;
       }
+      this.wrapQuestionPrompt(`<a href="${url}">`, '</a>');
     },
 
     insertQuestionCodeTag(tag) {
-      if (tag === 'link') {
-        this.insertQuestionLink();
-        return;
-      }
-      if (tag === 'img') {
-        this.addMediaToQuestionPrompt();
-        return;
-      }
-      if (tag === 'close tags') return;
+      if (tag === 'close tags' || tag === 'link' && false) return;
+      if (tag === 'link') { this.insertQuestionLink(); return; }
+      if (tag === 'img') { this.addMediaToQuestionPrompt(); return; }
       const pairs = {
         b: ['<strong>', '</strong>'],
         i: ['<em>', '</em>'],
         'b-quote': ['<blockquote>', '</blockquote>'],
         del: ['<del>', '</del>'],
         ins: ['<ins>', '</ins>'],
-        ul: ['<ul><li>', '</li></ul>'],
-        ol: ['<ol><li>', '</li></ol>'],
+        ul: ['<ul>\n<li>', '</li>\n</ul>'],
+        ol: ['<ol>\n<li>', '</li>\n</ol>'],
         li: ['<li>', '</li>'],
         code: ['<code>', '</code>'],
         more: ['<!--more-->', ''],
@@ -5675,21 +5915,25 @@ function courseBuilder(courseId, opts = {}) {
 
     addMediaToQuestionPrompt() {
       if (!window.wp?.media || !this.activeQuestion) return;
-      const frame = window.wp.media({
-        title: 'Add media',
-        button: { text: 'Insert' },
-        multiple: false,
-      });
+      const frame = window.wp.media({ title: 'Add media', button: { text: 'Insert' }, multiple: false });
       frame.on('select', () => {
         const attachment = frame.state().get('selection').first()?.toJSON();
         if (!attachment?.url || !this.activeQuestion) return;
+        let html = '';
         if (attachment.type === 'image') {
-          const alt = attachment.alt || attachment.title || '';
-          this.wrapQuestionPrompt(`<img src="${attachment.url}" alt="${alt}" />`, '');
+          html = `<img src="${attachment.url}" alt="${attachment.alt || attachment.title || ''}" />`;
         } else {
-          const label = attachment.title || attachment.filename || 'Download';
-          this.wrapQuestionPrompt(`<a href="${attachment.url}">${label}</a>`, '');
+          html = `<a href="${attachment.url}">${attachment.title || attachment.filename || 'Download'}</a>`;
         }
+        this.setQuestionEditorView('visual');
+        this.$nextTick(() => {
+          this.focusQuestionVisualEditor();
+          try { document.execCommand('insertHTML', false, html); } catch {
+            const el = this.questionVisualEditorEl();
+            if (el) el.innerHTML = `${el.innerHTML || ''}${html}`;
+          }
+          this.onQuestionVisualInput();
+        });
       });
       frame.open();
     },
@@ -5785,10 +6029,12 @@ function courseBuilder(courseId, opts = {}) {
           this.activeQuestion.settings.attachmentUrl = next.attachmentUrl || '';
           this.activeQuestion.settings.freePreview = !!next.freePreview;
         }
+        this.$nextTick(() => this.syncQuestionEditorFromActive());
         return;
       }
       this.activeQuestion.correctAnswer = '';
       this.activeQuestion.prompt = '';
+      this.$nextTick(() => this.syncQuestionEditorFromActive());
     },
 
     wrapExtraTfPrompt(index, before, after = '') {
