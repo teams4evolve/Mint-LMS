@@ -219,6 +219,18 @@ final class QuizController {
 				),
 			)
 		);
+
+		register_rest_route(
+			self::NAMESPACE,
+			'/quizzes/(?P<id>\d+)/reset-attempts',
+			array(
+				array(
+					'methods'             => \WP_REST_Server::CREATABLE,
+					'callback'            => array( $this, 'resetAttempts' ),
+					'permission_callback' => array( $this, 'canManageCourses' ),
+				),
+			)
+		);
 	}
 
 	public function canManageCourses(): bool {
@@ -666,6 +678,20 @@ final class QuizController {
 		}
 	}
 
+	public function resetAttempts( \WP_REST_Request $request ): \WP_REST_Response {
+		try {
+			$userId = $this->authorization->getCurrentUserId();
+			$id     = (int) $request->get_param( 'id' );
+			$this->quizService->resetAttempts( $id, $userId );
+
+			return ApiResponse::success( array( 'reset' => true ) );
+		} catch ( NotFoundException $exception ) {
+			return ApiResponse::error( 'not_found', $exception->getMessage(), 404 );
+		} catch ( ForbiddenException $exception ) {
+			return ApiResponse::error( 'forbidden', $exception->getMessage(), 403 );
+		}
+	}
+
 	/**
 	 * @return array<string, array<string, mixed>>
 	 */
@@ -819,14 +845,23 @@ final class QuizController {
 	 */
 	private function defaultQuizSettings(): array {
 		return array(
-			'restrictRetakes'     => false,
-			'retriesAllowed'      => 0,
-			'retriesApplicableTo' => 'all',
-			'questionCompletion'  => false,
-			'timeLimitEnabled'    => false,
-			'timeLimitHours'      => '00',
-			'timeLimitMinutes'    => '00',
-			'timeLimitSeconds'    => '00',
+			'restrictRetakes'             => false,
+			'retriesAllowed'              => 0,
+			'retriesApplicableTo'         => 'all',
+			'questionCompletion'          => false,
+			'timeLimitEnabled'            => false,
+			'timeLimitHours'              => '00',
+			'timeLimitMinutes'            => '00',
+			'timeLimitSeconds'            => '00',
+			'quizSavingEnabled'           => false,
+			'quizSavingIntervalSeconds'   => 20,
+			'releaseSchedule'             => 'immediately',
+			'releaseDaysAfterEnrollment'  => 0,
+			'releaseMonth'                => '',
+			'releaseDay'                  => '',
+			'releaseYear'                 => '',
+			'releaseHour'                 => '',
+			'releaseMinute'               => '',
 		);
 	}
 
@@ -847,15 +882,50 @@ final class QuizController {
 	 */
 	private function saveQuizSettings( int $quizId, array $settings ): void {
 		$defaults = $this->defaultQuizSettings();
-		$clean    = array(
-			'restrictRetakes'     => ! empty( $settings['restrictRetakes'] ),
-			'retriesAllowed'      => absint( $settings['retriesAllowed'] ?? 0 ),
-			'retriesApplicableTo' => sanitize_key( (string) ( $settings['retriesApplicableTo'] ?? 'all' ) ),
-			'questionCompletion'  => ! empty( $settings['questionCompletion'] ),
-			'timeLimitEnabled'    => ! empty( $settings['timeLimitEnabled'] ),
-			'timeLimitHours'      => $this->sanitizeTimePart( $settings['timeLimitHours'] ?? '00' ),
-			'timeLimitMinutes'    => $this->sanitizeTimePart( $settings['timeLimitMinutes'] ?? '00' ),
-			'timeLimitSeconds'    => $this->sanitizeTimePart( $settings['timeLimitSeconds'] ?? '00' ),
+		$schedule = sanitize_key( (string) ( $settings['releaseSchedule'] ?? 'immediately' ) );
+		if ( ! in_array( $schedule, array( 'immediately', 'enrollment', 'specific_date' ), true ) ) {
+			$schedule = 'immediately';
+		}
+
+		$month = preg_replace( '/\D+/', '', (string) ( $settings['releaseMonth'] ?? '' ) );
+		$month = is_string( $month ) ? substr( $month, 0, 2 ) : '';
+		if ( '' !== $month ) {
+			$monthNum = max( 1, min( 12, (int) $month ) );
+			$month    = str_pad( (string) $monthNum, 2, '0', STR_PAD_LEFT );
+		}
+
+		$day = preg_replace( '/\D+/', '', (string) ( $settings['releaseDay'] ?? '' ) );
+		$day = is_string( $day ) ? substr( $day, 0, 2 ) : '';
+		if ( '' !== $day ) {
+			$dayNum = max( 1, min( 31, (int) $day ) );
+			$day    = str_pad( (string) $dayNum, 2, '0', STR_PAD_LEFT );
+		}
+
+		$year = preg_replace( '/\D+/', '', (string) ( $settings['releaseYear'] ?? '' ) );
+		$year = is_string( $year ) ? substr( $year, 0, 4 ) : '';
+
+		$clean = array(
+			'restrictRetakes'            => ! empty( $settings['restrictRetakes'] ),
+			'retriesAllowed'             => absint( $settings['retriesAllowed'] ?? 0 ),
+			'retriesApplicableTo'        => sanitize_key( (string) ( $settings['retriesApplicableTo'] ?? 'all' ) ),
+			'questionCompletion'         => ! empty( $settings['questionCompletion'] ),
+			'timeLimitEnabled'           => ! empty( $settings['timeLimitEnabled'] ),
+			'timeLimitHours'             => $this->sanitizeTimePart( $settings['timeLimitHours'] ?? '00' ),
+			'timeLimitMinutes'           => $this->sanitizeTimePart( $settings['timeLimitMinutes'] ?? '00' ),
+			'timeLimitSeconds'           => $this->sanitizeTimePart( $settings['timeLimitSeconds'] ?? '00' ),
+			'quizSavingEnabled'          => ! empty( $settings['quizSavingEnabled'] ),
+			'quizSavingIntervalSeconds'  => max( 5, absint( $settings['quizSavingIntervalSeconds'] ?? 20 ) ),
+			'releaseSchedule'            => $schedule,
+			'releaseDaysAfterEnrollment' => absint( $settings['releaseDaysAfterEnrollment'] ?? 0 ),
+			'releaseMonth'               => $month,
+			'releaseDay'                 => $day,
+			'releaseYear'                => $year,
+			'releaseHour'                => '' === trim( (string) ( $settings['releaseHour'] ?? '' ) )
+				? ''
+				: $this->sanitizeTimePart( $settings['releaseHour'] ),
+			'releaseMinute'              => '' === trim( (string) ( $settings['releaseMinute'] ?? '' ) )
+				? ''
+				: $this->sanitizeTimePart( $settings['releaseMinute'] ),
 		);
 
 		if ( ! in_array( $clean['retriesApplicableTo'], array( 'all' ), true ) ) {

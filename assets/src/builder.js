@@ -122,6 +122,8 @@ function courseBuilder(courseId, opts = {}) {
     overviewSearch: '',
     overviewPage: 1,
     overviewPageSize: 10,
+    /** Full-page Quiz Settings (rules / progression) — opened from Quiz builder. */
+    quizSettingsView: false,
     addingCourseQuiz: false,
     /** Inline create row on Course Hierarchy full page: { kind:'lesson', sectionId } */
     treePageInlineAdd: null,
@@ -267,6 +269,44 @@ function courseBuilder(courseId, opts = {}) {
 
     get quizEditorActive() {
       return this.selected?.type === 'quiz';
+    },
+
+    openQuizSettings() {
+      if (!this.lessonQuiz?.id) {
+        window.MintLMS?.toast?.error?.('Save the quiz first, then open Quiz Settings.');
+        return;
+      }
+      this.quizSettingsView = true;
+      this.refreshPreviewUrl();
+    },
+
+    closeQuizSettings() {
+      this.quizSettingsView = false;
+      this.refreshPreviewUrl();
+    },
+
+    async resetQuizUserIdentification() {
+      const quizId = Number(this.lessonQuiz?.id || 0);
+      if (!quizId) return;
+      if (
+        !window.confirm(
+          'Reset user identification for this quiz? This clears all student attempt history for this quiz.'
+        )
+      ) {
+        return;
+      }
+      this.quizSaving = true;
+      try {
+        await mintApi(`quizzes/${quizId}/reset-attempts`, {
+          method: 'POST',
+          body: '{}',
+        });
+        window.MintLMS.toast.success('User identification reset.');
+      } catch (err) {
+        window.MintLMS.toast.error(err.message || 'Could not reset identification.');
+      } finally {
+        this.quizSaving = false;
+      }
     },
 
     get questionEditorActive() {
@@ -562,19 +602,19 @@ function courseBuilder(courseId, opts = {}) {
       }
 
       await this.loadAttachCourses();
-      if (this.isStandalone && this.fromQuizzes && !this.fromQuestions && !this.fromLessonOrigin) {
+      if (
+        this.showQuizLessonAttachCard() ||
+        this.showQuizLessonAttachPanel() ||
+        (this.fromQuizzes && !this.fromQuestions)
+      ) {
         await this.loadAttachLessons();
       }
-      if (this.isStandalone && this.fromQuestions && !this.fromQuizOrigin && !this.fromLessonOrigin) {
+      if (
+        this.showQuestionQuizAttachPanel() ||
+        (this.isStandalone && this.fromQuestions && !this.fromQuizOrigin && !this.fromLessonOrigin) ||
+        ((!this.isStandalone || this.fromLessonOrigin || this.fromQuizOrigin) && this.fromQuestions)
+      ) {
         await this.loadAttachQuizzes();
-      }
-      if (!this.isStandalone || this.fromLessonOrigin || this.fromQuizOrigin) {
-        if (this.fromQuizzes && !this.fromQuestions) {
-          await this.loadAttachLessons();
-        }
-        if (this.fromQuestions) {
-          await this.loadAttachQuizzes();
-        }
       }
       this.refreshPreviewUrl();
       this.$nextTick(() => {
@@ -597,7 +637,6 @@ function courseBuilder(courseId, opts = {}) {
     async loadAttachLessons() {
       this.attachLessons = [];
       this.attach.lessonId = 0;
-      const currentQuizId = Number(this.lessonQuiz?.id) || 0;
       const currentLessonId =
         Number(this.lessonQuiz?.lessonId) ||
         Number(this.selected?.lessonId) ||
@@ -605,15 +644,9 @@ function courseBuilder(courseId, opts = {}) {
         0;
       const courseId = Number(this.courseId) || 0;
 
-      // Course builder: list every other lesson from the Contents tree so the
-      // dropdown matches what the author already sees (occupied lessons stay visible but disabled).
+      // One lesson may hold multiple quizzes — never disable occupied lessons.
       if (courseId > 0 && Array.isArray(this.sections) && this.sections.length > 0) {
-        const takenByCourseQuiz = new Set(
-          (this.courseQuizzes || [])
-            .filter((q) => (Number(q.id) || 0) !== currentQuizId)
-            .map((q) => Number(q.lessonId) || 0)
-            .filter((id) => id > 0)
-        );        const fromTree = [];
+        const fromTree = [];
         for (const section of this.sections) {
           for (const lesson of section.lessons || []) {
             const id = Number(lesson.id) || 0;
@@ -622,7 +655,7 @@ function courseBuilder(courseId, opts = {}) {
               id,
               title: lesson.title || `Lesson #${id}`,
               courseId,
-              taken: takenByCourseQuiz.has(id),            });
+            });
           }
         }
         this.attachLessons = fromTree;
@@ -630,28 +663,15 @@ function courseBuilder(courseId, opts = {}) {
       }
 
       try {
-        const [lessonsData, quizzesData] = await Promise.all([
-          mintApi('content/lessons?per_page=100&status=all'),
-          mintApi('content/quizzes?per_page=100&status=all'),
-        ]);
-        const taken = new Set(
-          (quizzesData?.items || [])
-            .filter((q) => (Number(q.id) || 0) !== currentQuizId)
-            .map((q) => Number(q.lessonId) || 0)
-            .filter((id) => id > 0)
-        );        const hostId = Number(this.standaloneLessonId) || 0;
+        const lessonsData = await mintApi('content/lessons?per_page=100&status=all');
+        const hostId = Number(this.standaloneLessonId) || 0;
         this.attachLessons = (lessonsData?.items || [])
           .map((l) => ({
             id: Number(l.id) || 0,
             title: l.title || `Lesson #${l.id}`,
             courseId: Number(l.courseId) || 0,
-            taken: taken.has(Number(l.id) || 0),          }))
-          .filter(
-            (l) =>
-              l.id > 0 &&
-              l.id !== hostId &&
-              l.id !== currentLessonId &&
-              !l.taken          );
+          }))
+          .filter((l) => l.id > 0 && l.id !== hostId && l.id !== currentLessonId);
       } catch {
         this.attachLessons = [];
       }
@@ -703,23 +723,63 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     async loadAttachQuizzes() {
+      const preserved = Number(this.attach.quizId) || 0;
       this.attachQuizzes = [];
-      this.attach.quizId = 0;
+      // Exclude the current question's disposable host quiz — not a valid attach target.
+      const hostQuizId =
+        Number(this.activeQuestion?.quizId || this.selected?.quizId || 0) ||
+        Number(this.lessonQuiz?.id || 0);
+      const courseId = Number(this.courseId) || 0;
+
+      if (courseId > 0 && !(this.courseQuizzes || []).length) {
+        await this.loadCourseQuizzes();
+      }
+
+      const seen = new Set();
+      const addQuiz = (quiz) => {
+        const id = Number(quiz?.id) || 0;
+        if (id <= 0 || id === hostQuizId || seen.has(id)) return;
+        if (quiz.questionShell && !this.isLinkedCourseQuiz(quiz)) return;
+        // Only quizzes linked to a real course lesson (never disposable "New Quiz" hosts).
+        if (!this.isLinkedCourseQuiz(quiz)) return;
+        seen.add(id);
+        this.attachQuizzes.push({
+          id,
+          title: String(quiz.title || '').trim() || `Quiz #${id}`,
+          lessonId: Number(quiz.lessonId) || 0,
+          courseId: Number(quiz.courseId || courseId) || 0,
+        });
+      };
+
+      for (const quiz of this.courseQuizzes || []) {
+        addQuiz(quiz);
+      }
+
+      // Merge library list so course-linked quizzes missing from sidebar meta still appear.
       try {
         const data = await mintApi('content/quizzes?per_page=100&status=all');
-        const hostQuizId =
-          Number(this.lessonQuiz?.id || 0) ||
-          Number(this.courseQuizzes?.[0]?.id || 0);
-        this.attachQuizzes = (data?.items || [])
-          .map((q) => ({
-            id: Number(q.id) || 0,
-            title: q.title || `Quiz #${q.id}`,
-            lessonId: Number(q.lessonId) || 0,
-            courseId: Number(q.courseId) || 0,
-          }))
-          .filter((q) => q.id > 0 && q.id !== hostQuizId);
+        for (const quiz of data?.items || []) {
+          const lessonId = Number(quiz.lessonId) || 0;
+          const inTree = this.isCourseTreeLesson(lessonId);
+          const qCourse = Number(quiz.courseId) || 0;
+          if (courseId > 0 && !inTree && qCourse !== courseId) continue;
+          if (courseId > 0 && !inTree && qCourse <= 0) continue;
+          addQuiz({
+            ...quiz,
+            linked: inTree || quiz.linked === true,
+            questionShell: !!quiz.questionShell,
+          });
+        }
       } catch {
-        this.attachQuizzes = [];
+        // Keep whatever we already collected from courseQuizzes.
+      }
+
+      this.attachQuizzes.sort((a, b) =>
+        String(a.title).localeCompare(String(b.title), undefined, { sensitivity: 'base' })
+      );
+
+      if (preserved > 0 && this.attachQuizzes.some((quiz) => Number(quiz.id) === preserved)) {
+        this.attach.quizId = preserved;
       }
     },
 
@@ -771,20 +831,136 @@ function courseBuilder(courseId, opts = {}) {
       }
     },
 
-    async loadAttachSections() {
+    async loadAttachSections({ preserve = false, courseId = null } = {}) {
+      const preserved = preserve ? Number(this.attach.sectionId) || 0 : 0;
       this.attachSections = [];
-      this.attach.sectionId = 0;
-      if (!this.attach.courseId) return;
-      try {
-        const data = await mintApi(`courses/${this.attach.courseId}/structure`);
-        this.attachSections = (data?.sections || [])
+      const cid =
+        Number(courseId) ||
+        Number(this.attach.courseId) ||
+        Number(this.courseId) ||
+        0;
+      if (!cid) {
+        this.attach.sectionId = 0;
+        return;
+      }
+
+      if (cid === Number(this.courseId) && Array.isArray(this.sections) && this.sections.length > 0) {
+        this.attachSections = (this.sections || [])
           .filter((s) => Number(s.id) > 0)
           .map((s) => ({
-            id: s.id,
+            id: Number(s.id),
             title: s.title || `Lesson Group #${s.id}`,
           }));
-      } catch {
-        this.attachSections = [];
+      } else {
+        try {
+          const data = await mintApi(`courses/${cid}/structure`);
+          this.attachSections = (data?.sections || [])
+            .filter((s) => Number(s.id) > 0)
+            .map((s) => ({
+              id: Number(s.id),
+              title: s.title || `Lesson Group #${s.id}`,
+            }));
+        } catch {
+          this.attachSections = [];
+        }
+      }
+
+      if (preserve && preserved > 0 && this.attachSections.some((s) => Number(s.id) === preserved)) {
+        this.attach.sectionId = preserved;
+      } else {
+        this.attach.sectionId = 0;
+      }
+    },
+
+    /** Move a lesson between section buckets in local tree state. */
+    relocateLessonInTree(lessonId, toSectionId) {
+      const lid = Number(lessonId) || 0;
+      const toSid = Number(toSectionId) || 0;
+      if (lid <= 0) return null;
+
+      let moved = null;
+      for (const section of this.sections || []) {
+        const list = section.lessons || [];
+        const idx = list.findIndex((l) => Number(l.id) === lid);
+        if (idx >= 0) {
+          moved = list.splice(idx, 1)[0];
+          break;
+        }
+      }
+      if (!moved) return null;
+
+      const target = this.ensureSectionBucket(toSid);
+      if (!target) return moved;
+      if (!Array.isArray(target.lessons)) target.lessons = [];
+      moved.sectionId = toSid;
+      target.lessons.push(moved);
+      if (toSid > 0) this.expanded[toSid] = true;
+      else this.expanded[0] = true;
+      return moved;
+    },
+
+    async attachLessonToSection() {
+      const lessonId = Number(this.selectedLesson?.id || this.selected?.id || 0);
+      const sectionId = Number(this.attach.sectionId) || 0;
+      const courseId = Number(this.courseId) || 0;
+      if (!lessonId || !sectionId || !courseId) return;
+      this.attaching = true;
+      try {
+        await mintApi(`lessons/${lessonId}/attach`, {
+          method: 'POST',
+          body: JSON.stringify({
+            course_id: courseId,
+            section_id: sectionId,
+          }),
+        });
+        this.relocateLessonInTree(lessonId, sectionId);
+        if (this.selected?.type === 'lesson') {
+          this.selected = { ...this.selected, sectionId };
+        }
+        this.attach.sectionId = 0;
+        window.MintLMS.toast.success(
+          this.attach.changing ? 'Lesson group updated.' : 'Lesson added to lesson group.'
+        );
+        this.attach.changing = false;
+        this.$nextTick(() => this.initSortables());
+      } catch (err) {
+        window.MintLMS.toast.error(err.message || 'Could not add lesson to lesson group.');
+      } finally {
+        this.attaching = false;
+      }
+    },
+
+    async detachLessonFromSection() {
+      const lessonId = Number(this.selectedLesson?.id || this.selected?.id || 0);
+      const courseId = Number(this.courseId) || 0;
+      if (!lessonId || !courseId) return;
+      if (
+        !window.confirm(
+          'Remove this lesson from the lesson group? It stays in the course — you can attach it to another group later.'
+        )
+      ) {
+        return;
+      }
+      this.attaching = true;
+      try {
+        await mintApi(`lessons/${lessonId}/attach`, {
+          method: 'POST',
+          body: JSON.stringify({
+            course_id: courseId,
+            section_id: 0,
+          }),
+        });
+        this.relocateLessonInTree(lessonId, 0);
+        if (this.selected?.type === 'lesson') {
+          this.selected = { ...this.selected, sectionId: 0 };
+        }
+        this.attach.sectionId = 0;
+        window.MintLMS.toast.success('Lesson removed from lesson group.');
+        this.$nextTick(() => this.initSortables());
+      } catch (err) {
+        window.MintLMS.toast.error(err.message || 'Could not remove from lesson group.');
+      } finally {
+        this.attaching = false;
       }
     },
 
@@ -828,7 +1004,7 @@ function courseBuilder(courseId, opts = {}) {
       this.attach.sectionId = Number(this.selected?.sectionId || this.selectedLesson?.sectionId || 0);
       await this.loadAttachCourses();
       if (this.attach.courseId) {
-        await this.loadAttachSections();
+        await this.loadAttachSections({ preserve: true, courseId: this.attach.courseId });
       }
     },
 
@@ -866,7 +1042,7 @@ function courseBuilder(courseId, opts = {}) {
 
     async pickAttachCourse(courseId) {
       this.attach.courseId = Number(courseId) || 0;
-      await this.loadAttachSections();
+      await this.loadAttachSections({ courseId: this.attach.courseId });
     },
 
     pickAttachSection(sectionId) {
@@ -874,12 +1050,7 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     pickAttachLesson(lessonId) {
-      const id = Number(lessonId) || 0;
-      if (id > 0) {
-        const row = this.attachLessons.find((l) => Number(l.id) === id);
-        if (row?.taken) return;
-      }
-      this.attach.lessonId = id;
+      this.attach.lessonId = Number(lessonId) || 0;
     },
 
     pickAttachQuiz(quizId) {
@@ -927,12 +1098,28 @@ function courseBuilder(courseId, opts = {}) {
         });
         const lessonId = Number(quiz.lessonId) || 0;
         const quizId = Number(quiz.id) || Number(this.lessonQuiz.id) || 0;
-        const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
-        const url = new URL(base, window.location.href);
-        url.searchParams.set('lesson_id', String(lessonId));
-        if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
-        url.searchParams.set('tab', 'quiz');
-        url.searchParams.set('from', 'quizzes');
+        const courseId = Number(quiz.courseId) || Number(this.courseId) || 0;
+
+        let url;
+        if (courseId > 0) {
+          // Stay in course builder so Attach to Lesson rail remains available.
+          const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
+          url = new URL(base, window.location.href);
+          url.searchParams.set('course_id', String(courseId));
+          if (lessonId > 0) url.searchParams.set('lesson_id', String(lessonId));
+          if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
+          url.searchParams.set('tab', 'quiz');
+          url.searchParams.set('from', 'quizzes');
+          url.searchParams.set('origin', 'builder');
+        } else {
+          const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
+          url = new URL(base, window.location.href);
+          url.searchParams.set('lesson_id', String(lessonId));
+          if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
+          url.searchParams.set('tab', 'quiz');
+          url.searchParams.set('from', 'quizzes');
+        }
+
         window.MintLMS.toast.success('Quiz removed from lesson.');
         window.location.href = url.toString();
       } catch (err) {
@@ -962,13 +1149,29 @@ function courseBuilder(courseId, opts = {}) {
         });
         const lessonId = Number(quiz.lessonId) || 0;
         const quizId = Number(quiz.id) || 0;
-        const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
-        const url = new URL(base, window.location.href);
-        url.searchParams.set('lesson_id', String(lessonId));
-        if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
-        url.searchParams.set('question_id', String(questionId));
-        url.searchParams.set('tab', 'quiz');
-        url.searchParams.set('from', 'questions');
+        const courseId = Number(quiz.courseId) || Number(this.courseId) || 0;
+
+        let url;
+        if (courseId > 0) {
+          const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
+          url = new URL(base, window.location.href);
+          url.searchParams.set('course_id', String(courseId));
+          if (lessonId > 0) url.searchParams.set('lesson_id', String(lessonId));
+          if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
+          url.searchParams.set('question_id', String(questionId));
+          url.searchParams.set('tab', 'quiz');
+          url.searchParams.set('from', 'questions');
+          url.searchParams.set('origin', 'builder');
+        } else {
+          const base = config.urls?.lessonEdit || 'admin.php?page=mint-lms-lesson-edit';
+          url = new URL(base, window.location.href);
+          url.searchParams.set('lesson_id', String(lessonId));
+          if (quizId > 0) url.searchParams.set('quiz_id', String(quizId));
+          url.searchParams.set('question_id', String(questionId));
+          url.searchParams.set('tab', 'quiz');
+          url.searchParams.set('from', 'questions');
+        }
+
         window.MintLMS.toast.success('Question removed from quiz.');
         window.location.href = url.toString();
       } catch (err) {
@@ -1373,13 +1576,8 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     async addLessonToFirstSection() {
-      const section = this.navSectionList()[0];
-      if (!section) {
-        await this.createCourseLesson();
-        return;
-      }
-      this.selectItem('section', Number(section.id));
-      await this.addLesson(Number(section.id));
+      // Same as +New Lesson / quiz attach model — never auto-link to a group.
+      await this.createCourseLesson();
     },
 
     navUngroupedSection() {
@@ -1703,12 +1901,12 @@ function courseBuilder(courseId, opts = {}) {
     /** True when quiz is attached to a real course lesson (not a disposable host). */
     isLinkedCourseQuiz(quiz) {
       if (!quiz) return false;
-      if (typeof quiz.linked === 'boolean') {
-        return quiz.linked;
-      }
       const lessonId = Number(quiz.lessonId) || 0;
       if (lessonId <= 0) return false;
-      return this.isCourseTreeLesson(lessonId);
+      // Course Contents tree is the source of truth for "real" lesson membership.
+      if (this.isCourseTreeLesson(lessonId)) return true;
+      if (typeof quiz.linked === 'boolean') return quiz.linked === true;
+      return false;
     },
 
     /** True when lesson id appears in the course structure tree. */
@@ -1771,39 +1969,19 @@ function courseBuilder(courseId, opts = {}) {
 
     async navAddLesson() {
       this.closeAllNavMenus();
+      // Always create unassociated — author links via Attach to Lesson Group.
       await this.createCourseLesson();
     },
 
     async navAddQuiz() {
       this.closeAllNavMenus();
-      // Only attach onto a lesson when author is actively editing that course lesson.
-      if (this.selected?.type === 'lesson' && this.isCourseTreeLesson(this.selected.id)) {
-        await this.addQuizToLesson(Number(this.selected.id), this.selected.sectionId ?? null);
-        return;
-      }
+      // Always create unassociated — author links via Attach to Lesson.
       await this.addCourseQuiz();
     },
 
     async navAddQuestion() {
       this.closeAllNavMenus();
-      const quizId = Number(this.lessonQuiz?.id || this.selected?.quizId || 0);
-      const quizRow =
-        (this.courseQuizzes || []).find((row) => Number(row.id) === quizId) || null;
-      const editingLinkedQuiz =
-        quizId > 0 &&
-        (this.selected?.type === 'quiz' || this.selected?.type === 'question') &&
-        this.isLinkedCourseQuiz(
-          quizRow || {
-            id: quizId,
-            lessonId: this.selected?.lessonId,
-            linked: false,
-          }
-        );
-
-      if (editingLinkedQuiz) {
-        await this.openLessonQuestionEditor();
-        return;
-      }
+      // Always create unassociated — author links via Attach to Quiz.
       await this.addIndependentCourseQuestion();
     },
 
@@ -1877,11 +2055,44 @@ function courseBuilder(courseId, opts = {}) {
       this.questionAnswerReady = false;
       this.lessonQuiz = null;
       this.openQuizEditor = false;
+      this.quizSettingsView = false;
       if (view === 'tree') {
         this.applyTreePageDefaultToggles();
         this.treePageCancelInlineAdd();
         this.$nextTick(() => this.initTreePageSortables());
       }
+    },
+
+    /**
+     * After delete, send the author to that content type’s Overview
+     * (Lesson Groups / Lessons / Quizzes / Questions).
+     */
+    redirectToTypeOverview(view) {
+      const allowed = ['sections', 'lessons', 'quizzes', 'questions'];
+      if (!allowed.includes(view)) return;
+
+      if (!Number(this.courseId)) {
+        const listUrl =
+          (view === 'lessons' && config.urls?.lessons) ||
+          (view === 'quizzes' && config.urls?.quizzes) ||
+          (view === 'questions' && config.urls?.questions) ||
+          '';
+        if (listUrl) {
+          window.location.assign(listUrl);
+          return;
+        }
+        this.enterTypeOverview(view);
+        return;
+      }
+
+      const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
+      const url = new URL(base, window.location.href);
+      url.searchParams.set('course_id', String(this.courseId));
+      url.searchParams.set('view', view);
+      ['lesson_id', 'quiz_id', 'question_id', 'tab', 'from', 'origin', 'open_nav'].forEach((key) => {
+        url.searchParams.delete(key);
+      });
+      window.location.assign(url.toString());
     },
 
     treeStepsCount() {
@@ -2094,12 +2305,12 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     async treePageConfirmAddLesson() {
-      const sid = Number(this.treePageInlineAdd?.sectionId || 0);
-      if (sid <= 0 || this.addingLesson) return;
+      if (this.addingLesson || !Number(this.courseId)) return;
       const title = (this.treePageInlineTitle || '').trim() || 'New Lesson';
       this.addingLesson = true;
       try {
-        const lesson = await mintApi(`sections/${sid}/lessons`, {
+        // Hierarchy “New Lesson” also stays unassociated; author uses Attach to Lesson Group.
+        const lesson = await mintApi(`courses/${this.courseId}/lessons`, {
           method: 'POST',
           body: JSON.stringify({ title, content: '', is_preview: false }),
         });
@@ -2107,12 +2318,14 @@ function courseBuilder(courseId, opts = {}) {
         if (!lessonId) {
           throw new Error('Could not create lesson');
         }
-        const section = this.sections.find((s) => Number(s.id) === sid);
-        if (section) {
-          if (!Array.isArray(section.lessons)) section.lessons = [];
-          section.lessons.push({ ...lesson, id: lessonId });
+        let section = this.sections.find((s) => Number(s.id) === 0);
+        if (!section) {
+          section = { id: 0, title: '', sortOrder: -1, lessons: [] };
+          this.sections.unshift(section);
         }
-        this.expanded = { ...this.expanded, [sid]: true };
+        if (!Array.isArray(section.lessons)) section.lessons = [];
+        section.lessons.push({ ...lesson, id: lessonId, sectionId: 0 });
+        this.expanded = { ...this.expanded, 0: true };
         this.treePageCancelInlineAdd();
         window.MintLMS.toast.success('Lesson created');
         this.$nextTick(() => this.initTreePageSortables());
@@ -2141,27 +2354,27 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     async treePageConfirmAddQuiz() {
-      const lessonId = Number(this.treePageInlineAdd?.lessonId || 0);
-      const sectionId = Number(this.treePageInlineAdd?.sectionId || 0);
-      if (lessonId <= 0 || this.addingCourseQuiz) return;
+      if (this.addingCourseQuiz || !Number(this.courseId)) return;
       const title = (this.treePageInlineTitle || '').trim() || 'New Quiz';
       this.addingCourseQuiz = true;
       try {
-        const quiz = await mintApi(`lessons/${lessonId}/quiz`, {
+        // Hierarchy “New Quiz” also stays unassociated; author uses Attach to Lesson.
+        const quiz = await mintApi(`courses/${this.courseId}/quizzes`, {
           method: 'POST',
           body: JSON.stringify({ title, pass_percent: 80 }),
         });
         const quizId = Number(quiz?.id || 0);
+        const lessonId = Number(quiz?.lessonId || 0);
         if (!quizId) {
           throw new Error('Could not create quiz');
         }
         await this.loadCourseQuizzes();
-        if (sectionId > 0) {
-          this.expanded = { ...this.expanded, [sectionId]: true };
-        }
-        this.expandedLessons = { ...this.expandedLessons, [lessonId]: true };
         this.treePageCancelInlineAdd();
         window.MintLMS.toast.success('Quiz created');
+        if (quizId > 0 && lessonId > 0) {
+          await this.selectQuiz(lessonId, 0, quizId);
+          this.syncCourseQuizTitle();
+        }
         this.$nextTick(() => this.initTreePageSortables());
       } catch (err) {
         window.MintLMS.toast.error(err.message || 'Could not create quiz');
@@ -2190,45 +2403,10 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     async treePageConfirmAddQuestion() {
-      const quizId = Number(this.treePageInlineAdd?.quizId || 0);
-      const lessonId = Number(this.treePageInlineAdd?.lessonId || 0);
-      const sectionId = Number(this.treePageInlineAdd?.sectionId || 0);
-      if (quizId <= 0 || lessonId <= 0 || this.quizSaving) return;
-      const title = (this.treePageInlineTitle || '').trim() || 'New Question';
-      this.quizSaving = true;
-      try {
-        const data = await mintApi(`quizzes/${quizId}/questions`, {
-          method: 'POST',
-          body: JSON.stringify({
-            type: 'essay',
-            prompt: title,
-            options: [],
-            correct_answer: '',
-            settings: {
-              displayTitle: title,
-              answerTypePending: true,
-            },
-          }),
-        });
-        const questions = Array.isArray(data?.questions) ? data.questions : [];
-        const created = [...questions].reverse().find((item) => Number(item?.id || 0) > 0);
-        const questionId = Number(created?.id || 0);
-        if (!questionId) {
-          throw new Error('Could not create question');
-        }
-        await this.loadCourseQuestions();
-        if (sectionId > 0) {
-          this.expanded = { ...this.expanded, [sectionId]: true };
-        }
-        this.expandedLessons = { ...this.expandedLessons, [lessonId]: true };
-        this.expandedQuizzes = { ...this.expandedQuizzes, [quizId]: true };
-        this.treePageCancelInlineAdd();
-        window.MintLMS.toast.success('Question created');
-      } catch (err) {
-        window.MintLMS.toast.error(err.message || 'Could not create question');
-      } finally {
-        this.quizSaving = false;
-      }
+      if (this.quizSaving || this.addingCourseQuiz || !Number(this.courseId)) return;
+      this.treePageCancelInlineAdd();
+      // Hierarchy “Add Question” also stays unassociated; author uses Attach to Quiz.
+      await this.addIndependentCourseQuestion();
     },
 
     overviewTitle() {
@@ -2634,6 +2812,7 @@ function courseBuilder(courseId, opts = {}) {
 
     selectItem(type, id, sectionId = null) {
       this.overviewKind = null;
+      this.quizSettingsView = false;
       // From quiz/question URLs, jump back to the lesson/section editor so the
       // address bar matches the Contents tree (full course hierarchy).
       if (
@@ -2670,6 +2849,9 @@ function courseBuilder(courseId, opts = {}) {
           this.syncEditorFromLesson();
         });
         this.loadLessonQuiz(id);
+        if (this.showLessonSectionAttachPanel()) {
+          this.loadAttachSections({ courseId: this.courseId });
+        }
       }
     },
 
@@ -2679,6 +2861,7 @@ function courseBuilder(courseId, opts = {}) {
     async selectQuizById(quizId) {
       const id = Number(quizId) || 0;
       if (id <= 0) return;
+      this.quizSettingsView = false;
       this.quizLoading = true;
       try {
         const quiz = await mintApi(`quizzes/${id}`);
@@ -2695,6 +2878,9 @@ function courseBuilder(courseId, opts = {}) {
           this.lessonTab = 'quiz';
           this.syncCourseQuizSidebarRow();
           this.syncCourseQuizTitle();
+          if (this.showQuizLessonAttachPanel()) {
+            await this.loadAttachLessons();
+          }
           return;
         }
         await this.selectQuiz(lessonId, null, id);
@@ -2708,6 +2894,7 @@ function courseBuilder(courseId, opts = {}) {
 
     async selectQuiz(lessonId, sectionId = null, quizId = null) {
       this.overviewKind = null;
+      this.quizSettingsView = false;
       if (this.selected?.type === 'lesson') {
         this.pullEditorContent();
       }
@@ -2747,6 +2934,9 @@ function courseBuilder(courseId, opts = {}) {
         this.expandQuiz(this.lessonQuiz.id);
       }
       this.syncCourseQuizTitle();
+      if (this.showQuizLessonAttachPanel()) {
+        await this.loadAttachLessons();
+      }
     },
 
     /**
@@ -2984,6 +3174,9 @@ function courseBuilder(courseId, opts = {}) {
         this.initQuestionEditor();
         this.syncQuestionEditorFromActive();
       });
+      if (this.showQuestionQuizAttachPanel()) {
+        await this.loadAttachQuizzes();
+      }
     },
 
     isBlankQuestionPrompt(prompt) {
@@ -3537,22 +3730,12 @@ function courseBuilder(courseId, opts = {}) {
 
     async deleteActiveQuestion() {
       if (!this.activeQuestion) return;
-      await this.deleteQuizQuestion(this.activeQuestion);
+      const deleted = await this.deleteQuizQuestion(this.activeQuestion);
+      if (!deleted) return;
       this.activeQuestion = null;
       this.questionAnswerReady = false;
-      if (this.fromQuestions) {
-        await this.loadCourseQuestions();
-        if (this.courseQuestions.length > 0) {
-          const next = this.courseQuestions[0];
-          await this.selectQuestion(next.id, next.lessonId, next.sectionId || null);
-          return;
-        }
-      }
-      if (this.selected?.lessonId) {
-        await this.selectQuiz(this.selected.lessonId, this.selected.sectionId || null);
-      } else {
-        this.selected = null;
-      }
+      window.MintLMS.toast.success('Question deleted');
+      this.redirectToTypeOverview('questions');
     },
 
     async addCourseQuestion() {
@@ -3695,6 +3878,8 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     treeAddLessonLabel() {
+      // Course builder: keep tree actions as lesson actions; questions use + New Question.
+      if (!this.isStandalone) return 'Add lesson';
       return this.quizEditorActive ? 'Add Question' : 'Add lesson';
     },
 
@@ -3703,11 +3888,12 @@ function courseBuilder(courseId, opts = {}) {
     },
 
     onTreeAddLesson(sectionId) {
-      if (this.quizEditorActive || this.questionEditorActive) {
+      if (this.isStandalone && (this.quizEditorActive || this.questionEditorActive)) {
         this.addQuizQuestion('mcq', { select: true });
         return;
       }
-      this.addLesson(sectionId);
+      // Ignore sectionId — new lessons stay unassociated until Attach to Lesson Group.
+      this.createCourseLesson();
     },
 
     onTreeAddSection() {
@@ -4518,6 +4704,109 @@ function courseBuilder(courseId, opts = {}) {
       return url.toString();
     },
 
+    /** Show “Add to a lesson” when quiz is not linked to a real course lesson. */
+    showQuizLessonAttachCard() {
+      // Disposable host lessons can appear in the standalone tree; do not treat that as linked.
+      return !!this.lessonQuiz?.id && !this.showSidebarLessonParent();
+    },
+
+    /** Right-rail attach panel: unlinked attach + linked change/remove. */
+    showQuizLessonAttachPanel() {
+      return !!this.lessonQuiz?.id;
+    },
+
+    /** Course-builder lesson → Attach to Lesson Group (same rail as Quiz/Question). */
+    showLessonSectionAttachPanel() {
+      if (this.isStandalone) return false;
+      if (!Number(this.courseId)) return false;
+      return this.selected?.type === 'lesson' && !!this.selectedLesson?.id;
+    },
+
+    showSidebarSectionParent() {
+      if (this.isStandalone) return false;
+      const sectionId =
+        Number(this.selected?.sectionId) ||
+        this.resolveSectionIdForLesson(this.selectedLesson?.id || this.selected?.id) ||
+        0;
+      return sectionId > 0;
+    },
+
+    lessonAttachSelectedLabel() {
+      if (Number(this.attach.sectionId) > 0) {
+        return this.attachSectionLabel() || '';
+      }
+      if (this.showSidebarSectionParent()) {
+        return this.breadcrumbSectionTitle() || '';
+      }
+      return '';
+    },
+
+    async clearLessonAttachSelection() {
+      if (Number(this.attach.sectionId) > 0) {
+        this.attach.sectionId = 0;
+        return;
+      }
+      if (this.showSidebarSectionParent()) {
+        await this.detachLessonFromSection();
+      }
+    },
+
+    quizAttachSelectedLabel() {
+      if (Number(this.attach.lessonId) > 0) {
+        return this.attachLessonLabel() || '';
+      }
+      if (this.showSidebarLessonParent()) {
+        return (
+          this.breadcrumbParentLessonTitle() ||
+          this.breadcrumbQuizContextTitle() ||
+          ''
+        );
+      }
+      return '';
+    },
+
+    async clearQuizAttachSelection() {
+      if (Number(this.attach.lessonId) > 0) {
+        this.attach.lessonId = 0;
+        return;
+      }
+      if (this.showSidebarLessonParent()) {
+        await this.detachQuizFromLesson();
+      }
+    },
+
+    /** Unlinked question (disposable host quiz) — needs Attach to Quiz. */
+    showQuestionQuizAttachCard() {
+      const questionId = Number(this.activeQuestion?.id || this.selected?.questionId || 0);
+      if (questionId <= 0) return false;
+      return !this.showSidebarQuizParent();
+    },
+
+    showQuestionQuizAttachPanel() {
+      const questionId = Number(this.activeQuestion?.id || this.selected?.questionId || 0);
+      return questionId > 0;
+    },
+
+    questionAttachSelectedLabel() {
+      if (Number(this.attach.quizId) > 0) {
+        return this.attachQuizLabel() || '';
+      }
+      if (this.showSidebarQuizParent()) {
+        return this.breadcrumbQuizLabel() || '';
+      }
+      return '';
+    },
+
+    async clearQuestionAttachSelection() {
+      if (Number(this.attach.quizId) > 0) {
+        this.attach.quizId = 0;
+        return;
+      }
+      if (this.showSidebarQuizParent()) {
+        await this.detachQuestionFromQuiz();
+      }
+    },
+
     /** Show Lesson parent in quiz/question sidebar (course, or lesson→quiz flow). */
     showSidebarLessonParent() {
       if (this.isStandalone && !this.fromLessonOrigin) return false;
@@ -4803,38 +5092,9 @@ function courseBuilder(courseId, opts = {}) {
       }
     },
 
-    async addLesson(sectionId) {
-      if (this.addingLesson) return;
-      this.addingLesson = true;
-      try {
-        const sid = Number(sectionId || 0);
-        if (!sid) {
-          this.addingLesson = false;
-          await this.createCourseLesson();
-          return;
-        }
-        const lesson = await mintApi(`sections/${sid}/lessons`, {
-          method: 'POST',
-          body: JSON.stringify({ title: 'New Lesson', content: '', is_preview: false }),
-        });
-        const lessonId = Number(lesson?.id || 0);
-        if (!lessonId) {
-          throw new Error('Could not create lesson');
-        }
-        const section = this.sections.find((s) => Number(s.id) === sid);
-        if (section) {
-          if (!Array.isArray(section.lessons)) section.lessons = [];
-          section.lessons.push({ ...lesson, id: lessonId });
-          this.expanded[sid] = true;
-          // Add lesson → lesson editor.
-          this.selectItem('lesson', lessonId, sid);
-          this.$nextTick(() => this.initSortables());
-        }
-      } catch (err) {
-        window.MintLMS.toast.error(err.message || 'Could not create lesson');
-      } finally {
-        this.addingLesson = false;
-      }
+    async addLesson(_sectionId) {
+      // Always create unassociated — author links via Attach to Lesson Group.
+      await this.createCourseLesson();
     },
 
     async saveSection(section, { toast = false } = {}) {
@@ -4892,9 +5152,8 @@ function courseBuilder(courseId, opts = {}) {
       try {
         await mintApi(`sections/${sectionId}`, { method: 'DELETE' });
         this.sections = this.sections.filter((s) => s.id !== sectionId);
-        if (this.selected?.type === 'section' && this.selected.id === sectionId) {
-          this.selected = null;
-        }
+        window.MintLMS.toast.success('Lesson group deleted');
+        this.redirectToTypeOverview('sections');
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       }
@@ -4910,16 +5169,14 @@ function courseBuilder(courseId, opts = {}) {
         if (section) {
           section.lessons = (section.lessons || []).filter((l) => Number(l.id) !== lid);
         }
-        if (this.selected?.type === 'lesson' && Number(this.selected.id) === lid) {
-          this.afterLessonDeleted(sid);
-        }
-        // Drop orphaned course quizzes that belonged to this lesson.
         this.courseQuizzes = (this.courseQuizzes || []).filter(
           (quiz) => Number(quiz.lessonId) !== lid
         );
         this.courseQuestions = (this.courseQuestions || []).filter(
           (question) => Number(question.lessonId) !== lid
         );
+        window.MintLMS.toast.success('Lesson deleted');
+        this.redirectToTypeOverview('lessons');
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       }
@@ -5555,6 +5812,15 @@ function courseBuilder(courseId, opts = {}) {
         timeLimitHours: '00',
         timeLimitMinutes: '00',
         timeLimitSeconds: '00',
+        quizSavingEnabled: false,
+        quizSavingIntervalSeconds: 20,
+        releaseSchedule: 'immediately',
+        releaseDaysAfterEnrollment: 0,
+        releaseMonth: '',
+        releaseDay: '',
+        releaseYear: '',
+        releaseHour: '',
+        releaseMinute: '',
       };
     },
 
@@ -5684,22 +5950,15 @@ function courseBuilder(courseId, opts = {}) {
     async deleteQuiz() {
       if (!this.lessonQuiz?.id || !window.confirm('Delete this quiz and all questions?')) return;
       try {
-        await mintApi(`quizzes/${this.lessonQuiz.id}`, { method: 'DELETE' });
+        const quizId = Number(this.lessonQuiz.id);
+        await mintApi(`quizzes/${quizId}`, { method: 'DELETE' });
+        this.courseQuizzes = (this.courseQuizzes || []).filter((quiz) => Number(quiz.id) !== quizId);
+        this.courseQuestions = (this.courseQuestions || []).filter(
+          (question) => Number(question.quizId) !== quizId
+        );
         this.lessonQuiz = this.emptyQuizState();
-        if (this.fromQuizzes) {
-          await this.refreshQuizSidebar();
-          if (this.courseQuizzes.length > 0) {
-            const next = this.courseQuizzes[0];
-            await this.selectQuiz(next.lessonId, next.sectionId || null);
-          } else if (this.isStandalone && this.standaloneLessonId) {
-            this.navigateToLesson(this.standaloneLessonId, 0);
-          } else {
-            this.selected = null;
-          }
-        } else if (this.selected?.type === 'quiz' && this.selectedLesson) {
-          this.selectItem('lesson', this.selectedLesson.id, this.selected.sectionId);
-        }
         window.MintLMS.toast.success('Quiz deleted');
+        this.redirectToTypeOverview('quizzes');
       } catch (err) {
         window.MintLMS.toast.error(err.message);
       }
@@ -6215,16 +6474,21 @@ function courseBuilder(courseId, opts = {}) {
     async deleteQuizQuestion(question) {
       if (!question.id || !this.lessonQuiz?.id) {
         this.lessonQuiz.questions = this.lessonQuiz.questions.filter((q) => q !== question);
-        return;
+        return true;
       }
-      if (!window.confirm('Delete this question?')) return;
+      if (!window.confirm('Delete this question?')) return false;
       try {
         const quiz = await mintApi(`quizzes/${this.lessonQuiz.id}/questions/${question.id}`, {
           method: 'DELETE',
         });
         this.lessonQuiz = this.normalizeQuiz(quiz);
+        this.courseQuestions = (this.courseQuestions || []).filter(
+          (row) => Number(row.id) !== Number(question.id)
+        );
+        return true;
       } catch (err) {
         window.MintLMS.toast.error(err.message);
+        return false;
       }
     },
   };

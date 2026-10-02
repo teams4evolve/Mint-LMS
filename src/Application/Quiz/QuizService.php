@@ -248,14 +248,6 @@ final class QuizService {
 		$target = $this->findLessonOrFail( $targetLessonId );
 		$this->assertCanManageLessonContent( $userId, $target );
 
-		$existing = $this->quizRepository->findByLessonId( $targetLessonId );
-		if ( null !== $existing && $existing->id !== $quizId ) {
-			throw new ValidationException(
-				'This lesson already has a quiz.',
-				array( 'lesson_id' => 'This lesson already has a quiz.' )
-			);
-		}
-
 		$previousLessonId = $quiz->lessonId;
 		$sortOrder        = $this->quizRepository->nextQuizSortOrderForLesson( $targetLessonId );
 
@@ -531,6 +523,17 @@ final class QuizService {
 		}
 
 		return $dtos;
+	}
+
+	/**
+	 * Clear all attempt history for a quiz (admin “reset user identification”).
+	 */
+	public function resetAttempts( int $quizId, int $userId ): void {
+		$quiz   = $this->findQuizOrFail( $quizId );
+		$lesson = $this->findLessonOrFail( $quiz->lessonId );
+		$this->assertCanManageLessonContent( $userId, $lesson );
+
+		$this->quizRepository->deleteAttemptsByQuizId( $quizId );
 	}
 
 	public function hasPassed( int $userId, int $quizId ): bool {

@@ -625,7 +625,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<button
 							type="button"
 							class="mint-tree-add-section mint-w-full"
-							x-show="selected?.type === 'quiz' && lessonQuiz?.id"
+							x-show="isStandalone && selected?.type === 'quiz' && lessonQuiz?.id"
 							x-cloak
 							@click="openLessonQuestionEditor()"
 						>
@@ -644,7 +644,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						</button>
 						<div
 							class="mint-mt-3 mint-assoc-card"
-							x-show="isStandalone && !showSidebarLessonParent() && lessonQuiz?.id"
+							x-show="showQuizLessonAttachCard()"
 							x-cloak
 						>
 							<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a lesson', 'mint-lms' ); ?></h2>
@@ -675,13 +675,10 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										<button
 											type="button"
 											class="mint-assoc-select__option"
-											:class="{
-												'is-active': Number(attach.lessonId) === Number(l.id),
-												'is-disabled': !!l.taken
-											}"
-											:disabled="!!l.taken"
+											:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
 											@click="pickAttachLesson(l.id); open = false"
-											x-text="l.taken ? (l.title + ' (has quiz)') : l.title"										></button>
+											x-text="l.title"
+										></button>
 									</template>
 								</div>
 							</div>
@@ -735,13 +732,10 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 												<button
 													type="button"
 													class="mint-assoc-select__option"
-													:class="{
-														'is-active': Number(attach.lessonId) === Number(l.id),
-														'is-disabled': !!l.taken
-													}"
-													:disabled="!!l.taken"
+													:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
 													@click="pickAttachLesson(l.id); open = false"
-													x-text="l.taken ? (l.title + ' (has quiz)') : l.title"												></button>
+													x-text="l.title"
+												></button>
 											</template>
 										</div>
 									</div>
@@ -1165,16 +1159,55 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 			</div>
 
 			<div class="mint-builder-tree__footer mint-px-3 mint-pb-3" x-show="!isStandalone" x-cloak>
-				<button
-					type="button"
-					class="mint-tree-add-section mint-mb-3 mint-w-full"
-					x-show="(fromQuizzes || fromQuestions) && lessonQuiz?.id"
+				<div
+					class="mint-assoc-card mint-mb-3"
+					x-show="selected?.type === 'quiz' && showQuizLessonAttachCard()"
 					x-cloak
-					@click="openLessonQuestionEditor()"
 				>
-					<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
-					<?php esc_html_e( 'Add Question', 'mint-lms' ); ?>
-				</button>
+					<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a lesson', 'mint-lms' ); ?></h2>
+					<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this quiz to an existing lesson.', 'mint-lms' ); ?></p>
+					<label class="mint-assoc-card__label"><?php esc_html_e( 'Lesson', 'mint-lms' ); ?></label>
+					<div
+						class="mint-assoc-select"
+						:class="open ? 'is-open' : ''"
+						x-data="{ open: false }"
+						@click.outside="open = false"
+					>
+						<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
+							<span
+								class="mint-assoc-select__value"
+								:class="!attach.lessonId ? 'is-placeholder' : ''"
+								x-text="attachLessonLabel() || 'Select a lesson…'"
+							></span>
+							<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
+						</button>
+						<div class="mint-assoc-select__menu" x-show="open" x-cloak>
+							<button
+								type="button"
+								class="mint-assoc-select__option"
+								:class="!attach.lessonId ? 'is-active' : ''"
+								@click="pickAttachLesson(0); open = false"
+							><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></button>
+							<template x-for="l in attachLessons" :key="'tree-att-l-' + l.id">
+								<button
+									type="button"
+									class="mint-assoc-select__option"
+									:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
+									@click="pickAttachLesson(l.id); open = false"
+									x-text="l.title"
+								></button>
+							</template>
+						</div>
+					</div>
+					<button
+						type="button"
+						class="mint-builder-btn-publish"
+						@click="attachStandaloneQuizToLesson()"
+						:disabled="!attach.lessonId || attaching"
+					>
+						<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to lesson', 'mint-lms' ) ); ?>'"></span>
+					</button>
+				</div>
 				<div
 					class="mint-assoc-card mint-mb-3"
 					x-show="fromQuizzes && !fromQuestions && showSidebarLessonParent() && lessonQuiz?.id"
@@ -1213,13 +1246,10 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									<button
 										type="button"
 										class="mint-assoc-select__option"
-										:class="{
-											'is-active': Number(attach.lessonId) === Number(l.id),
-											'is-disabled': !!l.taken
-										}"
-										:disabled="!!l.taken"
+										:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
 										@click="pickAttachLesson(l.id); open = false"
-										x-text="l.taken ? (l.title + ' (has quiz)') : l.title"									></button>
+										x-text="l.title"
+									></button>
 								</template>
 							</div>
 						</div>
@@ -2538,7 +2568,318 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<div x-show="quizLoading" class="mint-text-[15px] mint-text-ink-3"><?php esc_html_e( 'Loading quiz…', 'mint-lms' ); ?></div>
 
 						<template x-if="!quizLoading && lessonQuiz">
-							<div>
+							<div class="mint-quiz-editor-layout">
+								<div class="mint-quiz-editor-layout__main">
+
+								<!-- Quiz Settings page -->
+								<div class="mint-quiz-settings" x-show="quizSettingsView" x-cloak>
+									<button
+										type="button"
+										class="mint-quiz-settings__back"
+										@click="closeQuizSettings()"
+									>
+										<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12.5 4.5 7 10l5.5 5.5"/></svg>
+										<?php esc_html_e( 'Back to quiz', 'mint-lms' ); ?>
+									</button>
+									<h1 class="mint-quiz-settings__title"><?php esc_html_e( 'Quiz Settings', 'mint-lms' ); ?></h1>
+									<div class="mint-quiz-settings__subtitle" x-text="lessonQuiz.title || '<?php echo esc_js( __( 'New Quiz', 'mint-lms' ) ); ?>'"></div>
+
+									<!-- Quiz Release Schedule -->
+									<div class="mint-quiz-rules mint-mt-7">
+										<div class="mint-quiz-release">
+											<div class="mint-quiz-release__label"><?php esc_html_e( 'Quiz Release Schedule', 'mint-lms' ); ?></div>
+											<div class="mint-quiz-release__options">
+												<button
+													type="button"
+													class="mint-quiz-release__option"
+													@click="lessonQuiz.settings.releaseSchedule = 'immediately'"
+												>
+													<span
+														class="mint-radio"
+														:class="lessonQuiz.settings.releaseSchedule === 'immediately' ? 'is-selected' : ''"
+														aria-hidden="true"
+													></span>
+													<span class="mint-quiz-release__option-text">
+														<span class="mint-quiz-release__option-title"><?php esc_html_e( 'Immediately', 'mint-lms' ); ?></span>
+														<span class="mint-quiz-release__option-copy"><?php esc_html_e( 'The quiz is made available on course enrollment.', 'mint-lms' ); ?></span>
+													</span>
+												</button>
+
+												<button
+													type="button"
+													class="mint-quiz-release__option"
+													@click="lessonQuiz.settings.releaseSchedule = 'enrollment'"
+												>
+													<span
+														class="mint-radio"
+														:class="lessonQuiz.settings.releaseSchedule === 'enrollment' ? 'is-selected' : ''"
+														aria-hidden="true"
+													></span>
+													<span class="mint-quiz-release__option-text">
+														<span class="mint-quiz-release__option-title"><?php esc_html_e( 'Enrollment-based', 'mint-lms' ); ?></span>
+														<span class="mint-quiz-release__option-copy"><?php esc_html_e( 'The quiz will be available X days after course enrollment.', 'mint-lms' ); ?></span>
+													</span>
+												</button>
+
+												<div
+													x-show="lessonQuiz.settings.releaseSchedule === 'enrollment'"
+													x-cloak
+													class="mint-quiz-rules__nested mint-quiz-release__nested"
+												>
+													<label class="mint-lesson-field-label" for="mint-quiz-release-days"><?php esc_html_e( 'Days after enrollment', 'mint-lms' ); ?></label>
+													<input
+														id="mint-quiz-release-days"
+														type="number"
+														min="0"
+														class="mint-lesson-field-input mint-lesson-field-input--sm mint-max-w-[140px]"
+														x-model.number="lessonQuiz.settings.releaseDaysAfterEnrollment"
+													/>
+												</div>
+
+												<button
+													type="button"
+													class="mint-quiz-release__option"
+													@click="lessonQuiz.settings.releaseSchedule = 'specific_date'"
+												>
+													<span
+														class="mint-radio"
+														:class="lessonQuiz.settings.releaseSchedule === 'specific_date' ? 'is-selected' : ''"
+														aria-hidden="true"
+													></span>
+													<span class="mint-quiz-release__option-text">
+														<span class="mint-quiz-release__option-title"><?php esc_html_e( 'Specific date', 'mint-lms' ); ?></span>
+														<span class="mint-quiz-release__option-copy"><?php esc_html_e( 'The quiz will be available on a specific date.', 'mint-lms' ); ?></span>
+													</span>
+												</button>
+
+												<div
+													x-show="lessonQuiz.settings.releaseSchedule === 'specific_date'"
+													x-cloak
+													class="mint-quiz-release__datetime"
+												>
+													<select
+														class="mint-quiz-release__month"
+														x-model="lessonQuiz.settings.releaseMonth"
+														aria-label="<?php echo esc_attr__( 'Month', 'mint-lms' ); ?>"
+													>
+														<option value=""><?php esc_html_e( 'MM', 'mint-lms' ); ?></option>
+														<option value="01"><?php esc_html_e( '01', 'mint-lms' ); ?></option>
+														<option value="02"><?php esc_html_e( '02', 'mint-lms' ); ?></option>
+														<option value="03"><?php esc_html_e( '03', 'mint-lms' ); ?></option>
+														<option value="04"><?php esc_html_e( '04', 'mint-lms' ); ?></option>
+														<option value="05"><?php esc_html_e( '05', 'mint-lms' ); ?></option>
+														<option value="06"><?php esc_html_e( '06', 'mint-lms' ); ?></option>
+														<option value="07"><?php esc_html_e( '07', 'mint-lms' ); ?></option>
+														<option value="08"><?php esc_html_e( '08', 'mint-lms' ); ?></option>
+														<option value="09"><?php esc_html_e( '09', 'mint-lms' ); ?></option>
+														<option value="10"><?php esc_html_e( '10', 'mint-lms' ); ?></option>
+														<option value="11"><?php esc_html_e( '11', 'mint-lms' ); ?></option>
+														<option value="12"><?php esc_html_e( '12', 'mint-lms' ); ?></option>
+													</select>
+													<input
+														type="text"
+														class="mint-quiz-release__part"
+														maxlength="2"
+														placeholder="<?php echo esc_attr__( 'DD', 'mint-lms' ); ?>"
+														x-model="lessonQuiz.settings.releaseDay"
+														aria-label="<?php echo esc_attr__( 'Day', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-release__sep" aria-hidden="true">,</span>
+													<input
+														type="text"
+														class="mint-quiz-release__part mint-quiz-release__part--year"
+														maxlength="4"
+														placeholder="<?php echo esc_attr__( 'YYYY', 'mint-lms' ); ?>"
+														x-model="lessonQuiz.settings.releaseYear"
+														aria-label="<?php echo esc_attr__( 'Year', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-release__sep" aria-hidden="true">@</span>
+													<input
+														type="text"
+														class="mint-quiz-release__part"
+														maxlength="2"
+														placeholder="<?php echo esc_attr__( 'HH', 'mint-lms' ); ?>"
+														x-model="lessonQuiz.settings.releaseHour"
+														aria-label="<?php echo esc_attr__( 'Hour', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-release__sep" aria-hidden="true">:</span>
+													<input
+														type="text"
+														class="mint-quiz-release__part"
+														maxlength="2"
+														placeholder="<?php echo esc_attr__( 'MN', 'mint-lms' ); ?>"
+														x-model="lessonQuiz.settings.releaseMinute"
+														aria-label="<?php echo esc_attr__( 'Minute', 'mint-lms' ); ?>"
+													/>
+												</div>
+											</div>
+										</div>
+									</div>
+
+									<div class="mint-quiz-rules mint-mt-5">
+										<div class="mint-text-[17px] mint-font-bold mint-tracking-[-0.01em] mint-text-ink"><?php esc_html_e( 'Rules / progression', 'mint-lms' ); ?></div>
+										<div class="mint-mt-[3px] mint-text-sm mint-text-ink-3"><?php esc_html_e( 'Controls how students take and complete this quiz.', 'mint-lms' ); ?></div>
+
+										<div class="mint-mt-[22px] mint-flex mint-items-start mint-justify-between mint-gap-4">
+											<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Restrict Quiz Retakes', 'mint-lms' ); ?></div>
+											<button
+												type="button"
+												role="switch"
+												class="mint-lesson-preview-toggle"
+												:class="lessonQuiz.settings.restrictRetakes ? 'is-on' : ''"
+												:aria-pressed="lessonQuiz.settings.restrictRetakes ? 'true' : 'false'"
+												@click="lessonQuiz.settings.restrictRetakes = !lessonQuiz.settings.restrictRetakes"
+											><span class="mint-lesson-preview-toggle__knob"></span></button>
+										</div>
+
+										<div x-show="lessonQuiz.settings.restrictRetakes" x-cloak class="mint-quiz-rules__nested mint-mt-4">
+											<div>
+												<label class="mint-lesson-field-label" for="mint-quiz-retries"><?php esc_html_e( 'Number of Retries Allowed', 'mint-lms' ); ?></label>
+												<input
+													id="mint-quiz-retries"
+													type="number"
+													min="0"
+													class="mint-lesson-field-input mint-lesson-field-input--sm mint-max-w-[160px]"
+													x-model.number="lessonQuiz.settings.retriesAllowed"
+												/>
+											</div>
+											<div class="mint-mt-4">
+												<label class="mint-lesson-field-label" for="mint-quiz-retries-to"><?php esc_html_e( 'Retries Applicable To', 'mint-lms' ); ?></label>
+												<select
+													id="mint-quiz-retries-to"
+													class="mint-lesson-field-input mint-lesson-field-input--sm mint-max-w-[320px]"
+													x-model="lessonQuiz.settings.retriesApplicableTo"
+												>
+													<option value="all"><?php esc_html_e( 'All users', 'mint-lms' ); ?></option>
+												</select>
+											</div>
+											<button
+												type="button"
+												class="mint-quiz-action mint-mt-4"
+												@click="resetQuizUserIdentification()"
+												:disabled="quizSaving"
+											><?php esc_html_e( 'Reset the user identification', 'mint-lms' ); ?></button>
+										</div>
+
+										<div class="mint-quiz-rules__divider"></div>
+
+										<button
+											type="button"
+											class="mint-quiz-checkrow"
+											@click="lessonQuiz.settings.questionCompletion = !lessonQuiz.settings.questionCompletion"
+										>
+											<span
+												class="mint-quiz-checkbox"
+												:class="lessonQuiz.settings.questionCompletion ? 'is-checked' : ''"
+												aria-hidden="true"
+											>
+												<svg x-show="lessonQuiz.settings.questionCompletion" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5 8.5 14 15 6.5"/></svg>
+											</span>
+											<span class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Question Completion', 'mint-lms' ); ?></span>
+											<span class="mint-text-sm mint-text-ink-3"><?php esc_html_e( '— all questions required to complete', 'mint-lms' ); ?></span>
+										</button>
+
+										<div class="mint-quiz-rules__divider"></div>
+
+										<div class="mint-flex mint-items-center mint-justify-between mint-gap-4">
+											<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Time Limit', 'mint-lms' ); ?></div>
+											<button
+												type="button"
+												role="switch"
+												class="mint-lesson-preview-toggle"
+												:class="lessonQuiz.settings.timeLimitEnabled ? 'is-on' : ''"
+												:aria-pressed="lessonQuiz.settings.timeLimitEnabled ? 'true' : 'false'"
+												@click="lessonQuiz.settings.timeLimitEnabled = !lessonQuiz.settings.timeLimitEnabled"
+											><span class="mint-lesson-preview-toggle__knob"></span></button>
+										</div>
+
+										<div x-show="lessonQuiz.settings.timeLimitEnabled" x-cloak class="mint-quiz-rules__nested mint-mt-4">
+											<div class="mint-lesson-field-label"><?php esc_html_e( 'Automatically Submit After', 'mint-lms' ); ?></div>
+											<div class="mint-quiz-time mint-mt-2">
+												<div class="mint-quiz-time__cell">
+													<input
+														type="text"
+														class="mint-quiz-time__part"
+														maxlength="2"
+														x-model="lessonQuiz.settings.timeLimitHours"
+														@blur="lessonQuiz.settings.timeLimitHours = clampTimePart(lessonQuiz.settings.timeLimitHours)"
+														aria-label="<?php echo esc_attr__( 'Hours', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-time__unit"><?php esc_html_e( 'HH', 'mint-lms' ); ?></span>
+												</div>
+												<span class="mint-quiz-time__sep">:</span>
+												<div class="mint-quiz-time__cell">
+													<input
+														type="text"
+														class="mint-quiz-time__part"
+														maxlength="2"
+														x-model="lessonQuiz.settings.timeLimitMinutes"
+														@blur="lessonQuiz.settings.timeLimitMinutes = clampTimePart(lessonQuiz.settings.timeLimitMinutes)"
+														aria-label="<?php echo esc_attr__( 'Minutes', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-time__unit"><?php esc_html_e( 'MM', 'mint-lms' ); ?></span>
+												</div>
+												<span class="mint-quiz-time__sep">:</span>
+												<div class="mint-quiz-time__cell">
+													<input
+														type="text"
+														class="mint-quiz-time__part"
+														maxlength="2"
+														x-model="lessonQuiz.settings.timeLimitSeconds"
+														@blur="lessonQuiz.settings.timeLimitSeconds = clampTimePart(lessonQuiz.settings.timeLimitSeconds)"
+														aria-label="<?php echo esc_attr__( 'Seconds', 'mint-lms' ); ?>"
+													/>
+													<span class="mint-quiz-time__unit"><?php esc_html_e( 'SS', 'mint-lms' ); ?></span>
+												</div>
+											</div>
+										</div>
+
+										<div class="mint-quiz-rules__divider"></div>
+
+										<div class="mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-3">
+											<div class="mint-flex mint-min-w-0 mint-items-center mint-gap-2">
+												<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Enable Quiz Saving', 'mint-lms' ); ?></div>
+												<span
+													class="mint-quiz-help"
+													title="<?php echo esc_attr__( 'When enabled, in-progress quiz answers are periodically saved to the server so students can resume.', 'mint-lms' ); ?>"
+													aria-label="<?php echo esc_attr__( 'Help: quiz saving', 'mint-lms' ); ?>"
+												>?</span>
+											</div>
+											<div class="mint-flex mint-flex-wrap mint-items-center mint-gap-3">
+												<button
+													type="button"
+													role="switch"
+													class="mint-lesson-preview-toggle"
+													:class="lessonQuiz.settings.quizSavingEnabled ? 'is-on' : ''"
+													:aria-pressed="lessonQuiz.settings.quizSavingEnabled ? 'true' : 'false'"
+													@click="lessonQuiz.settings.quizSavingEnabled = !lessonQuiz.settings.quizSavingEnabled"
+												><span class="mint-lesson-preview-toggle__knob"></span></button>
+												<span class="mint-text-sm mint-text-ink-3"><?php esc_html_e( 'Progress will be saved to the server', 'mint-lms' ); ?></span>
+											</div>
+										</div>
+
+										<div x-show="lessonQuiz.settings.quizSavingEnabled" x-cloak class="mint-quiz-rules__nested mint-mt-4">
+											<div class="mint-flex mint-flex-wrap mint-items-center mint-gap-2.5">
+												<span class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Save Quiz data to the server every', 'mint-lms' ); ?></span>
+												<input
+													type="number"
+													min="5"
+													class="mint-lesson-field-input mint-lesson-field-input--sm mint-quiz-saving-interval"
+													x-model.number="lessonQuiz.settings.quizSavingIntervalSeconds"
+													aria-label="<?php echo esc_attr__( 'Save interval in seconds', 'mint-lms' ); ?>"
+												/>
+												<span class="mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'seconds', 'mint-lms' ); ?></span>
+											</div>
+										</div>
+
+										<div class="mint-mt-[22px] mint-flex mint-justify-end">
+											<button type="button" class="mint-quiz-save" @click="saveQuiz()" :disabled="quizSaving"><?php esc_html_e( 'Save quiz', 'mint-lms' ); ?></button>
+										</div>
+									</div>
+								</div>
+
+								<!-- Quiz builder -->
+								<div x-show="!quizSettingsView">
 								<nav class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2" aria-label="<?php echo esc_attr__( 'Quiz location', 'mint-lms' ); ?>">
 									<template x-if="breadcrumbCourseTitle()">
 										<span class="mint-inline-flex mint-min-w-0 mint-items-center mint-gap-2.5">
@@ -2689,266 +3030,12 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									</template>
 								</div>
 
-								<div class="mint-quiz-rules mint-mt-7">
-									<div class="mint-text-[17px] mint-font-bold mint-tracking-[-0.01em] mint-text-ink"><?php esc_html_e( 'Rules / progression', 'mint-lms' ); ?></div>
-									<div class="mint-mt-[3px] mint-text-sm mint-text-ink-3"><?php esc_html_e( 'Controls how students take and complete this quiz.', 'mint-lms' ); ?></div>
-
-									<div class="mint-mt-[22px] mint-flex mint-items-start mint-justify-between mint-gap-4">
-										<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Restrict Quiz Retakes', 'mint-lms' ); ?></div>
-										<button
-											type="button"
-											role="switch"
-											class="mint-lesson-preview-toggle"
-											:class="lessonQuiz.settings.restrictRetakes ? 'is-on' : ''"
-											:aria-pressed="lessonQuiz.settings.restrictRetakes ? 'true' : 'false'"
-											@click="lessonQuiz.settings.restrictRetakes = !lessonQuiz.settings.restrictRetakes"
-										><span class="mint-lesson-preview-toggle__knob"></span></button>
-									</div>
-
-									<div x-show="lessonQuiz.settings.restrictRetakes" x-cloak class="mint-quiz-rules__nested mint-mt-4">
-										<div>
-											<label class="mint-lesson-field-label" for="mint-quiz-retries"><?php esc_html_e( 'Number of Retries Allowed', 'mint-lms' ); ?></label>
-											<input
-												id="mint-quiz-retries"
-												type="number"
-												min="0"
-												class="mint-lesson-field-input mint-lesson-field-input--sm mint-max-w-[160px]"
-												x-model.number="lessonQuiz.settings.retriesAllowed"
-											/>
-										</div>
-										<div class="mint-mt-4">
-											<label class="mint-lesson-field-label" for="mint-quiz-retries-to"><?php esc_html_e( 'Retries Applicable To', 'mint-lms' ); ?></label>
-											<select
-												id="mint-quiz-retries-to"
-												class="mint-lesson-field-input mint-lesson-field-input--sm mint-max-w-[320px]"
-												x-model="lessonQuiz.settings.retriesApplicableTo"
-											>
-												<option value="all"><?php esc_html_e( 'All users', 'mint-lms' ); ?></option>
-											</select>
-										</div>
-										<button type="button" class="mint-quiz-save mint-mt-4" @click="saveQuiz()" :disabled="quizSaving"><?php esc_html_e( 'Save quiz', 'mint-lms' ); ?></button>
-									</div>
-
-									<div class="mint-quiz-rules__divider"></div>
-
-									<button
-										type="button"
-										class="mint-quiz-checkrow"
-										@click="lessonQuiz.settings.questionCompletion = !lessonQuiz.settings.questionCompletion"
-									>
-										<span
-											class="mint-quiz-checkbox"
-											:class="lessonQuiz.settings.questionCompletion ? 'is-checked' : ''"
-											aria-hidden="true"
-										>
-											<svg x-show="lessonQuiz.settings.questionCompletion" width="13" height="13" viewBox="0 0 20 20" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5 8.5 14 15 6.5"/></svg>
-										</span>
-										<span class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Question Completion', 'mint-lms' ); ?></span>
-										<span class="mint-text-sm mint-text-ink-3"><?php esc_html_e( '— all questions required to complete', 'mint-lms' ); ?></span>
-									</button>
-
-									<div class="mint-quiz-rules__divider"></div>
-
-									<div class="mint-flex mint-items-center mint-justify-between mint-gap-4">
-										<div class="mint-text-[15px] mint-font-semibold mint-text-ink"><?php esc_html_e( 'Time Limit', 'mint-lms' ); ?></div>
-										<button
-											type="button"
-											role="switch"
-											class="mint-lesson-preview-toggle"
-											:class="lessonQuiz.settings.timeLimitEnabled ? 'is-on' : ''"
-											:aria-pressed="lessonQuiz.settings.timeLimitEnabled ? 'true' : 'false'"
-											@click="lessonQuiz.settings.timeLimitEnabled = !lessonQuiz.settings.timeLimitEnabled"
-										><span class="mint-lesson-preview-toggle__knob"></span></button>
-									</div>
-
-									<div x-show="lessonQuiz.settings.timeLimitEnabled" x-cloak class="mint-quiz-rules__nested mint-mt-4">
-										<div class="mint-lesson-field-label"><?php esc_html_e( 'Automatically Submit After', 'mint-lms' ); ?></div>
-										<div class="mint-quiz-time mint-mt-2">
-											<input
-												type="text"
-												class="mint-quiz-time__part"
-												maxlength="2"
-												x-model="lessonQuiz.settings.timeLimitHours"
-												@blur="lessonQuiz.settings.timeLimitHours = clampTimePart(lessonQuiz.settings.timeLimitHours)"
-												aria-label="<?php echo esc_attr__( 'Hours', 'mint-lms' ); ?>"
-											/>
-											<span class="mint-quiz-time__sep">:</span>
-											<input
-												type="text"
-												class="mint-quiz-time__part"
-												maxlength="2"
-												x-model="lessonQuiz.settings.timeLimitMinutes"
-												@blur="lessonQuiz.settings.timeLimitMinutes = clampTimePart(lessonQuiz.settings.timeLimitMinutes)"
-												aria-label="<?php echo esc_attr__( 'Minutes', 'mint-lms' ); ?>"
-											/>
-											<span class="mint-quiz-time__sep">:</span>
-											<input
-												type="text"
-												class="mint-quiz-time__part"
-												maxlength="2"
-												x-model="lessonQuiz.settings.timeLimitSeconds"
-												@blur="lessonQuiz.settings.timeLimitSeconds = clampTimePart(lessonQuiz.settings.timeLimitSeconds)"
-												aria-label="<?php echo esc_attr__( 'Seconds', 'mint-lms' ); ?>"
-											/>
-										</div>
-									</div>
-
-									<div class="mint-mt-[22px] mint-flex mint-justify-end">
-										<button type="button" class="mint-quiz-save" @click="saveQuiz()" :disabled="quizSaving"><?php esc_html_e( 'Save quiz', 'mint-lms' ); ?></button>
-									</div>
-								</div>
-
-								<section class="mint-mt-7 mint-grid mint-gap-[14px]">
-									<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
-										<?php esc_html_e( 'Set featured image · Quiz', 'mint-lms' ); ?>
-									</div>
-
-									<div
-										x-show="!lessonQuiz.featuredImageUrl"
-										class="mint-cover-placeholder mint-flex mint-h-[200px] mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#A79FE0]"
-									>
-										<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'featured image · 1200×675', 'mint-lms' ); ?></span>
-									</div>
-									<div
-										x-show="lessonQuiz.featuredImageUrl"
-										x-cloak
-										class="mint-h-[200px] mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
-									>
-										<img :src="lessonQuiz.featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
-									</div>
-
-									<p class="mint-m-0 mint-text-base mint-leading-[26px] mint-text-ink-2">
-										<?php esc_html_e( 'Optional. Shown on the quiz card and results screen.', 'mint-lms' ); ?>
-									</p>
-
-									<div class="mint-flex mint-flex-wrap mint-gap-2.5">
-										<button
-											type="button"
-											class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-base mint-font-semibold mint-text-cta-ink"
-											@click="pickQuizFeaturedImage()"
-										><?php esc_html_e( 'Upload image', 'mint-lms' ); ?></button>
-										<button
-											type="button"
-											class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-[15px] mint-text-base mint-font-semibold mint-text-cta-ink"
-											x-show="lessonQuiz.featuredImageId"
-											x-cloak
-											@click="clearQuizFeaturedImage()"
-										><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-									</div>
-								</section>
-
-								<div
-									class="mint-assoc-card mint-mt-8"
-									x-show="isStandalone && !showSidebarLessonParent() && lessonQuiz?.id"
-									x-cloak
-								>
-									<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a lesson', 'mint-lms' ); ?></h2>
-									<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this quiz to an existing lesson.', 'mint-lms' ); ?></p>
-									<label class="mint-assoc-card__label"><?php esc_html_e( 'Lesson', 'mint-lms' ); ?></label>
-									<div
-										class="mint-assoc-select"
-										:class="open ? 'is-open' : ''"
-										x-data="{ open: false }"
-										@click.outside="open = false"
-									>
-										<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
-											<span
-												class="mint-assoc-select__value"
-												:class="!attach.lessonId ? 'is-placeholder' : ''"
-												x-text="attachLessonLabel() || 'Select a lesson…'"
-											></span>
-											<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
-										</button>
-										<div class="mint-assoc-select__menu" x-show="open" x-cloak>
-											<button
-												type="button"
-												class="mint-assoc-select__option"
-												:class="!attach.lessonId ? 'is-active' : ''"
-												@click="pickAttachLesson(0); open = false"
-											><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></button>
-											<template x-for="l in attachLessons" :key="'ed-ql-' + l.id">
-												<button
-													type="button"
-													class="mint-assoc-select__option"
-													:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
-															@click="pickAttachLesson(l.id); open = false"
-															x-text="l.title"
-												></button>
-											</template>
-										</div>
-									</div>
-									<button
-										type="button"
-										class="mint-builder-btn-publish mint-mt-3"
-										@click="attachStandaloneQuizToLesson()"
-										:disabled="!attach.lessonId || attaching"
-									>
-										<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to lesson', 'mint-lms' ) ); ?>'"></span>
-									</button>
-								</div>
-
-								<div
-									class="mint-assoc-card mint-mt-8"
-									x-show="showSidebarLessonParent() && lessonQuiz?.id"
-									x-cloak
-								>
-									<div class="mint-assoc-card__badge"><?php esc_html_e( 'Linked lesson', 'mint-lms' ); ?></div>
-									<div class="mint-assoc-card__current mint-truncate" x-text="breadcrumbParentLessonTitle() || breadcrumbQuizContextTitle() || '<?php echo esc_js( __( 'Lesson', 'mint-lms' ) ); ?>'"></div>
-									<template x-if="!attach.changing">
-										<div class="mint-assoc-card__actions">
-											<button type="button" class="mint-lesson-choose-file" :disabled="attaching" @click="startChangeLesson()"><?php esc_html_e( 'Change', 'mint-lms' ); ?></button>
-											<button type="button" class="mint-assoc-card__remove" :disabled="attaching" @click="detachQuizFromLesson()"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-										</div>
-									</template>
-									<template x-if="attach.changing">
-										<div class="mint-mt-3">
-											<label class="mint-assoc-card__label"><?php esc_html_e( 'New lesson', 'mint-lms' ); ?></label>
-											<div
-												class="mint-assoc-select"
-												:class="open ? 'is-open' : ''"
-												x-data="{ open: false }"
-												@click.outside="open = false"
-											>
-												<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
-													<span
-														class="mint-assoc-select__value"
-														:class="!attach.lessonId ? 'is-placeholder' : ''"
-														x-text="attachLessonLabel() || 'Select a lesson…'"
-													></span>
-													<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
-												</button>
-												<div class="mint-assoc-select__menu" x-show="open" x-cloak>
-													<button
-														type="button"
-														class="mint-assoc-select__option"
-														:class="!attach.lessonId ? 'is-active' : ''"
-														@click="pickAttachLesson(0); open = false"
-													><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></button>
-													<template x-for="l in attachLessons" :key="'ed-chg-l-' + l.id">
-														<button
-															type="button"
-															class="mint-assoc-select__option"
-															:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
-															@click="pickAttachLesson(l.id); open = false"
-															x-text="l.title"
-														></button>
-													</template>
-												</div>
-											</div>
-											<div class="mint-assoc-card__actions">
-												<button type="button" class="mint-builder-btn-publish" :disabled="!attach.lessonId || attaching" @click="attachStandaloneQuizToLesson()">
-													<span x-text="attaching ? '<?php echo esc_js( __( 'Saving…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'mint-lms' ) ); ?>'"></span>
-												</button>
-												<button type="button" class="mint-assoc-card__cancel" :disabled="attaching" @click="cancelChangeAssociation()"><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
-											</div>
-										</div>
-									</template>
-								</div>
-
 								<div class="mint-mt-8 mint-border-t mint-border-rule mint-pt-5">
 									<button
 										type="button"
 										class="mint-quiz-action mint-mb-4"
+										x-show="isStandalone"
+										x-cloak
 										@click="openLessonQuestionEditor()"
 										:disabled="quizSaving || !lessonQuiz?.id"
 									>
@@ -2956,15 +3043,111 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										<?php esc_html_e( 'Add new question', 'mint-lms' ); ?>
 									</button>
 									<div class="mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-4">
-										<button type="button" class="mint-builder-delete" @click="deleteQuiz()"><?php esc_html_e( 'Delete quiz', 'mint-lms' ); ?></button>
 										<button
 											type="button"
-											class="mint-builder-btn-publish !mint-h-[38px] !mint-rounded-[9px] !mint-px-4 !mint-text-[15px]"
-											@click="saveQuiz()"
-											:disabled="quizSaving"
-										><?php esc_html_e( 'Save changes', 'mint-lms' ); ?></button>
+											class="mint-quiz-settings-btn"
+											@click="openQuizSettings()"
+											:disabled="!lessonQuiz?.id"
+										>
+											<img
+												class="mint-quiz-settings-btn__icon"
+												src="<?php echo esc_url( MINTLMS_URL . 'assets/img/quiz-settings-icon.png' ); ?>"
+												width="18"
+												height="18"
+												alt=""
+											/>
+											<?php esc_html_e( 'Quiz Settings', 'mint-lms' ); ?>
+										</button>
+										<div class="mint-flex mint-flex-wrap mint-items-center mint-gap-4">
+											<button type="button" class="mint-builder-delete" @click="deleteQuiz()"><?php esc_html_e( 'Delete quiz', 'mint-lms' ); ?></button>
+											<button
+												type="button"
+												class="mint-builder-btn-publish !mint-h-[38px] !mint-rounded-[9px] !mint-px-4 !mint-text-[15px]"
+												@click="saveQuiz()"
+												:disabled="quizSaving"
+											><?php esc_html_e( 'Save changes', 'mint-lms' ); ?></button>
+										</div>
 									</div>
 								</div>
+								</div><!-- /quiz builder -->
+
+								</div><!-- /.mint-quiz-editor-layout__main -->
+
+								<aside
+									class="mint-quiz-attach"
+									x-show="!quizSettingsView && showQuizLessonAttachPanel()"
+									x-cloak
+								>
+									<div class="mint-quiz-attach__head">
+										<span class="mint-quiz-attach__icon" aria-hidden="true">
+											<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<path d="M5 6.5h10M5 10h10M5 13.5h6"/>
+											</svg>
+										</span>
+										<div class="mint-quiz-attach__head-text">
+											<h2 class="mint-quiz-attach__title"><?php esc_html_e( 'Attach to Lesson', 'mint-lms' ); ?></h2>
+											<p class="mint-quiz-attach__copy"><?php esc_html_e( 'Pick one lesson to attach it to.', 'mint-lms' ); ?></p>
+										</div>
+									</div>
+
+									<div
+										class="mint-quiz-attach__selected"
+										x-show="quizAttachSelectedLabel()"
+										x-cloak
+									>
+										<span class="mint-quiz-attach__check" aria-hidden="true">
+											<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5 8.5 14 15 6.5"/></svg>
+										</span>
+										<span class="mint-quiz-attach__selected-title mint-truncate" x-text="quizAttachSelectedLabel()"></span>
+										<button
+											type="button"
+											class="mint-quiz-attach__remove"
+											:disabled="attaching"
+											@click="clearQuizAttachSelection()"
+										><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+									</div>
+
+									<div
+										class="mint-quiz-attach__select"
+										:class="open ? 'is-open' : ''"
+										x-data="{ open: false }"
+										@click.outside="open = false"
+									>
+										<button type="button" class="mint-quiz-attach__trigger" @click="open = !open">
+											<span class="mint-quiz-attach__placeholder">
+												<span aria-hidden="true">+</span>
+												<span><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></span>
+											</span>
+											<svg class="mint-quiz-attach__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
+										</button>
+										<div class="mint-quiz-attach__menu" x-show="open" x-cloak>
+											<button
+												type="button"
+												class="mint-quiz-attach__option"
+												:class="!attach.lessonId ? 'is-active' : ''"
+												@click="pickAttachLesson(0); open = false"
+											><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></button>
+											<template x-for="l in attachLessons" :key="'quiz-att-' + l.id">
+												<button
+													type="button"
+													class="mint-quiz-attach__option"
+													:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
+													@click="pickAttachLesson(l.id); open = false"
+													x-text="l.title"
+												></button>
+											</template>
+										</div>
+									</div>
+
+									<button
+										type="button"
+										class="mint-quiz-attach__submit"
+										@click="attachStandaloneQuizToLesson()"
+										:disabled="!attach.lessonId || attaching"
+									>
+										<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to lesson', 'mint-lms' ) ); ?>'"></span>
+									</button>
+								</aside>
 							</div>
 						</template>
 					</div>
@@ -2981,7 +3164,8 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<div x-show="quizLoading" class="mint-text-[15px] mint-text-ink-3"><?php esc_html_e( 'Loading question…', 'mint-lms' ); ?></div>
 
 						<template x-if="!quizLoading && activeQuestion">
-							<div>
+							<div class="mint-quiz-editor-layout">
+								<div class="mint-quiz-editor-layout__main">
 								<nav class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2" aria-label="<?php echo esc_attr__( 'Question location', 'mint-lms' ); ?>">
 									<template x-if="breadcrumbCourseTitle()">
 										<span class="mint-inline-flex mint-min-w-0 mint-items-center mint-gap-2.5">
@@ -3390,114 +3574,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									</div>
 								</section>
 
-								<div
-									class="mint-assoc-card mint-mt-8"
-									x-show="isStandalone && !showSidebarQuizParent() && (activeQuestion?.id || selected?.questionId)"
-									x-cloak
-								>
-									<h2 class="mint-assoc-card__title"><?php esc_html_e( 'Add to a quiz', 'mint-lms' ); ?></h2>
-									<p class="mint-assoc-card__copy"><?php esc_html_e( 'Attach this question to an existing quiz.', 'mint-lms' ); ?></p>
-									<label class="mint-assoc-card__label"><?php esc_html_e( 'Quiz', 'mint-lms' ); ?></label>
-									<div
-										class="mint-assoc-select"
-										:class="open ? 'is-open' : ''"
-										x-data="{ open: false }"
-										@click.outside="open = false"
-									>
-										<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
-											<span
-												class="mint-assoc-select__value"
-												:class="!attach.quizId ? 'is-placeholder' : ''"
-												x-text="attachQuizLabel() || 'Select a quiz…'"
-											></span>
-											<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
-										</button>
-										<div class="mint-assoc-select__menu" x-show="open" x-cloak>
-											<button
-												type="button"
-												class="mint-assoc-select__option"
-												:class="!attach.quizId ? 'is-active' : ''"
-												@click="pickAttachQuiz(0); open = false"
-											><?php esc_html_e( 'Select a quiz…', 'mint-lms' ); ?></button>
-											<template x-for="q in attachQuizzes" :key="'ed-aq-' + q.id">
-												<button
-													type="button"
-													class="mint-assoc-select__option"
-													:class="Number(attach.quizId) === Number(q.id) ? 'is-active' : ''"
-													@click="pickAttachQuiz(q.id); open = false"
-													x-text="q.title"
-												></button>
-											</template>
-										</div>
-									</div>
-									<button
-										type="button"
-										class="mint-builder-btn-publish mint-mt-3"
-										@click="attachStandaloneQuestionToQuiz()"
-										:disabled="!attach.quizId || attaching"
-									>
-										<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to quiz', 'mint-lms' ) ); ?>'"></span>
-									</button>
-								</div>
-
-								<div
-									class="mint-assoc-card mint-mt-8"
-									x-show="showSidebarQuizParent() && (activeQuestion?.id || selected?.questionId)"
-									x-cloak
-								>
-									<div class="mint-assoc-card__badge"><?php esc_html_e( 'Linked quiz', 'mint-lms' ); ?></div>
-									<div class="mint-assoc-card__current mint-truncate" x-text="breadcrumbQuizLabel() || '<?php echo esc_js( __( 'Quiz', 'mint-lms' ) ); ?>'"></div>
-									<template x-if="!attach.changing">
-										<div class="mint-assoc-card__actions">
-											<button type="button" class="mint-lesson-choose-file" :disabled="attaching" @click="startChangeQuiz()"><?php esc_html_e( 'Change', 'mint-lms' ); ?></button>
-											<button type="button" class="mint-assoc-card__remove" :disabled="attaching" @click="detachQuestionFromQuiz()"><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-										</div>
-									</template>
-									<template x-if="attach.changing">
-										<div class="mint-mt-3">
-											<label class="mint-assoc-card__label"><?php esc_html_e( 'New quiz', 'mint-lms' ); ?></label>
-											<div
-												class="mint-assoc-select"
-												:class="open ? 'is-open' : ''"
-												x-data="{ open: false }"
-												@click.outside="open = false"
-											>
-												<button type="button" class="mint-assoc-select__trigger" @click="open = !open">
-													<span
-														class="mint-assoc-select__value"
-														:class="!attach.quizId ? 'is-placeholder' : ''"
-														x-text="attachQuizLabel() || 'Select a quiz…'"
-													></span>
-													<svg class="mint-assoc-select__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
-												</button>
-												<div class="mint-assoc-select__menu" x-show="open" x-cloak>
-													<button
-														type="button"
-														class="mint-assoc-select__option"
-														:class="!attach.quizId ? 'is-active' : ''"
-														@click="pickAttachQuiz(0); open = false"
-													><?php esc_html_e( 'Select a quiz…', 'mint-lms' ); ?></button>
-													<template x-for="q in attachQuizzes" :key="'ed-chg-q-' + q.id">
-														<button
-															type="button"
-															class="mint-assoc-select__option"
-															:class="Number(attach.quizId) === Number(q.id) ? 'is-active' : ''"
-															@click="pickAttachQuiz(q.id); open = false"
-															x-text="q.title"
-														></button>
-													</template>
-												</div>
-											</div>
-											<div class="mint-assoc-card__actions">
-												<button type="button" class="mint-builder-btn-publish" :disabled="!attach.quizId || attaching" @click="attachStandaloneQuestionToQuiz()">
-													<span x-text="attaching ? '<?php echo esc_js( __( 'Saving…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Save', 'mint-lms' ) ); ?>'"></span>
-												</button>
-												<button type="button" class="mint-assoc-card__cancel" :disabled="attaching" @click="cancelChangeAssociation()"><?php esc_html_e( 'Cancel', 'mint-lms' ); ?></button>
-											</div>
-										</div>
-									</template>
-								</div>
-
 								<div class="mint-mt-8 mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-4 mint-border-t mint-border-rule mint-pt-5">
 									<button type="button" class="mint-builder-delete" @click="deleteActiveQuestion()"><?php esc_html_e( 'Delete question', 'mint-lms' ); ?></button>
 									<button
@@ -3507,6 +3583,84 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										:disabled="quizSaving"
 									><?php esc_html_e( 'Save changes', 'mint-lms' ); ?></button>
 								</div>
+								</div><!-- /.mint-quiz-editor-layout__main -->
+
+								<aside
+									class="mint-quiz-attach"
+									x-show="showQuestionQuizAttachPanel()"
+									x-cloak
+								>
+									<div class="mint-quiz-attach__head">
+										<span class="mint-quiz-attach__icon" aria-hidden="true">
+											<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+												<circle cx="10" cy="10" r="7"/>
+												<path d="M8 10.2 9.3 11.5 12.4 8.3"/>
+											</svg>
+										</span>
+										<div class="mint-quiz-attach__head-text">
+											<h2 class="mint-quiz-attach__title"><?php esc_html_e( 'Attach to Quiz', 'mint-lms' ); ?></h2>
+											<p class="mint-quiz-attach__copy"><?php esc_html_e( 'Pick one quiz to attach it to.', 'mint-lms' ); ?></p>
+										</div>
+									</div>
+
+									<div
+										class="mint-quiz-attach__selected"
+										x-show="questionAttachSelectedLabel()"
+										x-cloak
+									>
+										<span class="mint-quiz-attach__check" aria-hidden="true">
+											<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5 8.5 14 15 6.5"/></svg>
+										</span>
+										<span class="mint-quiz-attach__selected-title mint-truncate" x-text="questionAttachSelectedLabel()"></span>
+										<button
+											type="button"
+											class="mint-quiz-attach__remove"
+											:disabled="attaching"
+											@click="clearQuestionAttachSelection()"
+										><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+									</div>
+
+									<div
+										class="mint-quiz-attach__select"
+										:class="open ? 'is-open' : ''"
+										x-data="{ open: false }"
+										@click.outside="open = false"
+									>
+										<button type="button" class="mint-quiz-attach__trigger" @click="open = !open">
+											<span class="mint-quiz-attach__placeholder">
+												<span aria-hidden="true">+</span>
+												<span><?php esc_html_e( 'Select a quiz…', 'mint-lms' ); ?></span>
+											</span>
+											<svg class="mint-quiz-attach__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
+										</button>
+										<div class="mint-quiz-attach__menu" x-show="open" x-cloak>
+											<button
+												type="button"
+												class="mint-quiz-attach__option"
+												:class="!attach.quizId ? 'is-active' : ''"
+												@click="pickAttachQuiz(0); open = false"
+											><?php esc_html_e( 'Select a quiz…', 'mint-lms' ); ?></button>
+											<template x-for="q in attachQuizzes" :key="'q-att-' + q.id">
+												<button
+													type="button"
+													class="mint-quiz-attach__option"
+													:class="Number(attach.quizId) === Number(q.id) ? 'is-active' : ''"
+													@click="pickAttachQuiz(q.id); open = false"
+													x-text="q.title"
+												></button>
+											</template>
+										</div>
+									</div>
+
+									<button
+										type="button"
+										class="mint-quiz-attach__submit"
+										@click="attachStandaloneQuestionToQuiz()"
+										:disabled="!attach.quizId || attaching"
+									>
+										<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to quiz', 'mint-lms' ) ); ?>'"></span>
+									</button>
+								</aside>
 							</div>
 						</template>
 					</div>
@@ -3520,6 +3674,8 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 			>
 				<div class="mint-min-h-0 mint-flex-1 mint-overflow-y-auto">
 					<div class="mint-builder-editor__canvas">
+						<div class="mint-quiz-editor-layout" x-show="selectedLesson" x-cloak>
+							<div class="mint-quiz-editor-layout__main">
 						<nav class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2" aria-label="<?php echo esc_attr__( 'Lesson location', 'mint-lms' ); ?>">
 							<template x-if="breadcrumbCourseTitle()">
 								<span class="mint-inline-flex mint-min-w-0 mint-items-center mint-gap-2.5">
@@ -3563,16 +3719,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							<button type="button" class="mint-segmented__item" :class="lessonTab === 'video' ? 'is-active' : ''" @click="lessonTab = 'video'">
 								<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2.5" y="4" width="15" height="12" rx="3"/><path d="m8.5 7.5 4.5 2.5-4.5 2.5z"/></svg>
 								<?php esc_html_e( 'Video', 'mint-lms' ); ?>
-							</button>
-							<button
-								type="button"
-								class="mint-segmented__item"
-								x-show="!isStandalone"
-								:class="lessonTab === 'quiz' ? 'is-active' : ''"
-								@click="openLessonQuizEditor(selectedLesson.id, selected.sectionId)"
-							>
-								<svg width="19" height="19" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="10" cy="10" r="7"/><path d="M8 10.2 9.3 11.5 12.4 8.3"/></svg>
-								<?php esc_html_e( 'Quiz', 'mint-lms' ); ?>
 							</button>
 						</div>
 
@@ -3703,12 +3849,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									@input="debouncedSaveLesson(selectedLesson)"
 									placeholder="<?php echo esc_attr__( 'Optional description…', 'mint-lms' ); ?>"
 								></textarea>
-							</div>
-						</div>
-
-						<div x-show="lessonTab === 'quiz'" x-cloak class="mint-mt-[22px]">
-							<div class="mint-quiz-panel">
-								<div class="mint-text-[15px] mint-text-ink-2"><?php esc_html_e( 'Opening quiz editor…', 'mint-lms' ); ?></div>
 							</div>
 						</div>
 
@@ -3870,6 +4010,84 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							</div>
 							<button type="button" class="mint-builder-delete" @click="deleteLesson(selectedLesson.id, selected.sectionId)"><?php esc_html_e( 'Delete lesson', 'mint-lms' ); ?></button>
 						</div>
+							</div><!-- /.mint-quiz-editor-layout__main -->
+
+							<aside
+								class="mint-quiz-attach"
+								x-show="showLessonSectionAttachPanel()"
+								x-cloak
+							>
+								<div class="mint-quiz-attach__head">
+									<span class="mint-quiz-attach__icon" aria-hidden="true">
+										<svg width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+											<path d="M4.5 5.5h11v9h-11z"/><path d="M7.5 5.5V4.2a2.5 2.5 0 0 1 5 0v1.3"/>
+										</svg>
+									</span>
+									<div class="mint-quiz-attach__head-text">
+										<h2 class="mint-quiz-attach__title"><?php esc_html_e( 'Attach to Lesson Group', 'mint-lms' ); ?></h2>
+										<p class="mint-quiz-attach__copy"><?php esc_html_e( 'Pick one lesson group to attach it to.', 'mint-lms' ); ?></p>
+									</div>
+								</div>
+
+								<div
+									class="mint-quiz-attach__selected"
+									x-show="lessonAttachSelectedLabel()"
+									x-cloak
+								>
+									<span class="mint-quiz-attach__check" aria-hidden="true">
+										<svg width="14" height="14" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 10.5 8.5 14 15 6.5"/></svg>
+									</span>
+									<span class="mint-quiz-attach__selected-title mint-truncate" x-text="lessonAttachSelectedLabel()"></span>
+									<button
+										type="button"
+										class="mint-quiz-attach__remove"
+										:disabled="attaching"
+										@click="clearLessonAttachSelection()"
+									><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
+								</div>
+
+								<div
+									class="mint-quiz-attach__select"
+									:class="open ? 'is-open' : ''"
+									x-data="{ open: false }"
+									@click.outside="open = false"
+								>
+									<button type="button" class="mint-quiz-attach__trigger" @click="open = !open">
+										<span class="mint-quiz-attach__placeholder">
+											<span aria-hidden="true">+</span>
+											<span><?php esc_html_e( 'Select a lesson group…', 'mint-lms' ); ?></span>
+										</span>
+										<svg class="mint-quiz-attach__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
+									</button>
+									<div class="mint-quiz-attach__menu" x-show="open" x-cloak>
+										<button
+											type="button"
+											class="mint-quiz-attach__option"
+											:class="!attach.sectionId ? 'is-active' : ''"
+											@click="pickAttachSection(0); open = false"
+										><?php esc_html_e( 'Select a lesson group…', 'mint-lms' ); ?></button>
+										<template x-for="s in attachSections" :key="'lesson-att-s-' + s.id">
+											<button
+												type="button"
+												class="mint-quiz-attach__option"
+												:class="Number(attach.sectionId) === Number(s.id) ? 'is-active' : ''"
+												@click="pickAttachSection(s.id); open = false"
+												x-text="s.title"
+											></button>
+										</template>
+									</div>
+								</div>
+
+								<button
+									type="button"
+									class="mint-quiz-attach__submit"
+									@click="attachLessonToSection()"
+									:disabled="!attach.sectionId || attaching"
+								>
+									<span x-text="attaching ? '<?php echo esc_js( __( 'Adding…', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Add to lesson group', 'mint-lms' ) ); ?>'"></span>
+								</button>
+							</aside>
+						</div><!-- /.mint-quiz-editor-layout -->
 					</div>
 				</div>
 			</div>

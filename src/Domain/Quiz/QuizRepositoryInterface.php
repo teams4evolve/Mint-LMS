@@ -49,6 +49,8 @@ interface QuizRepositoryInterface {
 	 */
 	public function findAttemptsByQuizId( int $quizId ): array;
 
+	public function deleteAttemptsByQuizId( int $quizId ): void;
+
 	public function findBestPassedAttempt( int $userId, int $quizId ): ?QuizAttempt;
 
 	public function hasPassed( int $userId, int $quizId ): bool;

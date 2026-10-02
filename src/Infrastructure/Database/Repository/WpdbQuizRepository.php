@@ -261,6 +261,15 @@ final class WpdbQuizRepository implements QuizRepositoryInterface {
 		return false !== $deleted && $deleted > 0;
 	}
 
+	public function deleteAttemptsByQuizId( int $quizId ): void {
+		if ( $quizId <= 0 ) {
+			return;
+		}
+		$attemptsTable = Schema::validateTable( Schema::quizAttemptsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
+		// phpcs:ignore WordPress.DB.DirectDatabaseQuery.DirectQuery, WordPress.DB.DirectDatabaseQuery.NoCaching
+		$this->wpdb->delete( $attemptsTable, array( 'quiz_id' => $quizId ), array( '%d' ) );
+	}
+
 	public function deleteQuestion( int $id ): bool {
 		$table = Schema::validateTable( Schema::quizQuestionsTable( $this->wpdb->prefix ), $this->wpdb->prefix );
 
