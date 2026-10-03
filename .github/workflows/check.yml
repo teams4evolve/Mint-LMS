@@ -20,9 +20,9 @@ jobs:
           coverage: none
       - name: Lint PHP files
         run: |
-          set -e
-          find src views templates mint-lms.php -name '*.php' -print0 \
-            | xargs -0 -n1 php -l
+          while IFS= read -r -d '' file; do
+            php -l "$file"
+          done < <(find src views templates mint-lms.php -name '*.php' -print0)
 
   phpcs:
     name: WordPress coding standards
