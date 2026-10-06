@@ -47,8 +47,8 @@ final class CoursePostEditUi {
 	 * @param \WP_Post $post Post being edited.
 	 */
 	public function renderBuilderMetaBox( \WP_Post $post ): void {
-		if ( $post->ID <= 0 ) {
-			echo '<p>' . esc_html__( 'Save the course first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
+		if ( ! PostTypes::hasExplicitSave( $post ) ) {
+			echo '<p>' . esc_html__( 'Save the course as a draft or publish it first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
 			return;
 		}
 
@@ -56,7 +56,7 @@ final class CoursePostEditUi {
 	}
 
 	public function renderSubmitBoxLink( \WP_Post $post ): void {
-		if ( PostTypes::COURSE !== $post->post_type || $post->ID <= 0 ) {
+		if ( PostTypes::COURSE !== $post->post_type || ! PostTypes::hasExplicitSave( $post ) ) {
 			return;
 		}
 

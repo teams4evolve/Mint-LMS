@@ -40,6 +40,17 @@ final class PostTypes {
 		return array( self::COURSE, self::LESSON, self::QUIZ, self::QUESTION );
 	}
 
+	public static function isContentType( string $postType ): bool {
+		return in_array( $postType, self::all(), true );
+	}
+
+	/**
+	 * True once the author has used Save draft / Publish (not Gutenberg auto-draft).
+	 */
+	public static function hasExplicitSave( \WP_Post $post ): bool {
+		return $post->ID > 0 && 'auto-draft' !== $post->post_status;
+	}
+
 	/**
 	 * Native WordPress list-table URL for a Mint CPT.
 	 */

@@ -48,8 +48,8 @@ final class QuestionPostEditUi {
 	 * @param \WP_Post $post Post being edited.
 	 */
 	public function renderBuilderMetaBox( \WP_Post $post ): void {
-		if ( $post->ID <= 0 ) {
-			echo '<p>' . esc_html__( 'Save the question first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
+		if ( ! PostTypes::hasExplicitSave( $post ) ) {
+			echo '<p>' . esc_html__( 'Save the question as a draft or publish it first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
 			return;
 		}
 
@@ -57,7 +57,7 @@ final class QuestionPostEditUi {
 	}
 
 	public function renderSubmitBoxLink( \WP_Post $post ): void {
-		if ( PostTypes::QUESTION !== $post->post_type || $post->ID <= 0 ) {
+		if ( PostTypes::QUESTION !== $post->post_type || ! PostTypes::hasExplicitSave( $post ) ) {
 			return;
 		}
 
