@@ -227,6 +227,8 @@ final class PostTypeRegistrar {
 					),
 					'show_ui'      => true,
 					'show_in_menu' => false,
+					// Gutenberg (Add New Course) requires REST; other Mint CPTs stay classic.
+					'show_in_rest' => true,
 					'supports'     => array( 'title', 'editor', 'thumbnail', 'author' ),
 					'capabilities' => $caps,
 				)
