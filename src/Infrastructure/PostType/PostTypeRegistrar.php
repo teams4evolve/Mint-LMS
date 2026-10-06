@@ -261,7 +261,8 @@ final class PostTypeRegistrar {
 					),
 					'show_ui'      => true,
 					'show_in_menu' => false,
-					'supports'     => array( 'title', 'author' ),
+					// Match lesson/course native Add New / Edit chrome (title + editor + featured image).
+					'supports'     => array( 'title', 'editor', 'thumbnail', 'author' ),
 					'capabilities' => $caps,
 				)
 			)

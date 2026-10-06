@@ -370,7 +370,10 @@ function courseBuilder(courseId, opts = {}) {
         }
       }
       if (this.isStandalone && !this.selected && this.standaloneLessonId) {
-        if (this.openQuizEditor) {
+        // Prefer ?view= overview (e.g. Quizzes Overview) over auto-opening the quiz editor.
+        if (this.overviewKind) {
+          // Stay on overview.
+        } else if (this.openQuizEditor) {
           const quizId = parseInt(params.get('quiz_id') || '0', 10);
           await this.selectQuiz(this.standaloneLessonId, 0, quizId || null);
         } else {
@@ -551,6 +554,7 @@ function courseBuilder(courseId, opts = {}) {
               courseId: Number(lesson.courseId) || 0,
               status: 'draft',
               sortOrder: 0,
+              disposableHost: lesson.disposableHost !== false && this.isDisposableHostLesson(lesson),
             },
           ],
         },
@@ -575,10 +579,12 @@ function courseBuilder(courseId, opts = {}) {
               id: quiz.id,
               title: quiz.title,
               lessonId: lesson.id,
-              lessonTitle: lesson.title || 'New Lesson',
+              lessonTitle: quiz.linked ? (lesson.title || 'New Lesson') : '',
               courseId: Number(lesson.courseId) || 0,
               sectionId: 0,
               questionCount: (quiz.questions || []).length,
+              linked: !!quiz.linked,
+              disposableHost: !!quiz.disposableHost,
             },
           ];
           this.courseQuestions = (quiz.questions || []).map((q) => {
@@ -670,8 +676,15 @@ function courseBuilder(courseId, opts = {}) {
             id: Number(l.id) || 0,
             title: l.title || `Lesson #${l.id}`,
             courseId: Number(l.courseId) || 0,
+            disposableHost: !!l.disposableHost,
           }))
-          .filter((l) => l.id > 0 && l.id !== hostId && l.id !== currentLessonId);
+          .filter(
+            (l) =>
+              l.id > 0 &&
+              l.id !== hostId &&
+              l.id !== currentLessonId &&
+              !l.disposableHost
+          );
       } catch {
         this.attachLessons = [];
       }
@@ -1913,6 +1926,7 @@ function courseBuilder(courseId, opts = {}) {
     isCourseTreeLesson(lessonId) {
       const id = Number(lessonId) || 0;
       if (id <= 0) return false;
+      if (this.isStandalone || !Number(this.courseId)) return false;
       for (const section of this.sections || []) {
         if ((section.lessons || []).some((lesson) => Number(lesson.id) === id)) {
           return true;
@@ -1981,8 +1995,17 @@ function courseBuilder(courseId, opts = {}) {
 
     async navAddQuestion() {
       this.closeAllNavMenus();
+      if (this.isStandaloneQuizSurface() || (this.isStandalone && this.fromQuizzes)) {
+        this.goToWpNewQuestion();
+        return;
+      }
       // Always create unassociated — author links via Attach to Quiz.
       await this.addIndependentCourseQuestion();
+    },
+
+    goToWpNewQuestion() {
+      const url = config.urls?.newQuestion || 'post-new.php?post_type=mint-question';
+      window.location.assign(url);
     },
 
     /** Open searchable Overview for a content type (lists live in the editor, not the dropdown). */
@@ -1995,7 +2018,23 @@ function courseBuilder(courseId, opts = {}) {
         question: 'questions',
       };
       const view = map[kind];
-      if (!view || !Number(this.courseId)) return;
+      if (!view) return;
+
+      // Standalone library (no course): Overview must open in-place — there is no course builder URL.
+      if (!Number(this.courseId)) {
+        this.enterTypeOverview(view);
+        try {
+          const url = new URL(window.location.href);
+          url.searchParams.set('view', view);
+          ['quiz_id', 'question_id', 'tab'].forEach((key) => {
+            url.searchParams.delete(key);
+          });
+          window.history.replaceState({}, '', url.toString());
+        } catch {
+          // Ignore history failures.
+        }
+        return;
+      }
 
       const base = config.urls?.builder || 'admin.php?page=mint-lms-builder';
       const url = new URL(base, window.location.href);
@@ -2987,6 +3026,11 @@ function courseBuilder(courseId, opts = {}) {
      * (Lesson > Quiz > Question) — same pattern as lesson → quiz.
      */
     async openLessonQuestionEditor() {
+      if (this.isStandaloneQuizSurface() || (this.isStandalone && this.fromQuizzes && !this.fromQuestions)) {
+        this.goToWpNewQuestion();
+        return;
+      }
+
       if (this.fromQuestions) {
         // On question library, prefer independent create unless editing a linked quiz.
         const quizId = Number(this.lessonQuiz?.id || this.selected?.quizId || 0);
@@ -4611,14 +4655,15 @@ function courseBuilder(courseId, opts = {}) {
 
     /** Owning lesson title for quiz/question chrome (sidebar + breadcrumbs). */
     breadcrumbParentLessonTitle() {
+      if (this.quizUsesDisposableHost()) return '';
       const lesson = this.selectedLesson;
-      if (lesson?.title) {
+      if (lesson?.title && !this.isDisposableHostLesson(lesson)) {
         return String(lesson.title).trim();
       }
       const lessonId = Number(this.selected?.lessonId || 0);
       if (lessonId > 0) {
         const row = this.courseQuizzes.find((item) => Number(item.lessonId) === lessonId);
-        if (row?.lessonTitle) {
+        if (row?.lessonTitle && row.linked !== false) {
           return String(row.lessonTitle).trim();
         }
       }
@@ -4807,8 +4852,45 @@ function courseBuilder(courseId, opts = {}) {
       }
     },
 
+    /**
+     * Quizzes library → standalone quiz editor (no course).
+     * Top nav should only expose Quiz — not Lesson Group / Lesson / Question / Course Hierarchy.
+     */
+    isStandaloneQuizSurface() {
+      return Boolean(this.isStandalone && this.fromQuizzes && !this.fromQuestions);
+    },
+
+    /** Questions library → standalone question editor. Top nav is Question only. */
+    isStandaloneQuestionSurface() {
+      return Boolean(this.isStandalone && this.fromQuestions && !this.fromQuizOrigin && !this.fromLessonOrigin);
+    },
+
+    /** Internal quiz/question host lesson — not a real Attach parent. */
+    isDisposableHostLesson(lesson) {
+      if (!lesson) return false;
+      if (lesson.disposableHost === true) return true;
+      if (lesson.disposableHost === false) return false;
+      if (Number(lesson.courseId) > 0) return false;
+      if (String(lesson.content || '').trim()) return false;
+      if (String(lesson.videoUrl || '').trim()) return false;
+      if (Number(lesson.attachmentId) > 0) return false;
+      if (Number(lesson.featuredImageId) > 0) return false;
+      return true;
+    },
+
+    quizUsesDisposableHost() {
+      if (this.lessonQuiz?.disposableHost === true) return true;
+      if (this.selectedLesson && this.isDisposableHostLesson(this.selectedLesson)) return true;
+      const row = (this.courseQuizzes || []).find(
+        (quiz) => Number(quiz.id) === Number(this.lessonQuiz?.id || this.selected?.quizId || 0)
+      );
+      return row?.disposableHost === true;
+    },
+
     /** Show Lesson parent in quiz/question sidebar (course, or lesson→quiz flow). */
     showSidebarLessonParent() {
+      if (this.quizUsesDisposableHost()) return false;
+      if (this.isStandaloneQuizSurface() && !this.fromLessonOrigin) return false;
       if (this.isStandalone && !this.fromLessonOrigin) return false;
       const quizId = Number(this.lessonQuiz?.id || this.selected?.quizId || 0);
       if (quizId > 0) {

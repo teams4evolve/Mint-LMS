@@ -28,7 +28,7 @@ final class QuestionPostEditUi {
 
 		echo '<div class="misc-pub-section">';
 		echo '<a class="button button-primary" style="width:100%;text-align:center;" href="' . esc_url( $url ) . '">';
-		echo esc_html__( 'Open In Mint LMS Builder', 'mint-lms' );
+		echo esc_html__( 'Open Question In Mint LMS Builder', 'mint-lms' );
 		echo '</a>';
 		echo '</div>';
 	}

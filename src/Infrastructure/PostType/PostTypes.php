@@ -50,4 +50,40 @@ final class PostTypes {
 
 		return admin_url( 'edit.php?post_type=' . $postType );
 	}
+
+	/**
+	 * Empty library lesson used only as a quiz/question host (not a real parent).
+	 */
+	public static function isDisposableHostLesson( int $lessonId ): bool {
+		if ( $lessonId <= 0 ) {
+			return false;
+		}
+
+		$post = get_post( $lessonId );
+		if ( ! $post instanceof \WP_Post || self::LESSON !== $post->post_type ) {
+			return false;
+		}
+
+		if ( (int) get_post_meta( $lessonId, self::META_COURSE_ID, true ) > 0 ) {
+			return false;
+		}
+
+		if ( '' !== trim( wp_strip_all_tags( (string) $post->post_content ) ) ) {
+			return false;
+		}
+
+		if ( '' !== trim( (string) get_post_meta( $lessonId, self::META_VIDEO_URL, true ) ) ) {
+			return false;
+		}
+
+		if ( (int) get_post_meta( $lessonId, self::META_ATTACHMENT_ID, true ) > 0 ) {
+			return false;
+		}
+
+		if ( (int) get_post_thumbnail_id( $lessonId ) > 0 ) {
+			return false;
+		}
+
+		return true;
+	}
 }

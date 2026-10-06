@@ -802,6 +802,10 @@ final class QuizController {
 		$data['featuredImageId']  = null;
 		$data['featuredImageUrl'] = '';
 		$data['status']           = $this->mintPostStatus( (string) get_post_status( $quiz->id ) );
+		$lessonId                 = (int) $quiz->lessonId;
+		$lessonCourseId           = $lessonId > 0 ? (int) get_post_meta( $lessonId, PostTypes::META_COURSE_ID, true ) : 0;
+		$data['linked']           = $lessonId > 0 && $lessonCourseId > 0;
+		$data['disposableHost']   = PostTypes::isDisposableHostLesson( $lessonId );
 
 		$thumbId = (int) get_post_thumbnail_id( $quiz->id );
 		if ( $thumbId > 0 ) {

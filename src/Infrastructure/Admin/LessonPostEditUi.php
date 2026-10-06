@@ -27,7 +27,7 @@ final class LessonPostEditUi {
 
 		echo '<div class="misc-pub-section mint-lms-lesson-submitbox">';
 		echo '<a class="button button-primary" style="width:100%;text-align:center;" href="' . esc_url( $builderUrl ) . '">';
-		echo esc_html__( 'Open In Mint LMS Builder', 'mint-lms' );
+		echo esc_html__( 'Open Lesson In Mint LMS Builder', 'mint-lms' );
 		echo '</a>';
 		echo '</div>';
 	}

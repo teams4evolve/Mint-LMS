@@ -30,6 +30,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 	<nav class="mint-builder-nav" aria-label="<?php echo esc_attr__( 'Builder contents', 'mint-lms' ); ?>">
 		<div
 			class="mint-builder-nav__item"
+			x-show="!isStandaloneQuizSurface() && !isStandaloneQuestionSurface()"
 			:class="navTabActive('section') ? 'is-active' : ''"
 			tabindex="0"
 			@click="toggleNavMenu('section')"
@@ -57,6 +58,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 		<div
 			class="mint-builder-nav__item"
+			x-show="!isStandaloneQuizSurface() && !isStandaloneQuestionSurface()"
 			:class="navTabActive('lesson') ? 'is-active' : ''"
 			tabindex="0"
 			@click="toggleNavMenu('lesson')"
@@ -84,6 +86,8 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 		<div
 			class="mint-builder-nav__item"
+			x-show="!isStandaloneQuestionSurface()"
+			x-cloak
 			:class="navTabActive('quiz') ? 'is-active' : ''"
 			tabindex="0"
 			@click="toggleNavMenu('quiz')"
@@ -111,6 +115,8 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 		<div
 			class="mint-builder-nav__item"
+			x-show="!isStandaloneQuizSurface()"
+			x-cloak
 			:class="navTabActive('question') ? 'is-active' : ''"
 			tabindex="0"
 			@click="toggleNavMenu('question')"
@@ -138,6 +144,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 		<div
 			class="mint-builder-nav__item"
+			x-show="!isStandaloneQuizSurface() && !isStandaloneQuestionSurface()"
 			:class="navTabActive('tree') ? 'is-active' : ''"
 			tabindex="0"
 			@click="toggleNavMenu('tree')"
@@ -2176,7 +2183,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									</span>
 									<div>
 										<div class="mint-builder-overview__title"><?php esc_html_e( 'Quizzes', 'mint-lms' ); ?></div>
-										<div class="mint-builder-overview__copy"><?php esc_html_e( 'Every quiz in this course, across all lessons.', 'mint-lms' ); ?></div>
+										<div class="mint-builder-overview__copy" x-text="isStandaloneQuizSurface() ? '<?php echo esc_js( __( 'Every quiz in your library.', 'mint-lms' ) ); ?>' : '<?php echo esc_js( __( 'Every quiz in this course, across all lessons.', 'mint-lms' ) ); ?>'"></div>
 									</div>
 								</div>
 								<button
@@ -2584,6 +2591,27 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 									<h1 class="mint-quiz-settings__title"><?php esc_html_e( 'Quiz Settings', 'mint-lms' ); ?></h1>
 									<div class="mint-quiz-settings__subtitle" x-text="lessonQuiz.title || '<?php echo esc_js( __( 'New Quiz', 'mint-lms' ) ); ?>'"></div>
 
+									<div class="mint-quiz-rules mint-mt-7">
+										<div class="mint-quiz-release">
+											<div class="mint-quiz-release__label" id="mint-quiz-pass-label"><?php esc_html_e( 'Pass %', 'mint-lms' ); ?></div>
+											<div class="mint-quiz-pass">
+												<div class="mint-quiz-pass__control">
+													<input
+														id="mint-quiz-settings-pass"
+														type="number"
+														class="mint-quiz-pass__input"
+														min="0"
+														max="100"
+														x-model.number="lessonQuiz.passPercent"
+														aria-labelledby="mint-quiz-pass-label"
+													/>
+													<span class="mint-quiz-pass__suffix" aria-hidden="true"><?php esc_html_e( '%', 'mint-lms' ); ?></span>
+												</div>
+												<p class="mint-quiz-pass__copy"><?php esc_html_e( 'Students must score at least this percentage to pass.', 'mint-lms' ); ?></p>
+											</div>
+										</div>
+									</div>
+
 									<!-- Quiz Release Schedule -->
 									<div class="mint-quiz-rules mint-mt-7">
 										<div class="mint-quiz-release">
@@ -2880,7 +2908,12 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 								<!-- Quiz builder -->
 								<div x-show="!quizSettingsView">
-								<nav class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2" aria-label="<?php echo esc_attr__( 'Quiz location', 'mint-lms' ); ?>">
+								<nav
+									class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2"
+									aria-label="<?php echo esc_attr__( 'Quiz location', 'mint-lms' ); ?>"
+									x-show="breadcrumbCourseTitle() || breadcrumbSectionTitle() || (showSidebarLessonParent() && breadcrumbParentLessonTitle())"
+									x-cloak
+								>
 									<template x-if="breadcrumbCourseTitle()">
 										<span class="mint-inline-flex mint-min-w-0 mint-items-center mint-gap-2.5">
 											<a
@@ -2914,7 +2947,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4.5 5.5 5.5L8 15.5"/></svg>
 										</span>
 									</template>
-									<span class="mint-breadcrumb__current" x-text="breadcrumbQuizLabel()"></span>
 								</nav>
 
 								<input
@@ -2932,18 +2964,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 								</div>
 
 								<div class="mint-quiz-panel mint-mt-5">
-									<div class="mint-quiz-panel__pass-field">
-										<label class="mint-lesson-field-label" for="mint-quiz-editor-pass"><?php esc_html_e( 'Pass %', 'mint-lms' ); ?></label>
-										<input
-											id="mint-quiz-editor-pass"
-											type="number"
-											class="mint-lesson-field-input mint-lesson-field-input--sm"
-											min="0"
-											max="100"
-											x-model.number="lessonQuiz.passPercent"
-										/>
-									</div>
-
 									<div x-show="lessonQuiz.questions.length === 0" class="mint-quiz-empty"><?php esc_html_e( 'No questions yet.', 'mint-lms' ); ?></div>
 
 									<template x-for="(question, qIndex) in lessonQuiz.questions" :key="question.id || question._key">
@@ -3166,7 +3186,12 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<template x-if="!quizLoading && activeQuestion">
 							<div class="mint-quiz-editor-layout">
 								<div class="mint-quiz-editor-layout__main">
-								<nav class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2" aria-label="<?php echo esc_attr__( 'Question location', 'mint-lms' ); ?>">
+								<nav
+									class="mint-flex mint-items-center mint-gap-2.5 mint-text-[15px] mint-text-ink-2"
+									aria-label="<?php echo esc_attr__( 'Question location', 'mint-lms' ); ?>"
+									x-show="breadcrumbCourseTitle() || breadcrumbSectionTitle() || (showSidebarLessonParent() && breadcrumbParentLessonTitle()) || (showSidebarQuizParent() && breadcrumbQuizLabel())"
+									x-cloak
+								>
 									<template x-if="breadcrumbCourseTitle()">
 										<span class="mint-inline-flex mint-min-w-0 mint-items-center mint-gap-2.5">
 											<a
@@ -3211,7 +3236,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 											<svg width="15" height="15" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m8 4.5 5.5 5.5L8 15.5"/></svg>
 										</span>
 									</template>
-									<span class="mint-breadcrumb__current" x-text="breadcrumbQuestionLabel()"></span>
 								</nav>
 
 								<input
@@ -3534,45 +3558,6 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 										:disabled="quizSaving"
 									><?php esc_html_e( 'Save question', 'mint-lms' ); ?></button>
 								</div>
-
-								<section class="mint-mt-7 mint-grid mint-gap-[14px]">
-									<div class="mint-text-[13px] mint-font-bold mint-uppercase mint-tracking-[0.08em] mint-text-ink-2">
-										<?php esc_html_e( 'Set featured image · Question', 'mint-lms' ); ?>
-									</div>
-
-									<div
-										x-show="!activeQuestion.featuredImageUrl"
-										class="mint-cover-placeholder mint-flex mint-h-[200px] mint-items-center mint-justify-center mint-rounded-[14px] mint-border-[1.5px] mint-border-dashed mint-border-[#98FBCB]"
-									>
-										<span class="mint-font-mono mint-text-[13px] mint-text-ink-2"><?php esc_html_e( 'featured image · 1200×675', 'mint-lms' ); ?></span>
-									</div>
-									<div
-										x-show="activeQuestion.featuredImageUrl"
-										x-cloak
-										class="mint-h-[200px] mint-overflow-hidden mint-rounded-[14px] mint-border-[1.5px] mint-border-[#DAD7E6]"
-									>
-										<img :src="activeQuestion.featuredImageUrl" alt="" class="mint-h-full mint-w-full mint-object-cover" />
-									</div>
-
-									<p class="mint-m-0 mint-text-base mint-leading-[26px] mint-text-ink-2">
-										<?php esc_html_e( 'Optional. Shown on the question card and results screen.', 'mint-lms' ); ?>
-									</p>
-
-									<div class="mint-flex mint-flex-wrap mint-gap-2.5">
-										<button
-											type="button"
-											class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-4 mint-text-base mint-font-semibold mint-text-cta-ink"
-											@click="pickQuestionFeaturedImage()"
-										><?php esc_html_e( 'Upload image', 'mint-lms' ); ?></button>
-										<button
-											type="button"
-											class="mint-settings-action mint-inline-flex mint-h-[42px] mint-cursor-pointer mint-items-center mint-justify-center mint-rounded-md mint-border-0 mint-bg-cta mint-px-[15px] mint-text-base mint-font-semibold mint-text-cta-ink"
-											x-show="activeQuestion.featuredImageId"
-											x-cloak
-											@click="clearQuestionFeaturedImage()"
-										><?php esc_html_e( 'Remove', 'mint-lms' ); ?></button>
-									</div>
-								</section>
 
 								<div class="mint-mt-8 mint-flex mint-flex-wrap mint-items-center mint-justify-between mint-gap-4 mint-border-t mint-border-rule mint-pt-5">
 									<button type="button" class="mint-builder-delete" @click="deleteActiveQuestion()"><?php esc_html_e( 'Delete question', 'mint-lms' ); ?></button>
