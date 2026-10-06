@@ -8,14 +8,51 @@ defined( 'ABSPATH' ) || exit;
 use MintLMS\Infrastructure\PostType\PostTypes;
 
 /**
- * Native WP lesson editor (post.php) ↔ Mint lesson builder.
+ * Native WP lesson editor (Gutenberg / classic) ↔ Mint lesson builder.
  *
- * Default edit surface is classic WP. Mint builder opens via Publish box link.
+ * Default Add New / Edit surface is WordPress. Mint builder opens via sidebar link.
  */
 final class LessonPostEditUi {
 
 	public function register(): void {
+		add_filter( 'use_block_editor_for_post_type', array( $this, 'enableBlockEditor' ), 10, 2 );
+		add_action( 'add_meta_boxes', array( $this, 'registerBuilderMetaBox' ) );
 		add_action( 'post_submitbox_misc_actions', array( $this, 'renderSubmitBoxLink' ) );
+	}
+
+	/**
+	 * @param bool   $use_block_editor Whether the post type uses the block editor.
+	 * @param string $post_type        Post type slug.
+	 */
+	public function enableBlockEditor( bool $use_block_editor, string $post_type ): bool {
+		if ( PostTypes::LESSON === $post_type ) {
+			return true;
+		}
+
+		return $use_block_editor;
+	}
+
+	public function registerBuilderMetaBox(): void {
+		add_meta_box(
+			'mintlms-lesson-builder-link',
+			__( 'Mint LMS', 'mint-lms' ),
+			array( $this, 'renderBuilderMetaBox' ),
+			PostTypes::LESSON,
+			'side',
+			'high'
+		);
+	}
+
+	/**
+	 * @param \WP_Post $post Post being edited.
+	 */
+	public function renderBuilderMetaBox( \WP_Post $post ): void {
+		if ( $post->ID <= 0 ) {
+			echo '<p>' . esc_html__( 'Save the lesson first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
+			return;
+		}
+
+		$this->renderBuilderButton( (int) $post->ID );
 	}
 
 	public function renderSubmitBoxLink( \WP_Post $post ): void {
@@ -23,13 +60,15 @@ final class LessonPostEditUi {
 			return;
 		}
 
-		$builderUrl = self::lessonBuilderUrl( (int) $post->ID );
-
 		echo '<div class="misc-pub-section mint-lms-lesson-submitbox">';
-		echo '<a class="button button-primary" style="width:100%;text-align:center;" href="' . esc_url( $builderUrl ) . '">';
+		$this->renderBuilderButton( (int) $post->ID );
+		echo '</div>';
+	}
+
+	private function renderBuilderButton( int $lessonId ): void {
+		echo '<a class="button button-primary" style="width:100%;text-align:center;box-sizing:border-box;" href="' . esc_url( self::lessonBuilderUrl( $lessonId ) ) . '">';
 		echo esc_html__( 'Open Lesson In Mint LMS Builder', 'mint-lms' );
 		echo '</a>';
-		echo '</div>';
 	}
 
 	/**
