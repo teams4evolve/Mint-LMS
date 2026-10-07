@@ -7297,6 +7297,12 @@ body.folded.mint-lms-focus-mode .mint-lms-admin-wrap.wrap {
   gap: 6px;
   min-width: 0;
 }
+#mint-lms-root .mint-quiz-attach__chosen {
+  display: block;
+  min-width: 0;
+  color: #0F0E1A;
+  font-weight: 600;
+}
 #mint-lms-root .mint-quiz-attach__chevron {
   flex: 0 0 auto;
   color: #8A879E;

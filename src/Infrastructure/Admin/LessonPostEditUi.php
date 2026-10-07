@@ -47,28 +47,31 @@ final class LessonPostEditUi {
 	 * @param \WP_Post $post Post being edited.
 	 */
 	public function renderBuilderMetaBox( \WP_Post $post ): void {
-		if ( ! PostTypes::hasExplicitSave( $post ) ) {
-			echo '<p>' . esc_html__( 'Save the lesson as a draft or publish it first, then open it in Mint LMS Builder.', 'mint-lms' ) . '</p>';
-			return;
-		}
-
-		$this->renderBuilderButton( (int) $post->ID );
+		NativeBuilderGate::render(
+			$post,
+			array(
+				'pending' => __( 'Save the lesson as a draft or publish it first, then open it in Mint LMS Builder.', 'mint-lms' ),
+				'label'   => __( 'Open Lesson In Mint LMS Builder', 'mint-lms' ),
+				'url'     => self::lessonBuilderUrl( (int) $post->ID ),
+			)
+		);
 	}
 
 	public function renderSubmitBoxLink( \WP_Post $post ): void {
-		if ( PostTypes::LESSON !== $post->post_type || ! PostTypes::hasExplicitSave( $post ) ) {
+		if ( PostTypes::LESSON !== $post->post_type || $post->ID <= 0 ) {
 			return;
 		}
 
 		echo '<div class="misc-pub-section mint-lms-lesson-submitbox">';
-		$this->renderBuilderButton( (int) $post->ID );
+		NativeBuilderGate::render(
+			$post,
+			array(
+				'pending' => __( 'Save the lesson as a draft or publish it first, then open it in Mint LMS Builder.', 'mint-lms' ),
+				'label'   => __( 'Open Lesson In Mint LMS Builder', 'mint-lms' ),
+				'url'     => self::lessonBuilderUrl( (int) $post->ID ),
+			)
+		);
 		echo '</div>';
-	}
-
-	private function renderBuilderButton( int $lessonId ): void {
-		echo '<a class="button button-primary" style="width:100%;text-align:center;box-sizing:border-box;" href="' . esc_url( self::lessonBuilderUrl( $lessonId ) ) . '">';
-		echo esc_html__( 'Open Lesson In Mint LMS Builder', 'mint-lms' );
-		echo '</a>';
 	}
 
 	/**

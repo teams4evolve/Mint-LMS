@@ -50,9 +50,10 @@ final class NativeEditorSaveGuard {
 			return;
 		}
 
-		$post   = isset( $GLOBALS['post'] ) && $GLOBALS['post'] instanceof \WP_Post ? $GLOBALS['post'] : null;
-		$postId = $post instanceof \WP_Post ? (int) $post->ID : 0;
-		$status = $post instanceof \WP_Post ? (string) $post->post_status : 'auto-draft';
+		$post     = isset( $GLOBALS['post'] ) && $GLOBALS['post'] instanceof \WP_Post ? $GLOBALS['post'] : null;
+		$postId   = $post instanceof \WP_Post ? (int) $post->ID : 0;
+		$status   = $post instanceof \WP_Post ? (string) $post->post_status : 'auto-draft';
+		$postType = (string) $screen->post_type;
 
 		wp_enqueue_script(
 			'mintlms-native-editor-save-guard',
@@ -68,8 +69,15 @@ final class NativeEditorSaveGuard {
 			array(
 				'postId'       => $postId,
 				'status'       => $status,
+				'postType'     => $postType,
 				'ajaxUrl'      => admin_url( 'admin-ajax.php' ),
 				'discardNonce' => wp_create_nonce( 'mintlms_discard_auto_draft' ),
+				'builderUrls'  => array(
+					PostTypes::COURSE   => admin_url( 'admin.php?page=mint-lms-builder&course_id=__ID__' ),
+					PostTypes::LESSON   => admin_url( 'admin.php?page=mint-lms-lesson-edit&lesson_id=__ID__&from=lessons' ),
+					PostTypes::QUIZ     => admin_url( 'admin.php?page=mint-lms-edit-quiz&quiz_id=__ID__' ),
+					PostTypes::QUESTION => admin_url( 'admin.php?page=mint-lms-edit-quiz&question_id=__ID__' ),
+				),
 			)
 		);
 	}

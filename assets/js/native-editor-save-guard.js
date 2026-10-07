@@ -5,6 +5,7 @@
   const ajaxUrl = cfg.ajaxUrl || '';
 
   let preserve = false;
+  let lastRevealedStatus = '';
 
   function lockAutosave() {
     if (!window.wp || !wp.data || typeof wp.data.dispatch !== 'function') {
@@ -79,6 +80,94 @@
       // Editor store not ready; fall back to the PHP-provided status.
     }
     return cfg.status || '';
+  }
+
+  function currentPostId() {
+    try {
+      const id = wp.data.select('core/editor').getCurrentPostId();
+      const n = parseInt(id, 10);
+      if (n > 0) {
+        return n;
+      }
+    } catch (err) {
+      // Fall through.
+    }
+    return postId;
+  }
+
+  function builderUrlFor(id) {
+    const templates = cfg.builderUrls || {};
+    const postType = cfg.postType || '';
+    const template = templates[postType] || '';
+    if (!template || id <= 0) {
+      return '';
+    }
+    return String(template).split('__ID__').join(String(id));
+  }
+
+  /**
+   * After Save draft / Publish, reveal Open In Mint LMS Builder without a page refresh.
+   */
+  function revealBuilderGates() {
+    const status = currentStatus();
+    if (!status || status === 'auto-draft') {
+      return;
+    }
+    lastRevealedStatus = status;
+
+    const id = currentPostId();
+    const liveUrl = builderUrlFor(id);
+    document.querySelectorAll('[data-mintlms-builder-gate]').forEach(function (gate) {
+      const pending = gate.querySelector('.mintlms-builder-gate__pending');
+      const button = gate.querySelector('.mintlms-builder-gate__button');
+      if (pending) {
+        pending.hidden = true;
+      }
+      if (!button) {
+        return;
+      }
+      button.hidden = false;
+      if (liveUrl) {
+        button.href = liveUrl;
+        button.setAttribute('data-url', liveUrl);
+      } else {
+        const fallback = button.getAttribute('data-url') || button.getAttribute('href') || '';
+        if (fallback) {
+          button.href = fallback;
+        }
+      }
+    });
+  }
+
+  function armBuilderReveal() {
+    revealBuilderGates();
+    if (!window.wp || !wp.data || typeof wp.data.subscribe !== 'function') {
+      return;
+    }
+    let wasSaving = false;
+    wp.data.subscribe(function () {
+      let saving = false;
+      try {
+        saving = !!wp.data.select('core/editor').isSavingPost();
+      } catch (err) {
+        saving = false;
+      }
+      // Reveal as soon as status leaves auto-draft, and again when a save finishes.
+      const status = currentStatus();
+      if (status && status !== 'auto-draft') {
+        revealBuilderGates();
+      }
+      if (wasSaving && !saving) {
+        revealBuilderGates();
+      }
+      wasSaving = saving;
+    });
+  }
+
+  if (window.wp && typeof wp.domReady === 'function') {
+    wp.domReady(armBuilderReveal);
+  } else {
+    armBuilderReveal();
   }
 
   function discard() {

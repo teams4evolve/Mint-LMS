@@ -212,7 +212,7 @@ final class LessonController {
 		try {
 			$userId    = $this->authorization->getCurrentUserId();
 			$courseId  = (int) $request->get_param( 'id' );
-			$sectionId = $request->offsetExists( 'section_id' ) ? (int) $request->get_param( 'section_id' ) : 0;
+			$sectionId = absint( $request->get_param( 'section_id' ) );
 
 			$dto = new CreateLessonDto(
 				(string) ( $request->get_param( 'title' ) ?? '' ),

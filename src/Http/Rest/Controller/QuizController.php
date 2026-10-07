@@ -290,14 +290,15 @@ final class QuizController {
 			$questionShell = (bool) get_post_meta( $post->ID, PostTypes::META_QUESTION_SHELL, true );
 
 			$items[] = array(
-				'id'            => (int) $post->ID,
-				'title'         => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
-				'lessonId'      => $lessonId,
-				'lessonTitle'   => $linked ? (string) get_the_title( $lessonId ) : '',
-				'sectionId'     => $linked ? $sectionId : 0,
-				'courseId'      => $courseId,
-				'linked'        => $linked,
-				'questionShell' => $questionShell,
+				'id'             => (int) $post->ID,
+				'title'          => $post->post_title !== '' ? $post->post_title : __( 'New Quiz', 'mint-lms' ),
+				'lessonId'       => $lessonId,
+				'lessonTitle'    => $linked ? (string) get_the_title( $lessonId ) : '',
+				'sectionId'      => $linked ? $sectionId : 0,
+				'courseId'       => $courseId,
+				'linked'         => $linked,
+				'disposableHost' => PostTypes::isDisposableHostLesson( $lessonId ),
+				'questionShell'  => $questionShell,
 			);
 		}
 
@@ -451,9 +452,19 @@ final class QuizController {
 
 	public function attach( \WP_REST_Request $request ): \WP_REST_Response {
 		try {
-			$userId   = $this->authorization->getCurrentUserId();
-			$quizId   = (int) $request->get_param( 'id' );
-			$lessonId = (int) $request->get_param( 'lesson_id' );
+			$userId = $this->authorization->getCurrentUserId();
+			$quizId = (int) $request->get_param( 'id' );
+
+			// JSON body + query/body params — never rely on offsetExists for lesson_id.
+			$json     = $request->get_json_params();
+			$lessonId = absint( $request->get_param( 'lesson_id' ) );
+			if ( $lessonId <= 0 && is_array( $json ) ) {
+				$lessonId = absint( $json['lesson_id'] ?? 0 );
+			}
+
+			if ( $lessonId <= 0 ) {
+				return ApiResponse::error( 'validation_error', __( 'Pick a lesson to attach this quiz to.', 'mint-lms' ), 400 );
+			}
 
 			$quiz = $this->quizService->attachToLesson( $quizId, $lessonId, $userId );
 

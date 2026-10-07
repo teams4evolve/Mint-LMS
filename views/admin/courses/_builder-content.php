@@ -806,7 +806,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 						<template x-if="filteredContentsSections().length === 0">
 							<div class="mint-builder-tree__empty">
 								<p x-text="contentsSearchQuery() ? contentsSearchEmptyLabel() : '<?php echo esc_js( __( 'No content yet', 'mint-lms' ) ); ?>'"></p>
-								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="createCourseLesson()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add lesson group', 'mint-lms' ); ?></button>
+								<button type="button" class="mint-builder-empty__cta" x-show="!contentsSearchQuery()" :disabled="addingLesson" @click="addLessonToFirstSection()"><?php esc_html_e( 'Add a lesson', 'mint-lms' ); ?></button>								<button type="button" class="mint-tree-add-section mint-mt-3 mint-w-full" x-show="!contentsSearchQuery()" :disabled="addingSection" @click="addSection()"><?php esc_html_e( 'Add lesson group', 'mint-lms' ); ?></button>
 							</div>
 						</template>
 
@@ -1418,7 +1418,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 					class="mint-tree-add-section mint-w-full"
 					x-show="!fromQuizzes && !quizEditorActive && !questionEditorActive"
 					:disabled="addingLesson"
-					@click="createCourseLesson()"
+					@click="createCourseLesson(resolveTargetLessonGroupId())"
 				>
 					<svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" aria-hidden="true"><path d="M10 5v10M5 10h10"/></svg>
 					<span><?php esc_html_e( 'Add lesson', 'mint-lms' ); ?></span>
@@ -2546,7 +2546,7 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 							type="button"
 							class="mint-builder-empty__cta mint-mt-4"
 							:disabled="addingLesson"
-							@click="addLesson(selected.id)"
+							@click="addLesson(selectedSection?.id || selected?.id)"
 						><?php esc_html_e( 'Add lesson', 'mint-lms' ); ?></button>
 					</div>
 
@@ -3129,30 +3129,30 @@ $labelClass    = 'mint-mb-1.5 mint-block mint-text-[13px] mint-font-bold mint-up
 
 									<div
 										class="mint-quiz-attach__select"
-										:class="open ? 'is-open' : ''"
-										x-data="{ open: false }"
-										@click.outside="open = false"
+										:class="quizAttachMenuOpen ? 'is-open' : ''"
+										@click.outside="quizAttachMenuOpen = false"
 									>
-										<button type="button" class="mint-quiz-attach__trigger" @click="open = !open">
-											<span class="mint-quiz-attach__placeholder">
+										<button type="button" class="mint-quiz-attach__trigger" @click="quizAttachMenuOpen = !quizAttachMenuOpen">
+											<span class="mint-quiz-attach__placeholder" x-show="!attach.lessonId">
 												<span aria-hidden="true">+</span>
 												<span><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></span>
 											</span>
+											<span class="mint-quiz-attach__chosen mint-truncate" x-show="attach.lessonId" x-cloak x-text="attachLessonLabel()"></span>
 											<svg class="mint-quiz-attach__chevron" width="16" height="16" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5.5 8 10 12.5 14.5 8"/></svg>
 										</button>
-										<div class="mint-quiz-attach__menu" x-show="open" x-cloak>
+										<div class="mint-quiz-attach__menu" x-show="quizAttachMenuOpen" x-cloak>
 											<button
 												type="button"
 												class="mint-quiz-attach__option"
 												:class="!attach.lessonId ? 'is-active' : ''"
-												@click="pickAttachLesson(0); open = false"
+												@click="pickAttachLesson(0); quizAttachMenuOpen = false"
 											><?php esc_html_e( 'Select a lesson…', 'mint-lms' ); ?></button>
 											<template x-for="l in attachLessons" :key="'quiz-att-' + l.id">
 												<button
 													type="button"
 													class="mint-quiz-attach__option"
 													:class="Number(attach.lessonId) === Number(l.id) ? 'is-active' : ''"
-													@click="pickAttachLesson(l.id); open = false"
+													@click="pickAttachLesson(l.id); quizAttachMenuOpen = false"
 													x-text="l.title"
 												></button>
 											</template>
